@@ -1,13 +1,11 @@
 package com.kwwsyk.endinv.network;
 
-import com.kwwsyk.endinv.EndlessInventoryMenu;
 import com.kwwsyk.endinv.client.LocalData;
+import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.network.payloads.EndInvSettings;
 import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-
-import static com.kwwsyk.endinv.ModInitializer.ENDINV_SETTINGS;
 
 public abstract class ClientPayloadHandler {
 

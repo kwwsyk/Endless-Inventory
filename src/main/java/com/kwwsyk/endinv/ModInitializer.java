@@ -1,7 +1,9 @@
 package com.kwwsyk.endinv;
 
+import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.item.ScreenDebugger;
 import com.kwwsyk.endinv.item.TestEndInv;
+import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.network.payloads.EndInvSettings;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
@@ -9,7 +11,9 @@ import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -48,10 +52,13 @@ public class ModInitializer {
                     .build()
     );
 
-    public ModInitializer(IEventBus modEventBus){
+    public ModInitializer(IEventBus modEventBus, ModContainer container){
         MENUS.register(modEventBus);
         ITEMS.register(modEventBus);
         ATTACHMENT_TYPES.register(modEventBus);
+
+        container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
+        container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);
     }
 
 

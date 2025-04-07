@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.network;
 
 import com.kwwsyk.endinv.EndlessInventory;
-import com.kwwsyk.endinv.EndlessInventoryMenu;
+import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.network.payloads.EndInvRequestContentPayload;
 import com.kwwsyk.endinv.network.payloads.EndInvSettings;
 import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;

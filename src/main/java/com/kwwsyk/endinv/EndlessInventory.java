@@ -2,7 +2,6 @@ package com.kwwsyk.endinv;
 
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.world.ContainerListener;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
@@ -13,32 +12,31 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+import static com.kwwsyk.endinv.ModInitializer.DEFAULT_UUID;
 import static com.kwwsyk.endinv.ModInitializer.ENDINV_UUID;
 
 
 public class EndlessInventory implements SourceInventory{
 
-    public static final UUID DEFAULT_UUID = UUID.fromString("f47ac10b-58cc-4372-a567-0e02b2c3d479");
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final EndlessInventory EMPTY = new EndlessInventory(DEFAULT_UUID);
 
     private UUID uuid;
     private List<ItemStack> items;
-    private ContainerListener[] listeners;
+    private int maxStackSize;
+    private boolean infinityMode;
 
     public EndlessInventory(){
-        this.items = new ArrayList<>();
-        this.uuid= UUID.randomUUID();
+        this(UUID.randomUUID());
     }
 
     public EndlessInventory(UUID uuid){
         this.items = new ArrayList<>();
         this.uuid = uuid;
+        this.maxStackSize = ServerConfig.CONFIG.MAX_STACK_SIZE.getAsInt();
+        this.infinityMode = ServerConfig.CONFIG.ENABLE_INFINITE.getAsBoolean();
     }
 
-    public static EndlessInventory createEmpty(){
-        return new EndlessInventory(null);
-    }
 
     //TODO dangerous
     private static EndlessInventory createForPlayer(Player player){
@@ -54,6 +52,30 @@ public class EndlessInventory implements SourceInventory{
         return endlessInventory;
     }
 
+    public int getMaxItemStackSize() {
+        return maxStackSize;
+    }
+
+    public void setMaxItemStackSize(int maxStackSize) {
+        this.maxStackSize = maxStackSize;
+    }
+
+    public boolean isInfinityMode() {
+        return infinityMode;
+    }
+
+    public void setInfinityMode(boolean infinityMode) {
+        this.infinityMode = infinityMode;
+    }
+
+    public boolean isFull(ItemStack itemStack){
+        return itemStack.getCount()>=maxStackSize;
+    }
+
+    public boolean isInfinite(ItemStack itemStack){
+        return isFull(itemStack) && infinityMode;
+    }
+
     public List<ItemStack> getItems(){
         return this.items;
     }
@@ -62,18 +84,39 @@ public class EndlessInventory implements SourceInventory{
         return this.items.get(index);
     }
 
-    public void addItem(ItemStack itemStack){
-        if(itemStack.isEmpty()) return;
+    /**
+     * Add item to EndInv and return remain item copy or IS.Empty.
+     * @param itemStack to add
+     * @return Remain item copied, or Empty if all inserted.
+     */
+    public ItemStack addItem(ItemStack itemStack){
+        if(itemStack.isEmpty()) return ItemStack.EMPTY;
         for(ItemStack itemStack1 : this.items){
             if(ItemStack.isSameItemSameComponents(itemStack1,itemStack)){
-                itemStack1.grow(itemStack.getCount());
-                this.setChanged();
-                return;
+                if(!isFull(itemStack1)) {
+                    if(itemStack1.getCount()+itemStack.getCount()<maxStackSize) {
+                        //normally
+                        itemStack1.grow(itemStack.getCount());
+                        this.setChanged();
+                        return ItemStack.EMPTY;
+                    }else {
+                        itemStack1.setCount(maxStackSize);
+                        this.setChanged();
+                        return itemStack.copyWithCount(itemStack1.getCount()+itemStack.getCount()-maxStackSize);
+                    }
+                }else if(infinityMode){
+                    return ItemStack.EMPTY;
+                }else {
+                    return itemStack.copy();
+                }
             }
 
         }
+        int c = itemStack.getCount();
+        itemStack.limitSize(maxStackSize);
         this.items.add(itemStack);
         this.setChanged();
+        return itemStack.copyWithCount(Math.max(0,c-maxStackSize));
     }
 
     public ItemStack takeItem(int index){
@@ -82,13 +125,18 @@ public class EndlessInventory implements SourceInventory{
         }else {
             ItemStack itemStack = this.getItemStack(index);
             ItemStack taken;
-            if(itemStack.getCount()> itemStack.getMaxStackSize()){
-                taken = itemStack.split(itemStack.getMaxStackSize());
+            if(!isInfinite(itemStack)) {
+                if (itemStack.getCount() > itemStack.getMaxStackSize()) {
+                    //IS#split ret a new IS with split count
+                    taken = itemStack.split(itemStack.getMaxStackSize());
 
+                } else {
+                    taken = this.items.remove(index);
+                }
+                this.setChanged();
             }else {
-                taken = this.items.remove(index);
+                taken = itemStack.copyWithCount(itemStack.getMaxStackSize());
             }
-            this.setChanged();
             return taken;
         }
     }
@@ -100,14 +148,16 @@ public class EndlessInventory implements SourceInventory{
             ItemStack itemStack = this.getItemStack(index);
             ItemStack taken;
             if(count>itemStack.getMaxStackSize()) count=itemStack.getMaxStackSize();
-
-            if(itemStack.getCount()> count){
-                taken = itemStack.split(count);
-
+            if(!isInfinite(itemStack)) {
+                if (itemStack.getCount() > count) {
+                    taken = itemStack.split(count);
+                } else {
+                    taken = this.items.remove(index);
+                }
+                this.setChanged();
             }else {
-                taken = this.items.remove(index);
+                taken = itemStack.copyWithCount(count);
             }
-            this.setChanged();
             return taken;
         }
     }
@@ -120,17 +170,19 @@ public class EndlessInventory implements SourceInventory{
      * @return taken items | 被拿走的物品
      */
     public ItemStack takeItem(ItemStack itemStack, int count){
-        for(ItemStack itemStack1 :this.items){
-            if(ItemStack.isSameItemSameComponents(itemStack1,itemStack)){
+        for(ItemStack toTake :this.items){
+            if(ItemStack.isSameItemSameComponents(toTake,itemStack)){
                 ItemStack taken;
                 if(count>itemStack.getMaxStackSize()) count=itemStack.getMaxStackSize();
-                if(itemStack1.getCount()> count){
-                    taken = itemStack1.split(count);
-                }else {
-                    this.items.remove(itemStack1);
-                    taken = itemStack1;
-                }
-                this.setChanged();
+                if(!isInfinite(toTake)) {
+                    if (toTake.getCount() > count) {
+                        taken = toTake.split(count);
+                    } else {
+                        this.items.remove(toTake);
+                        taken = toTake;
+                    }
+                    this.setChanged();
+                }else taken = toTake.copyWithCount(count);
                 return taken;
             }
 
@@ -193,6 +245,11 @@ public class EndlessInventory implements SourceInventory{
         return uuid;
     }
 
+    /**
+     * Get player's EndInv, if player has not or has invalid, create new.
+     * @param player the player
+     * @return Player's EndInv, original or created
+     */
     public static EndlessInventory getEndInvForPlayer(Player player){
         EndlessInventory endlessInventory;
         if(hasEndInvUuid(player)){
@@ -205,6 +262,11 @@ public class EndlessInventory implements SourceInventory{
         return endlessInventory;
     }
 
+    /**
+     * Check whether player has a valid uuid, which is not {@link ModInitializer#DEFAULT_UUID}
+     * @param player player to check endInv uuid
+     * @return true if player has uuid and the uuid is valid.
+     */
     public static boolean hasEndInvUuid(Player player){
         if(player.hasData(ENDINV_UUID)){
             if(player.getData(ENDINV_UUID)==DEFAULT_UUID){
@@ -214,7 +276,7 @@ public class EndlessInventory implements SourceInventory{
             return true;
         }else return false;
     }
-    //TODO
+
     private static EndlessInventory getPlayerDefaultEndInv(Player player){
         return EndlessInventoryData.levelEndInvData.fromUUID(player.getData(ENDINV_UUID));
     }
@@ -225,13 +287,12 @@ public class EndlessInventory implements SourceInventory{
                 this.items.sort(
                         Comparator.comparingInt(ItemStack::getCount)
                 );
-                break;
             }
             case ID -> {
 
             }
             case LAST_MODIFIED -> {
-                break;
+
             }
         }
         end:
@@ -240,7 +301,6 @@ public class EndlessInventory implements SourceInventory{
 
 
     /**
-     *
      * @return Size of Endless Inventory.
      */
     public int getItemSize() {
@@ -258,35 +318,6 @@ public class EndlessInventory implements SourceInventory{
 
     public ItemStack getItem(int i) {
         return i>=0 && i<this.items.size() ? this.items.get(i) : ItemStack.EMPTY;
-    }
-
-
-    public ItemStack removeItem(int i, int i1) {
-        return i>=0 && i<this.items.size() ? this.items.get(i).split(i1) : ItemStack.EMPTY;
-    }
-
-
-    public ItemStack removeItemNoUpdate(int i) {
-        ItemStack itemstack = (ItemStack)this.items.get(i);
-        if (itemstack.isEmpty()) {
-            return ItemStack.EMPTY;
-        } else {
-            this.items.set(i, ItemStack.EMPTY);
-            return itemstack;
-        }
-    }
-
-
-    public void setItem(int i, ItemStack itemStack) {
-        if(!itemStack.isEmpty()) {
-            if(i<0) return;
-            if(i<items.size()) {
-                this.items.set(i, itemStack);
-                this.setChanged();
-            }else {
-                this.addItem(itemStack);
-            }
-        }else if(!this.getItem(i).isEmpty()) this.removeItem(i);
     }
 
 

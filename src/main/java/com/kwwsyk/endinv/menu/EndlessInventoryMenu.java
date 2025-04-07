@@ -1,5 +1,6 @@
-package com.kwwsyk.endinv;
+package com.kwwsyk.endinv.menu;
 
+import com.kwwsyk.endinv.*;
 import com.kwwsyk.endinv.client.LocalData;
 import com.kwwsyk.endinv.network.payloads.EndInvRequestContentPayload;
 import net.minecraft.CrashReport;
@@ -14,6 +15,7 @@ import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -25,7 +27,6 @@ import static com.kwwsyk.endinv.ModInitializer.ENDLESS_INVENTORY_MENU_TYPE;
 
 public class EndlessInventoryMenu extends AbstractContainerMenu {
 
-    private static final int DEFAULT_ROWS = 15;
 
     private final Inventory playerInv;
     private int rows;
@@ -36,6 +37,8 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
     Set<Slot> quickcraftSlots = new HashSet<>();
     private final DataSlot rowsData = DataSlot.standalone();
     private final DataSlot itemSize = DataSlot.standalone();
+    private final DataSlot maxStackSize = DataSlot.standalone();
+    private final DataSlot infinityMode = DataSlot.standalone();
 
     //Client constructor
     public EndlessInventoryMenu(int id, Inventory playerInv){
@@ -49,8 +52,12 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         this.player = playerInv.player;
         rowsData.set(rows);
         itemSize.set( endlessInventory!=null ? endlessInventory.getItemSize() : 0);
+        maxStackSize.set(endlessInventory!=null? endlessInventory.getMaxItemStackSize() : Integer.MAX_VALUE);
+        infinityMode.set(endlessInventory!=null && endlessInventory.isInfinityMode() ? 1 : 0);
         addDataSlot(rowsData);
         addDataSlot(itemSize);
+        addDataSlot(maxStackSize);
+        addDataSlot(infinityMode);
         this.refreshSlots(rows,playerInv);
     }
 
@@ -107,6 +114,14 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
 
     public float subtractInputFromScroll(float scrollOffs, double input) {
         return Mth.clamp(scrollOffs - (float)(input / (double)this.calculateRowCount()), 0.0F, 1.0F);
+    }
+
+    public boolean enableInifinity(){
+        return infinityMode.get() > 0;
+    }
+
+    public int getMaxStackSize(){
+        return maxStackSize.get();
     }
 
     public static AbstractContainerMenu createMenu(int i, Inventory inventory, Player player) {
@@ -200,9 +215,9 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
 
 
     @Override
-    public ItemStack quickMoveStack(Player player, int index) {
+    public @NotNull ItemStack quickMoveStack(Player player, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
-        Slot slot = (Slot)this.slots.get(index);
+        Slot slot = this.slots.get(index);
         if (slot.hasItem()) {
             ItemStack itemstack1 = slot.getItem();
             if (index < this.rows * 9) { // in EndInv.
@@ -222,10 +237,9 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
             } else { // in player inventory
                 if(itemstack1.getItem()== ModInitializer.testEndInv.get()) return ItemStack.EMPTY;
                 itemstack =itemstack1.copy();
-                this.container.addItem(itemstack);
-                itemstack1.setCount(0);
+                ItemStack remain = this.container.addItem(itemstack);
+                itemstack1.setCount(remain.getCount());
                 slot.setByPlayer(ItemStack.EMPTY);
-
             }
 
         this.container.setChanged();
@@ -242,7 +256,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
 
     public void requestContent(int startIndex, int length) {
         if(this.player instanceof LocalPlayer){
-            PacketDistributor.sendToServer(new EndInvRequestContentPayload(startIndex,length,SortType.DEFAULT));
+            PacketDistributor.sendToServer(new EndInvRequestContentPayload(startIndex,length, SortType.DEFAULT));
         }
     }
 }

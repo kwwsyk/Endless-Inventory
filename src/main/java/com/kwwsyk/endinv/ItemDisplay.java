@@ -1,12 +1,14 @@
 package com.kwwsyk.endinv;
 
+import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ItemLike;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ItemDisplay implements Container {
@@ -48,8 +50,9 @@ public class ItemDisplay implements Container {
         }
 
         @Override
-        public void addItem(ItemStack itemStack) {
+        public ItemStack addItem(ItemStack itemStack) {
             setChanged();
+            return ItemStack.EMPTY;
         }
 
         @Override
@@ -127,7 +130,13 @@ public class ItemDisplay implements Container {
         }
     }
 
+    public boolean isFull(ItemStack itemStack){
+        return itemStack.getCount() >= menu.getMaxStackSize();
+    }
 
+    public boolean isInfinite(ItemStack itemStack){
+        return  isFull(itemStack) && menu.enableInifinity();
+    }
 
     public SourceInventory getSourceInventory(){
         return this.sourceInventory;
@@ -143,13 +152,15 @@ public class ItemDisplay implements Container {
         //Will take Client display item firstly
         ItemStack itemStack = this.items.get(index);
         ItemStack ret = itemStack.copy();
-        if(count< itemStack.getCount()) {
-            itemStack.split(count);
-            ret.setCount(count);
-        }else {
-            itemStack=ItemStack.EMPTY;
+        if(!isInfinite(itemStack)) {
+            if (count < itemStack.getCount()) {
+                itemStack.split(count);
+                ret.setCount(count);
+            } else {
+                itemStack = ItemStack.EMPTY;
+            }
+            this.items.set(index, itemStack);
         }
-        this.items.set(index,itemStack);
         //then affect server
         takeItem(ret,count);
         return ret;
@@ -159,23 +170,41 @@ public class ItemDisplay implements Container {
     }
     //May shift
 
-    public void addItem(ItemStack itemStack){
+    /**
+     * Add item into ItemDisplay and EndInv.
+     * Return Empty if successfully inserted all or client fake insert.
+     * @param itemStack to add
+     * @return remain item that not inserted. Client may not sync to server.
+     */
+    public ItemStack addItem(ItemStack itemStack){//TODO
+        ItemStack ret = ItemStack.EMPTY;
+        int count = itemStack.getCount();
         l:
         {
             for (int i = 0; i < this.length; ++i) {
                 ItemStack itemStack1 = this.items.get(i);
                 if (ItemStack.isSameItemSameComponents(itemStack1, itemStack)) {
-                    itemStack1.grow(itemStack.getCount());
+                    if(!isFull(itemStack1)) {
+                        int additional = itemStack1.getCount();
+                        int max = menu.getMaxStackSize();
+                        itemStack1.setCount(Math.min(count+additional,max));
+                        ret = itemStack.copyWithCount(Math.max(0,count+additional-max));
+                    }
+                    if(isInfinite(itemStack1)) ret = ItemStack.EMPTY;
                     break l;
                 }
                 if (itemStack1.isEmpty()){
+                    itemStack.limitSize(menu.getMaxStackSize());
                     this.items.set(i,itemStack);
+                    ret = itemStack.copyWithCount(Math.max(0,count-menu.getMaxStackSize()));
                     break l;
                 }
             }
         }
         // Important: use `copy()` to avoid duplicate actions due to shared ItemStack references.
-        this.sourceInventory.addItem(itemStack.copy());
+        ItemStack remain = this.sourceInventory.addItem(itemStack.copy());
+        if(!remain.isEmpty()) ret = remain;
+        return ret;
     }
 
     public int getStartIndex(){
@@ -189,23 +218,20 @@ public class ItemDisplay implements Container {
 
     @Override
     public boolean isEmpty() {
-        return items.stream().allMatch(stack -> stack.isEmpty());
+        return items.stream().allMatch(ItemStack::isEmpty);
     }
 
     @Override
-    public ItemStack getItem(int index) {
+    public @NotNull ItemStack getItem(int index) {
         return (index >= 0 && index < items.size()) ? items.get(index) : ItemStack.EMPTY;
     }
-
-    @Override
     /**
-     * This method is only supposed to run in client;
+     * This method is only supposed to run in client,
      *   and should not modify source endInv.
      *  To modify EndInv, use {@link #addItem(ItemStack)} {@link #takeItem(ItemStack, int)}
-     *  {@link #removeItem(ItemLike)} etc.
-     *
      */
-    public void setItem(int index, ItemStack itemStack) {
+    @Override
+    public void setItem(int index, @NotNull ItemStack itemStack) {
         if (index >= 0 && index < items.size()) {
             this.items.set(index,itemStack);
         }
@@ -217,7 +243,7 @@ public class ItemDisplay implements Container {
     }
 
     @Override
-    public ItemStack removeItem(int index, int count) {
+    public @NotNull ItemStack removeItem(int index, int count) {
         if (index >= 0 && index < items.size() && !items.get(index).isEmpty()) {
             return sourceInventory.takeItem(index, count);
         }
@@ -225,7 +251,7 @@ public class ItemDisplay implements Container {
     }
 
     @Override
-    public ItemStack removeItemNoUpdate(int index) {
+    public @NotNull ItemStack removeItemNoUpdate(int index) {
         if (index >= 0 && index < items.size() && !items.get(index).isEmpty()) {
             int count = items.get(index).getCount();
             return sourceInventory.takeItem(index, count);
@@ -235,12 +261,12 @@ public class ItemDisplay implements Container {
 
     @Override
     public void clearContent() {
-        items.replaceAll(ignored -> ItemStack.EMPTY);
+        Collections.fill(items, ItemStack.EMPTY);
 
     }
 
     @Override
-    public boolean stillValid(Player player) {
+    public boolean stillValid(@NotNull Player player) {
         return true;
     }
 }

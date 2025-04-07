@@ -1,10 +1,9 @@
 package com.kwwsyk.endinv.client.gui;
 
-import com.kwwsyk.endinv.EndlessInventoryMenu;
 import com.kwwsyk.endinv.ItemDisplay;
+import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -26,8 +25,8 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
 
     public void init(){
         super.init();
-        this.leftPos = 10;
-        this.topPos = 10;
+        //this.leftPos = 10;
+        //this.topPos = 10;
     }
 
     public void refresh(){

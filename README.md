@@ -13,6 +13,10 @@ It's now under test, many features are expected to be implemented.
 Features
 -----
 + Player can access an Endless Inventory using specific item 'endless_inventory:test_endinv'
++ config.toml to customize the behavior of EndInv to suit specific needs.
+  + client config
+  + server config
+    + Max size and max single item size player can insert
 
 Features coming soon
 ----
@@ -24,7 +28,6 @@ Features coming soon
     + Classify, like component items will be in one entry
   + server config
     + How player can access his/her or other's EndInv
-    + Max size and max single item size player can insert
     + How player can use working space (coming soon feature)
     + How EndInv interacts with other
 + Player will access EndInv by press specific key.
@@ -33,6 +36,6 @@ Features coming soon
   + Capability with fluids, chemical and unlocking entries.
   + Classifies, like magic.
 + Technical
- + Api
- + Changing ItemDisplay logic, as now ItemDisplay acts as a container across client and server.\
+  + Api
+  + Changing ItemDisplay logic, as now ItemDisplay acts as a container across client and server.\
 With useless operations reserved, causing unnecessary performance and memory overhead.

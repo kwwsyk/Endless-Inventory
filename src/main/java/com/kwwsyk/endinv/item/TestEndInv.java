@@ -1,9 +1,8 @@
 package com.kwwsyk.endinv.item;
 
-import com.kwwsyk.endinv.EndlessInventoryMenu;
+import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;

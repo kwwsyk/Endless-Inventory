@@ -13,7 +13,7 @@ public interface SourceInventory {
 
     ItemStack takeItem(int index, int count);
 
-    void addItem(ItemStack itemStack);
+    ItemStack addItem(ItemStack itemStack);
 
     void setChanged();
 

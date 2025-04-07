@@ -1,5 +1,6 @@
-package com.kwwsyk.endinv;
+package com.kwwsyk.endinv.menu;
 
+import com.kwwsyk.endinv.ItemDisplay;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -81,8 +82,9 @@ public abstract class MenuClickHandler {
                             count -= l - j;//=count-itemCountDecrease = remainCount
 
                             if(slot1.container instanceof ItemDisplay itemDisplay){
-                                itemDisplay.addItem(copiedCarried.copyWithCount(l));
+                                ItemStack remain = itemDisplay.addItem(copiedCarried.copyWithCount(l));
                                 itemDisplay.setChanged();
+                                count += remain.getCount();
                             }else slot1.setByPlayer(copiedCarried.copyWithCount(l));
                         }
                     }
@@ -137,9 +139,9 @@ public abstract class MenuClickHandler {
         ItemStack carried = EIM.getCarried();
         ItemStack clickedSlotItem = itemDisplay.getItem(slotId);
         if(!carried.isEmpty()){
-            itemDisplay.addItem(carried.copy());
+            ItemStack remain = itemDisplay.addItem(carried.copy());
             itemDisplay.setChanged();
-            EIM.setCarried(ItemStack.EMPTY);
+            EIM.setCarried(remain);
         }else{
             int count = Math.min(clickedSlotItem.getCount(),clickedSlotItem.getMaxStackSize());
             int takenCount = clickaction == ClickAction.PRIMARY ? count : (count + 1) / 2;
@@ -215,11 +217,8 @@ public abstract class MenuClickHandler {
 
     public static void handleSwap(EndlessInventoryMenu EIM, int slotId, int button, Player player){
         if(!(button >= 0 && button < 9 || button == 40) || slotId<=0) return;
-        Inventory inventory = player.getInventory();
-        ItemStack inventoryItem = inventory.getItem(button);
         Slot clickedSlot = EIM.slots.get(slotId);
         Container container = clickedSlot.container;
-        ItemStack clickedSlotItem = clickedSlot.getItem();
         if(container instanceof  ItemDisplay itemDisplay){
             handleItemDisplaySwap(EIM,itemDisplay,slotId,button,player);
         }else {
@@ -234,17 +233,21 @@ public abstract class MenuClickHandler {
         boolean a = !inventoryItem.isEmpty();
         boolean b = !clickedSlotItem.isEmpty();
         if( a && !b ){
-            inventory.setItem(button, ItemStack.EMPTY);
-            itemDisplay.addItem(inventoryItem);
+            ItemStack remain = itemDisplay.addItem(inventoryItem);
+            inventory.setItem(button, remain);
         }
         if( !a && b ){
             ItemStack swapping = itemDisplay.takeItem(slotId); //take most
             inventory.setItem(button,swapping);
         }
         if( a && b ){
-            ItemStack swapping = itemDisplay.takeItem(slotId); //take most
-            inventory.setItem(button,swapping);
-            itemDisplay.addItem(inventoryItem);
+            ItemStack remain = itemDisplay.addItem(inventoryItem);
+            if(remain.isEmpty()) {
+                ItemStack swapping = itemDisplay.takeItem(slotId); //take most
+                inventory.setItem(button, swapping);
+            }else {
+                inventory.setItem(button,remain);
+            }
         }
         itemDisplay.setChanged();
     }
@@ -335,7 +338,8 @@ public abstract class MenuClickHandler {
                 ItemStack scanningItem =scanning.getItem();
                 if(ItemStack.isSameItemSameComponents(carried,scanningItem)){
                     ItemStack taken = scanning.safeTake(scanningItem.getCount(), scanningItem.getCount(), player);
-                    itemDisplay.addItem(taken);
+                    ItemStack remain = itemDisplay.addItem(taken);
+                    if(!remain.isEmpty()) scanning.set(remain);
                     itemDisplay.setChanged();
                 }
             }

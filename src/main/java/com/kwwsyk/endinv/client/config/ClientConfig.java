@@ -1,5 +1,7 @@
-package com.kwwsyk.endinv;
+package com.kwwsyk.endinv.client.config;
 
+import com.electronwill.nightconfig.core.EnumGetMethod;
+import com.kwwsyk.endinv.SortType;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -16,8 +18,7 @@ public class ClientConfig {
                 .translation("config.endinv.comment.row2")
                 .defineInRange("rows",0,0,Integer.MAX_VALUE);
         SORT_TYPE = builder.translation("config.endinv.comment.sort_type")
-                
-                .defineEnum("sort_type", SortType.DEFAULT);
+                .defineEnum("sort_type", SortType.DEFAULT, EnumGetMethod.ORDINAL_OR_NAME_IGNORECASE);
     }
 
     static {
