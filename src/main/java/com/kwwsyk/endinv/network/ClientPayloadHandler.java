@@ -1,9 +1,10 @@
 package com.kwwsyk.endinv.network;
 
-import com.kwwsyk.endinv.client.LocalData;
+import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.network.payloads.EndInvSettings;
+import com.kwwsyk.endinv.menu.page.ItemDisplay;
 import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -11,15 +12,15 @@ public abstract class ClientPayloadHandler {
 
 
 
-    public static void handleEndInvSettings(EndInvSettings endInvSettings, IPayloadContext iPayloadContext){
+    public static void handleEndInvSettings(SyncedConfig syncedConfig, IPayloadContext iPayloadContext){
 
-        LocalData.settings = endInvSettings;
+        ClientConfig.CONFIG.ROWS.set(syncedConfig.rows());
     }
 
     public static void handleItemDisplay(SetItemDisplayContentPayload setItemDisplayContentPayload, IPayloadContext iPayloadContext) {
         Player player = iPayloadContext.player();
-        if(player.containerMenu instanceof EndlessInventoryMenu menu){
-            menu.getContainer().initializeContents(setItemDisplayContentPayload.stacks());
+        if(player.containerMenu instanceof EndlessInventoryMenu menu && menu.getDisplayingPage() instanceof ItemDisplay itemDisplay){
+            itemDisplay.initializeContents(setItemDisplayContentPayload.stacks());
         }
     }
 }

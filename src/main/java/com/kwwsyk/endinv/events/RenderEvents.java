@@ -1,8 +1,8 @@
 package com.kwwsyk.endinv.events;
 
-import com.kwwsyk.endinv.ItemDisplay;
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
+import com.kwwsyk.endinv.menu.page.ItemDisplay;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,6 +28,8 @@ public class RenderEvents {
         int imageHeight = 0;
         int guiLeft = 0;
         int guiTop = 0;
+        double mouseX = event.getMouseX();
+        double mouseY = event.getMouseY();
         GuiGraphics graphics = event.getGuiGraphics();
         Minecraft mc = screen.getMinecraft();
         if(screen instanceof AbstractContainerScreen<?> ACS){
@@ -58,12 +60,17 @@ public class RenderEvents {
             }
         }
         if(phase>0){
+            graphics.hLine(0,width, (int) mouseY,0xff888822);
+            graphics.vLine((int)mouseX,0,height,0xff888822);
+
             graphics.drawString(mc.font, Component.literal("Width: "+width),width-128,10,0xFFFFFF00);
             graphics.drawString(mc.font, Component.literal("Height: "+height),width-128,20,0xFFFFFF00);
             graphics.drawString(mc.font, Component.literal("ImageWidth/XSize: "+imageWidth),width-128,30,0xFFFFFF00);
             graphics.drawString(mc.font, Component.literal("ImageHeight/YSize: "+imageHeight),width-128,40,0xFFFFFF00);
             graphics.drawString(mc.font, Component.literal("GUILeft: "+guiLeft),width-128,50,0xFFFFFF00);
             graphics.drawString(mc.font, Component.literal("GUITop: "+guiTop),width-128,60,0xFFFFFF00);
+            graphics.drawString(mc.font, Component.literal("mouseX: "+mouseX),width-128,70,0xFFFFFF00);
+            graphics.drawString(mc.font, Component.literal("mouseY: "+mouseY),width-128,80,0xFFFFFF00);
         }
     }
 
@@ -74,8 +81,7 @@ public class RenderEvents {
             phase++;
             if(phase>2) phase=0;
         }
-        if(event.getScreen() instanceof EndlessInventoryScreen EIS){
-            ItemDisplay itemDisplay = EIS.getMenu().getContainer();
+        if(event.getScreen() instanceof EndlessInventoryScreen EIS && EIS.getMenu().getDisplayingPage() instanceof ItemDisplay itemDisplay){
             if(button == InputConstants.KEY_R){
                 itemDisplay.tryRequestContents(itemDisplay.getStartIndex(),itemDisplay.getContainerSize());
             }

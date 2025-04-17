@@ -10,22 +10,26 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
-public record EndInvSettings(int rows) implements CustomPacketPayload {
+/**Synced endless inventory config data across server player (attached) data and
+ *  client ClientConfig of player.
+ * @param rows
+ */
+public record SyncedConfig(int rows) implements CustomPacketPayload {
 
-    public static final EndInvSettings DEFAULT = new EndInvSettings(15);
+    public static final SyncedConfig DEFAULT = new SyncedConfig(15);
 
-    public static final Codec<EndInvSettings> CODEC = RecordCodecBuilder.create(
+    public static final Codec<SyncedConfig> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                    Codec.INT.optionalFieldOf("rows", 15).forGetter(EndInvSettings::rows)
-            ).apply(instance, EndInvSettings::new)
+                    Codec.INT.optionalFieldOf("rows", 15).forGetter(SyncedConfig::rows)
+            ).apply(instance, SyncedConfig::new)
     );
 
-    public static final Type<EndInvSettings> TYPE =
+    public static final Type<SyncedConfig> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"endinv_settings"));
 
-    public static final StreamCodec<ByteBuf,EndInvSettings> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.INT,EndInvSettings::rows,
-            EndInvSettings::new
+    public static final StreamCodec<ByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.INT, SyncedConfig::rows,
+            SyncedConfig::new
     );
 
     @Override

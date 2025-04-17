@@ -13,19 +13,22 @@ It's now under test, many features are expected to be implemented.
 Features
 -----
 + Player can access an Endless Inventory using specific item 'endless_inventory:test_endinv'
++ Can switch pages(item classifies) and sort type
 + config.toml to customize the behavior of EndInv to suit specific needs.
   + client config
+    + Way of sorting items
+    + Classify, like component items will be in one entry
+    + EndInv menu size/rows
   + server config
     + Max size and max single item size player can insert
 
 Features coming soon
 ----
++ Sort type and page that are switched can be saved on close.
++ Utility of search.
 + config.toml to customize the behavior of EndInv to suit specific needs.
   + client config:
-    + Way of sorting items
-    + Texture of EndInv menu
-    + EndInv menu size/rows
-    + Classify, like component items will be in one entry
+    + Texture of EndInv menu, vanilla menu style has been realized, waiting for transparent style.
   + server config
     + How player can access his/her or other's EndInv
     + How player can use working space (coming soon feature)
@@ -37,5 +40,3 @@ Features coming soon
   + Classifies, like magic.
 + Technical
   + Api
-  + Changing ItemDisplay logic, as now ItemDisplay acts as a container across client and server.\
-With useless operations reserved, causing unnecessary performance and memory overhead.

@@ -1,7 +1,6 @@
 package com.kwwsyk.endinv.events;
 
-import com.kwwsyk.endinv.EndlessInventoryData;
-import com.kwwsyk.endinv.events.PlayerEvents;
+import com.kwwsyk.endinv.data.EndlessInventoryData;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

@@ -1,12 +1,20 @@
 package com.kwwsyk.endinv.menu;
 
-import com.kwwsyk.endinv.*;
-import com.kwwsyk.endinv.client.LocalData;
-import com.kwwsyk.endinv.network.payloads.EndInvRequestContentPayload;
+import com.kwwsyk.endinv.EndlessInventory;
+import com.kwwsyk.endinv.ModInitializer;
+import com.kwwsyk.endinv.SourceInventory;
+import com.kwwsyk.endinv.client.config.ClientConfig;
+import com.kwwsyk.endinv.menu.page.DefaultPages;
+import com.kwwsyk.endinv.menu.page.DisplayPage;
+import com.kwwsyk.endinv.menu.page.ItemDisplay;
+import com.kwwsyk.endinv.network.payloads.PageChangePayload;
+import com.kwwsyk.endinv.options.ItemClassify;
+import com.kwwsyk.endinv.options.SortType;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.Holder;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Inventory;
@@ -16,9 +24,10 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.kwwsyk.endinv.EndlessInventory.getEndInvForPlayer;
@@ -29,9 +38,10 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
 
 
     private final Inventory playerInv;
+    private final SourceInventory sourceInventory;
     private int rows;
-    private ItemDisplay container;
-    private final Player player;
+
+    public final Player player;
     int quickcraftStatus;
     int quickcraftType;
     Set<Slot> quickcraftSlots = new HashSet<>();
@@ -39,17 +49,64 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
     private final DataSlot itemSize = DataSlot.standalone();
     private final DataSlot maxStackSize = DataSlot.standalone();
     private final DataSlot infinityMode = DataSlot.standalone();
+    private DisplayPage displayingPage;
+    //client for page switch
+    private int displayingPageIndex;
+    public final List<DisplayPage> pages;
+    public SortType sortType;
+    public String searching;
+    private int inventoryX;
+    private int inventoryY;
+    public final SourceInventory REMOTE = new SourceInventory() {
+        public ItemStack getItem(int i){
+            return ItemStack.EMPTY;
+        }
+
+        public int getItemSize(){
+            return EndlessInventoryMenu.this.getItemSize();
+        }
+
+        @Override
+        public ItemStack takeItem(ItemStack itemStack) {
+            setChanged();
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack takeItem(ItemStack itemStack, int count) {
+            setChanged();
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack addItem(ItemStack itemStack) {
+            setChanged();
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public void setChanged() {
+            EndlessInventoryMenu.this.displayingPage.setChanged();
+
+        }
+
+    };
 
     //Client constructor
     public EndlessInventoryMenu(int id, Inventory playerInv){
-        this(id,playerInv, LocalData.settings.rows(), null);
+        this(id,playerInv, ClientConfig.CONFIG.ROWS.getAsInt(), null);
     }
     //Server constructor
-    public EndlessInventoryMenu(int id , Inventory playerInv, int rows,@Nullable EndlessInventory endlessInventory){
+    public EndlessInventoryMenu(int id , Inventory playerInv, int rows,EndlessInventory endlessInventory){
         super(ENDLESS_INVENTORY_MENU_TYPE.get(),id);
-        this.container = new ItemDisplay(this,endlessInventory,9*rows);
+        this.rows = rows;
         this.playerInv = playerInv;
         this.player = playerInv.player;
+        this.sourceInventory = endlessInventory!=null ? endlessInventory : REMOTE;
+        this.pages = buildPages();
+        this.sortType = SortType.DEFAULT;
+        this.searching = "";
+        //build data slots
         rowsData.set(rows);
         itemSize.set( endlessInventory!=null ? endlessInventory.getItemSize() : 0);
         maxStackSize.set(endlessInventory!=null? endlessInventory.getMaxItemStackSize() : Integer.MAX_VALUE);
@@ -58,38 +115,52 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         addDataSlot(itemSize);
         addDataSlot(maxStackSize);
         addDataSlot(infinityMode);
-        this.refreshSlots(rows,playerInv);
+        //build inventory slots
+        this.inventoryX = 8;
+        this.inventoryY = 18*rows +18+13;
+        this.addStandardInventorySlots(playerInv,inventoryX,inventoryY);
+        //build default page
+        this.switchPage(0);
     }
-
-    private void refreshSlots(int rows,Inventory playerInv){
-        this.rows = rows;
-        for(int i=0;i<rows;++i){
-            for(int j=0;j<9;++j){
-                //refer: CreativeModeInventoryMenu
-                this.addSlot(new Slot(this.container,9*i+j,8+j*18,18+i*18));
+    //build pages by default registered item classifies on server and with config hiding pages on client.
+    // will change when need to compatible for reg more pages.
+    private List<DisplayPage> buildPages(){
+        List<DisplayPage> ret = new ArrayList<>();
+        for(int i=0; i<ItemClassify.DEFAULT_CLASSIFIES.size(); ++i){
+            Holder<ItemClassify> classify = ItemClassify.DEFAULT_CLASSIFIES.get(i);
+            if(player instanceof LocalPlayer) {
+                boolean hidden = ClientConfig.CONFIG.PAGES.get(i).getAsBoolean();
+                if (!hidden) {
+                    DisplayPage page = DefaultPages.CLASSIFY2PAGE.get(classify).create(this, classify, i);
+                    page.icon = DefaultPages.CLASSIFY2RSRC.get(classify);
+                    ret.add(page);
+                }
+            }else {
+                DisplayPage page = DefaultPages.CLASSIFY2PAGE.get(classify).create(this, classify, i);
+                ret.add(page);
             }
         }
-        this.addStandardInventorySlots(playerInv,8,18*rows+18+13);
-        this.scrollTo(0.0F);
+        return ret;
     }
-
     private void addStandardInventorySlots(Inventory playerInventory, int x, int y){
-        int i = (this.rows - 4) * 18;
         for (int l = 0; l < 3; l++) {
             for (int j1 = 0; j1 < 9; j1++) {
-                this.addSlot(new Slot(playerInventory, j1 + l * 9 + 9, 8 + j1 * 18, 103 + l * 18 + i));
+                this.addSlot(new Slot(playerInventory, j1 + l * 9 + 9, x + j1 * 18, y + l * 18 ));
             }
         }
 
         for (int i1 = 0; i1 < 9; i1++) {
-            this.addSlot(new Slot(playerInventory, i1, 8 + i1 * 18, 161 + i));
+            this.addSlot(new Slot(playerInventory, i1, x + i1 * 18, y+58));
         }
     }
-
+    //supposed to be the only method to change displaying page and index value; in order to sync.
+    public void switchPage(int index){
+        this.displayingPageIndex = index;
+        this.displayingPage = this.pages.get(index);
+        this.displayingPage.scrollTo(0);
+    }
     public void scrollTo(float pos){
-        int startIndex = this.getRowIndexForScroll(pos) * 9;
-        // 重新设置 `ItemDisplay` 的视图
-        this.container.setDisplay(startIndex, this.rows * 9);
+        this.displayingPage.scrollTo(pos);
     }
 
     public int getItemSize(){
@@ -100,23 +171,15 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         this.itemSize.set(i);
     }
 
-    protected int calculateRowCount() {
-        return Mth.positiveCeilDiv(this.getItemSize(), 9) - this.rows;
-    }
-
-    public int getRowIndexForScroll(float scrollOffs) {
-        return Math.max((int)((double)(scrollOffs * (float)this.calculateRowCount()) + 0.5), 0);
-    }
-
-    public float getScrollForRowIndex(int rowIndex) {
-        return Mth.clamp((float)rowIndex / (float)this.calculateRowCount(), 0.0F, 1.0F);
+    public int calculateRowCount() {
+        return displayingPage.calculateRowCount();
     }
 
     public float subtractInputFromScroll(float scrollOffs, double input) {
         return Mth.clamp(scrollOffs - (float)(input / (double)this.calculateRowCount()), 0.0F, 1.0F);
     }
 
-    public boolean enableInifinity(){
+    public boolean enableInfinity(){
         return infinityMode.get() > 0;
     }
 
@@ -128,13 +191,15 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         EndlessInventory endlessInventory = getEndInvForPlayer(player);
         return new EndlessInventoryMenu(i,inventory,player.getData(ENDINV_SETTINGS).rows(),endlessInventory);
     }
-
-    public ItemDisplay getContainer(){
-        return this.container;
+    public int getDisplayingPageId(){
+        return displayingPage.pageId;
     }
-
+    public DisplayPage getDisplayingPage(){
+        return displayingPage;
+    }
+    public int getDisplayingPageIndex(){return displayingPageIndex;}
     public SourceInventory getSourceInventory(){
-        return this.container.getSourceInventory();
+        return this.sourceInventory;
     }
 
     public int getRowCount(){
@@ -149,7 +214,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
      * @param clickType {@link ClickType}
      * @param player player performing menu click
      */
-    public void clicked(int slotId, int button, ClickType clickType, Player player) {
+    public void clicked(int slotId, int button, @NotNull ClickType clickType, @NotNull Player player) {
         try {
             if(clickType==ClickType.QUICK_CRAFT){
                 MenuClickHandler.handleQuickCraft(this,slotId,button,player);
@@ -167,8 +232,9 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
                     return;
                 }
             }
-            if(this.container.getSourceInventory() instanceof EndlessInventory) this.container.refreshItems();
-            if(this.container.getSourceInventory() instanceof EndlessInventory endinv){
+            if(this.getSourceInventory() instanceof EndlessInventory && this.displayingPage instanceof ItemDisplay itemDisplay)
+                itemDisplay.refreshItems();
+            if(this.getSourceInventory() instanceof EndlessInventory endinv){
                 this.setItemSize(endinv.getItemSize());
             }
         } catch (Exception exception) {
@@ -201,12 +267,12 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
     private SlotAccess createCarriedSlotAccess() {
         return new SlotAccess() {
             @Override
-            public ItemStack get() {
+            public @NotNull ItemStack get() {
                 return EndlessInventoryMenu.this.getCarried();
             }
 
             @Override
-            public boolean set(ItemStack itemStack) {
+            public boolean set(@NotNull ItemStack itemStack) {
                 EndlessInventoryMenu.this.setCarried(itemStack);
                 return true;
             }
@@ -215,48 +281,38 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
 
 
     @Override
-    public @NotNull ItemStack quickMoveStack(Player player, int index) {
+    public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);
         if (slot.hasItem()) {
             ItemStack itemstack1 = slot.getItem();
-            if (index < this.rows * 9) { // in EndInv.
-                /*
-                   EndInv slot may have more than 64/16 items,
-                   but maybe it's no necessary branching two situations,
-                   we take its max stack size count items and put into itemStack field.
-                 */
-                //先“借”至多一组的物品
-                itemstack = this.container.takeItem(itemstack1);
-                //moveItemStackTo : 若itemStack被更改（进入物品栏或部分分离进入），则返回true
-                //所以 可能削减itemStack的数量
-                boolean isItemStackMoved = this.moveItemStackTo(itemstack, this.rows * 9, this.slots.size(), true);
-                //“还”
-                if(!itemstack.isEmpty()) this.container.addItem(itemstack);
-                if(!isItemStackMoved) return ItemStack.EMPTY;
-            } else { // in player inventory
-                if(itemstack1.getItem()== ModInitializer.testEndInv.get()) return ItemStack.EMPTY;
-                itemstack =itemstack1.copy();
-                ItemStack remain = this.container.addItem(itemstack);
-                itemstack1.setCount(remain.getCount());
-                slot.setByPlayer(ItemStack.EMPTY);
-            }
-
-        this.container.setChanged();
+            if(itemstack1.getItem()== ModInitializer.testEndInv.get()) return ItemStack.EMPTY;
+            itemstack =itemstack1.copy();
+            ItemStack remain = this.displayingPage.tryQuickMoveStackTo(itemstack);
+            itemstack1.setCount(remain.getCount());
+            slot.setByPlayer(ItemStack.EMPTY);
+            displayingPage.setChanged();
         }
 
         return itemstack;
     }
+    public ItemStack quickMoveFromPage(ItemStack stack){
+        moveItemStackTo(stack,0,this.slots.size()-1,true);
+        return stack;
+    }
 
     @Override
-    public boolean stillValid(Player player) {
+    public boolean stillValid(@NotNull Player player) {
         return true;
     }
 
 
-    public void requestContent(int startIndex, int length) {
+    public void requestContent(int startIndex, int length) { //将要废弃
         if(this.player instanceof LocalPlayer){
-            PacketDistributor.sendToServer(new EndInvRequestContentPayload(startIndex,length, SortType.DEFAULT));
+            PacketDistributor.sendToServer(new PageChangePayload(startIndex,length, sortType, displayingPage.getItemClassify(), searching));
         }
+    }
+    public void syncContent(){
+        displayingPage.syncContentToServer();
     }
 }

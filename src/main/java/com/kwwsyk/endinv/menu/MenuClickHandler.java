@@ -1,6 +1,5 @@
 package com.kwwsyk.endinv.menu;
 
-import com.kwwsyk.endinv.ItemDisplay;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -81,11 +80,7 @@ public abstract class MenuClickHandler {
                             int l = Math.min(getQuickCraftPlaceCount(menu.quickcraftSlots, menu.quickcraftType, copiedCarried) + j, k);//finalCountAfterPlace
                             count -= l - j;//=count-itemCountDecrease = remainCount
 
-                            if(slot1.container instanceof ItemDisplay itemDisplay){
-                                ItemStack remain = itemDisplay.addItem(copiedCarried.copyWithCount(l));
-                                itemDisplay.setChanged();
-                                count += remain.getCount();
-                            }else slot1.setByPlayer(copiedCarried.copyWithCount(l));
+                            slot1.setByPlayer(copiedCarried.copyWithCount(l));
                         }
                     }
 
@@ -124,31 +119,14 @@ public abstract class MenuClickHandler {
             ItemStack clickedSlotItem = clickedSlot.getItem();
             ItemStack carried = EIM.getCarried();
             if(!EIM.tryItemClickBehaviourOverride(player, clickaction, clickedSlot, clickedSlotItem, carried)){
-                if(container instanceof ItemDisplay itemDisplay){
-                    handleItemDisplayPickup(EIM,itemDisplay,slotId,clickaction);
-                }else{
-                    handleVanillaPickup(EIM,slotId,clickaction,player);
-                    clickedSlot.setChanged();
-                }
+                handleVanillaPickup(EIM,slotId,clickaction,player);
+                clickedSlot.setChanged();
             }
             //clickedSlot.setChanged();
         }
         
     }
-    public static void handleItemDisplayPickup(EndlessInventoryMenu EIM, ItemDisplay itemDisplay, int slotId, ClickAction clickaction){
-        ItemStack carried = EIM.getCarried();
-        ItemStack clickedSlotItem = itemDisplay.getItem(slotId);
-        if(!carried.isEmpty()){
-            ItemStack remain = itemDisplay.addItem(carried.copy());
-            itemDisplay.setChanged();
-            EIM.setCarried(remain);
-        }else{
-            int count = Math.min(clickedSlotItem.getCount(),clickedSlotItem.getMaxStackSize());
-            int takenCount = clickaction == ClickAction.PRIMARY ? count : (count + 1) / 2;
-            EIM.setCarried(itemDisplay.takeItem(slotId,takenCount));
-            if(!EIM.getCarried().isEmpty()) itemDisplay.setChanged();
-        }
-    }
+
     
     public static void handleVanillaPickup(AbstractContainerMenu menu, int slotId, ClickAction clickaction, Player player){
         Slot clickedSlot = menu.slots.get(slotId);
@@ -219,38 +197,10 @@ public abstract class MenuClickHandler {
         if(!(button >= 0 && button < 9 || button == 40) || slotId<=0) return;
         Slot clickedSlot = EIM.slots.get(slotId);
         Container container = clickedSlot.container;
-        if(container instanceof  ItemDisplay itemDisplay){
-            handleItemDisplaySwap(EIM,itemDisplay,slotId,button,player);
-        }else {
-            handleVanillaSwap(EIM,slotId,button,player);
-        }
+        handleVanillaSwap(EIM,slotId,button,player);
 
     }
-    public static void handleItemDisplaySwap(EndlessInventoryMenu EIM,ItemDisplay itemDisplay ,int slotId,int button, Player player){
-        Inventory inventory = player.getInventory();
-        ItemStack inventoryItem = inventory.getItem(button);
-        ItemStack clickedSlotItem = EIM.slots.get(slotId).getItem();
-        boolean a = !inventoryItem.isEmpty();
-        boolean b = !clickedSlotItem.isEmpty();
-        if( a && !b ){
-            ItemStack remain = itemDisplay.addItem(inventoryItem);
-            inventory.setItem(button, remain);
-        }
-        if( !a && b ){
-            ItemStack swapping = itemDisplay.takeItem(slotId); //take most
-            inventory.setItem(button,swapping);
-        }
-        if( a && b ){
-            ItemStack remain = itemDisplay.addItem(inventoryItem);
-            if(remain.isEmpty()) {
-                ItemStack swapping = itemDisplay.takeItem(slotId); //take most
-                inventory.setItem(button, swapping);
-            }else {
-                inventory.setItem(button,remain);
-            }
-        }
-        itemDisplay.setChanged();
-    }
+
     public static void handleVanillaSwap(AbstractContainerMenu menu, int slotId, int button, Player player){
         Inventory inventory = player.getInventory();
         ItemStack inventoryItem = inventory.getItem(button);
@@ -296,20 +246,14 @@ public abstract class MenuClickHandler {
         if(!menu.getCarried().isEmpty() || slotId < 0 ) return;
         Slot throwingSlot = menu.slots.get(slotId);
         int throwingCount = button == 0 ? 1 : throwingSlot.getItem().getCount(); // Q : ctrl+Q
-        if(menu.slots.get(slotId).container instanceof ItemDisplay itemDisplay){ //handleItemDisplay I'm lazy...
-            ItemStack thrown = itemDisplay.takeItem(throwingSlot.getItem());
-            player.drop(thrown, true);
-            itemDisplay.setChanged();
-        }else {                                                       //handleVanilla
-            ItemStack thrown = throwingSlot.safeTake(throwingCount, Integer.MAX_VALUE, player);
-            player.drop(thrown, true);
+        ItemStack thrown = throwingSlot.safeTake(throwingCount, Integer.MAX_VALUE, player);
+        player.drop(thrown, true);
 
-            if (button == 1) {
-                while (!thrown.isEmpty() && ItemStack.isSameItem(throwingSlot.getItem(), thrown)) {
+        if (button == 1) {
+            while (!thrown.isEmpty() && ItemStack.isSameItem(throwingSlot.getItem(), thrown)) {
 
-                    thrown = throwingSlot.safeTake(throwingCount, Integer.MAX_VALUE, player);
-                    player.drop(thrown, true);
-                }
+                thrown = throwingSlot.safeTake(throwingCount, Integer.MAX_VALUE, player);
+                player.drop(thrown, true);
             }
         }
     }
@@ -330,22 +274,7 @@ public abstract class MenuClickHandler {
         ItemStack carried = EIM.getCarried();
 
         if (carried.isEmpty()) return;
-        if (slotContainer instanceof ItemDisplay itemDisplay){
-            int startIndex = EIM.slots.size() - 1; //changed: reversed button==0 condition
-            for(int index = startIndex; index>=0 ; --index){
-                Slot scanning = EIM.slots.get(index);
-                if(scanning.container instanceof ItemDisplay) break; //todo May other situations emerge
-                ItemStack scanningItem =scanning.getItem();
-                if(ItemStack.isSameItemSameComponents(carried,scanningItem)){
-                    ItemStack taken = scanning.safeTake(scanningItem.getCount(), scanningItem.getCount(), player);
-                    ItemStack remain = itemDisplay.addItem(taken);
-                    if(!remain.isEmpty()) scanning.set(remain);
-                    itemDisplay.setChanged();
-                }
-            }
-
-
-        }else if(!clickedSlot.hasItem() || !clickedSlot.mayPickup(player)) {
+        if(!clickedSlot.hasItem() || !clickedSlot.mayPickup(player)) {
             int startIndex = button == 0 ? 0 : EIM.slots.size() - 1;
             int inc = button == 0 ? 1 : -1;
 
@@ -357,15 +286,16 @@ public abstract class MenuClickHandler {
                             && EIM.canTakeItemForPickAll(carried, scanningSlot)
                             ) {
                         ItemStack scanningItem = scanningSlot.getItem();
-                        if (scanningSlot.container instanceof ItemDisplay itemDisplay) { //todo handle slot in ItemDisplay condition in Screen
-                            ItemStack taken = itemDisplay.takeItem(scanningItem, carried.getMaxStackSize() - carried.getCount());
-                            itemDisplay.setChanged();
-                            carried.grow(taken.getCount());
-                        } else if (l2 != 0 || scanningItem.getCount() != scanningItem.getMaxStackSize()) {
+                        if (l2 != 0 || scanningItem.getCount() != scanningItem.getMaxStackSize()) {
                             ItemStack taken = scanningSlot.safeTake(scanningItem.getCount(), carried.getMaxStackSize() - carried.getCount(), player);
                             carried.grow(taken.getCount());
                         }
                     }
+                }
+                if(carried.getCount() < carried.getMaxStackSize()){
+                    ItemStack taken = EIM.getDisplayingPage().tryExtractItem(carried,carried.getMaxStackSize()-carried.getCount());
+                    carried.grow(taken.getCount());
+                    carried.limitSize(carried.getMaxStackSize());
                 }
             }
         }

@@ -4,9 +4,16 @@ import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.item.ScreenDebugger;
 import com.kwwsyk.endinv.item.TestEndInv;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.network.payloads.EndInvSettings;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.options.ItemClassify;
+import com.kwwsyk.endinv.options.ServerConfig;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.core.Registry;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
@@ -18,6 +25,7 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.neoforged.neoforge.registries.RegistryBuilder;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -43,19 +51,33 @@ public class ModInitializer {
                     .copyOnDeath()
                     .build()
     );
-
-    public static final Supplier<AttachmentType<EndInvSettings>> ENDINV_SETTINGS = ATTACHMENT_TYPES.register("endinv_settings",
+    public static final Supplier<AttachmentType<SyncedConfig>> ENDINV_SETTINGS = ATTACHMENT_TYPES.register("endinv_settings",
             ()-> AttachmentType
-                    .builder(()->EndInvSettings.DEFAULT)
-                    .serialize(EndInvSettings.CODEC)
+                    .builder(()-> SyncedConfig.DEFAULT)
+                    .serialize(SyncedConfig.CODEC)
                     .copyOnDeath()
                     .build()
     );
+    public static final KeyMapping OPEN_ENDINV_KEY = new KeyMapping(
+            "key.endless_inventory.open",         // 绑定的键名（语言文件中提供翻译）
+            InputConstants.KEY_I,                 // 默认键位，这里是 "O"
+            "key.categories.inventory"            // 键位分类
+    );
+    public static final ResourceKey<Registry<ItemClassify>> CLASSIFY_REGISTRY_KEY =
+            ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MOD_ID,"item_classify"));
+    public static final Registry<ItemClassify> CLASSIFY_REGISTRY =
+            new RegistryBuilder<>(CLASSIFY_REGISTRY_KEY)
+                    .sync(true)
+                    .defaultKey(ResourceLocation.fromNamespaceAndPath(MOD_ID,"all"))
+                    .create();
+   public static final DeferredRegister<ItemClassify> CLASSIFIES = DeferredRegister.create(CLASSIFY_REGISTRY,MOD_ID);
+
 
     public ModInitializer(IEventBus modEventBus, ModContainer container){
         MENUS.register(modEventBus);
         ITEMS.register(modEventBus);
         ATTACHMENT_TYPES.register(modEventBus);
+        CLASSIFIES.register(modEventBus);
 
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
         container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);

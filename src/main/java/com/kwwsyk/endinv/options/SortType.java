@@ -1,7 +1,8 @@
-package com.kwwsyk.endinv;
+package com.kwwsyk.endinv.options;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.StreamCodec;
+import org.jetbrains.annotations.NotNull;
 
 public enum SortType {
     DEFAULT,
@@ -9,12 +10,12 @@ public enum SortType {
     ID,
     LAST_MODIFIED;
 
-    public static final StreamCodec<ByteBuf,SortType> STREAM_CODEC = new StreamCodec<ByteBuf, SortType>() {
+    public static final StreamCodec<ByteBuf,SortType> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public SortType decode(ByteBuf byteBuf) {
+        public @NotNull SortType decode(ByteBuf byteBuf) {
             byte b = byteBuf.readByte();
             SortType[] types = SortType.values();
-            if(b<0||b>=types.length) b=0;
+            if (b < 0 || b >= types.length) b = 0;
             return types[b];
         }
 

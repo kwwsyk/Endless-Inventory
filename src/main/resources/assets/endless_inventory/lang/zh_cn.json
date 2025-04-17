@@ -4,5 +4,6 @@
   "config.endinv.comment.sort_type": "排序方式",
   "config.endinv.comment.max_stack_size": "物品的最大堆叠数目，默认为2147483647",
   "config.endinv.comment.enable_infinite1": "允许物品达到最大堆叠数目后作为无限物品",
-  "config.endinv.comment.enable_infinite2": "注意如果设置小的最大堆叠数目也会生效"
+  "config.endinv.comment.enable_infinite2": "注意如果设置小的最大堆叠数目也会生效",
+  "config.endinv.comment.hidepages": "隐藏页面"
 }

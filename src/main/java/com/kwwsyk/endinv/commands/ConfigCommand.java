@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.commands;
 
 import com.kwwsyk.endinv.EndlessInventory;
-import com.kwwsyk.endinv.network.payloads.EndInvSettings;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -52,8 +52,8 @@ public class ConfigCommand {
             source.sendFailure(Component.literal("This player has not EndInv."));
             return 0;
         }
-        serverPlayer.setData(ENDINV_SETTINGS, new EndInvSettings(rows));
-        PacketDistributor.sendToPlayer(serverPlayer,new EndInvSettings(rows));
+        serverPlayer.setData(ENDINV_SETTINGS, new SyncedConfig(rows));
+        PacketDistributor.sendToPlayer(serverPlayer,new SyncedConfig(rows));
         source.sendSuccess(()->Component.literal(""+rows),true);
         return rows;
     }

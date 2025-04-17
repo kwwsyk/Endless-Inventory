@@ -1,9 +1,8 @@
 package com.kwwsyk.endinv.events;
 
 import com.kwwsyk.endinv.ModInitializer;
-import com.kwwsyk.endinv.network.payloads.EndInvSettings;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -20,7 +19,7 @@ public class PlayerEvents {
     public static void tick(PlayerTickEvent.Post event){
         if(event.getEntity() instanceof ServerPlayer serverPlayer){
             if(tickRefresh) {
-                PacketDistributor.sendToPlayer(serverPlayer, new EndInvSettings(serverPlayer.getData(ENDINV_SETTINGS).rows()));
+                PacketDistributor.sendToPlayer(serverPlayer, new SyncedConfig(serverPlayer.getData(ENDINV_SETTINGS).rows()));
                 tickRefresh = false ;
             }
         }
@@ -29,6 +28,5 @@ public class PlayerEvents {
     @SubscribeEvent
     public static void onRespawnClone(PlayerEvent.Clone event){
         tickRefresh=true;
-
     }
 }
