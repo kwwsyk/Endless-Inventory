@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.client.config;
 
 import com.kwwsyk.endinv.options.ItemClassify;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
@@ -34,6 +35,14 @@ public class ClientConfig {
             PAGES.add(builderEntry);
             index++;
         }
+    }
+
+    public int calculateDefaultRowCount(){
+        Minecraft mc = Minecraft.getInstance();
+        int height = mc.getWindow().getGuiScaledHeight();
+        if(LAYOUT.getAsInt()==0)
+            return Math.floorDiv(height-115,18);
+        return Math.floorDiv(height-25,18);
     }
 
     static {

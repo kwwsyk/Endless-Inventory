@@ -8,12 +8,15 @@ import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
+
 public abstract class ClientPayloadHandler {
 
 
 
     public static void handleEndInvSettings(SyncedConfig syncedConfig, IPayloadContext iPayloadContext){
-
+        Player player = iPayloadContext.player();
+        player.setData(SYNCED_CONFIG,syncedConfig);
         ClientConfig.CONFIG.ROWS.set(syncedConfig.rows());
     }
 

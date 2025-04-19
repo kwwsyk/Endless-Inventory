@@ -2,10 +2,8 @@ package com.kwwsyk.endinv.network;
 
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.network.payloads.PageChangePayload;
-import com.kwwsyk.endinv.network.payloads.PageClickPayload;
-import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
-import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.menu.page.ItemDisplay;
+import com.kwwsyk.endinv.network.payloads.*;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.SortType;
 import com.mojang.logging.LogUtils;
@@ -19,7 +17,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 
-import static com.kwwsyk.endinv.ModInitializer.ENDINV_SETTINGS;
+import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
 
 public abstract class ServerPayloadHandler {
@@ -27,7 +25,7 @@ public abstract class ServerPayloadHandler {
 
     public static void handleEndInvSettings(SyncedConfig syncedConfig, IPayloadContext iPayloadContext){
         Player player = iPayloadContext.player();
-        player.setData(ENDINV_SETTINGS, syncedConfig);
+        player.setData(SYNCED_CONFIG, syncedConfig);
     }
 
     public static void handleEndInvRequests(PageChangePayload payload, IPayloadContext iPayloadContext){
@@ -47,7 +45,7 @@ public abstract class ServerPayloadHandler {
 
             NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
             for(int i=0;i< view.size();++i){
-                stacks.set(i,view.get(i));
+                stacks.set(i,view.get(i));//do not need copy as will be sent
             }
             menu.getDisplayingPage().setChanged();
             menu.getDisplayingPage().setDisplay(startIndex,length);
@@ -60,7 +58,7 @@ public abstract class ServerPayloadHandler {
                 !(player.containerMenu instanceof EndlessInventoryMenu EIM)) return;
         if(EIM.getDisplayingPageId()!=payload.pageId()){
             LOGGER.warn("Different pages are displaying across server and client EIM");
-            EIM.switchPage(payload.pageId());
+            EIM.switchPageWithId(payload.pageId());
         }
         if(player.isSpectator()){
             EIM.sendAllDataToRemote();
@@ -71,10 +69,22 @@ public abstract class ServerPayloadHandler {
         }
         EIM.suppressRemoteUpdates();
         EIM.getDisplayingPage().pageClicked(payload.XOffset(),payload.YOffset(),payload.keyCode(),payload.clickType());
+        if(EIM.getDisplayingPage() instanceof ItemDisplay itemDisplay) itemDisplay.refreshItems();
         EIM.resumeRemoteUpdates();
 
         EIM.getDisplayingPage().syncContentToClient(player);
 
         EIM.broadcastChanges();
+    }
+    public static void handlePageStates(PageStatePayload payload, IPayloadContext context){
+        Player player = context.player();
+        boolean holdOn = payload.holdOn();
+        if(player.containerMenu instanceof EndlessInventoryMenu EIM){
+            if(holdOn){
+                EIM.getDisplayingPage().setHoldOn();
+            }else {
+                EIM.getDisplayingPage().release();
+            }
+        }
     }
 }

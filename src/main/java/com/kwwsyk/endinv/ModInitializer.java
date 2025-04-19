@@ -37,7 +37,7 @@ public class ModInitializer {
 
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, MOD_ID);
     public static final Supplier<MenuType<EndlessInventoryMenu>> ENDLESS_INVENTORY_MENU_TYPE = MENUS.register("endless_inventory",
-            ()->new MenuType<>(EndlessInventoryMenu::new, FeatureFlags.DEFAULT_FLAGS));
+            ()->new MenuType<>(EndlessInventoryMenu::createClient, FeatureFlags.DEFAULT_FLAGS));
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
     public static final DeferredItem<Item> testEndInv = ITEMS.registerItem("test_endinv", TestEndInv::new);
     public static final DeferredItem<Item> SCREEN_DEBUGGER = ITEMS.registerItem("screen_debugger", ScreenDebugger::new);
@@ -51,7 +51,7 @@ public class ModInitializer {
                     .copyOnDeath()
                     .build()
     );
-    public static final Supplier<AttachmentType<SyncedConfig>> ENDINV_SETTINGS = ATTACHMENT_TYPES.register("endinv_settings",
+    public static final Supplier<AttachmentType<SyncedConfig>> SYNCED_CONFIG = ATTACHMENT_TYPES.register("endinv_settings",
             ()-> AttachmentType
                     .builder(()-> SyncedConfig.DEFAULT)
                     .serialize(SyncedConfig.CODEC)

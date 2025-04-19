@@ -82,6 +82,7 @@ public class EndlessInventory implements SourceInventory{
     public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, ItemClassify classify, String search){
         Stream<ItemStack> base = getSortedView(sortType).stream();
         List<ItemStack> filtered = base.filter(classify::matches).toList();
+        if(startIndex>= filtered.size()) return new ArrayList<>();
         return filtered.subList(startIndex,Math.min(startIndex+length,filtered.size()));
     }
 
@@ -93,9 +94,9 @@ public class EndlessInventory implements SourceInventory{
 
     public void syncMapFromItems() {
         this.itemMap.clear();
-        long now = ++modState;
         for (ItemStack stack : items) {
             if (stack.isEmpty()) continue;
+            long now = increaseModState();
             ItemStack key = stack.copyWithCount(1);
             this.itemMap.put(key, new ItemState(stack.getCount(), now));
         }
@@ -150,7 +151,6 @@ public class EndlessInventory implements SourceInventory{
         if(itemStack.isEmpty()) return ItemStack.EMPTY;
         ItemStack key = itemStack.copyWithCount(1);
         ItemState state = itemMap.get(key);
-        long now = ++modState;
         int count = itemStack.getCount();
         int original = 0;
 
@@ -161,16 +161,16 @@ public class EndlessInventory implements SourceInventory{
         if(original < maxStackSize){
             increased = original+count;
             if(increased <= maxStackSize){
-                itemMap.put(key, new ItemState(increased, now));
+                itemMap.put(key, new ItemState(increased, increaseModState()));
                 setChanged();
                 return ItemStack.EMPTY;
             }else {
-                itemMap.put(key, new ItemState(maxStackSize, now));
+                itemMap.put(key, new ItemState(maxStackSize, increaseModState()));
                 setChanged();
                 return itemStack.copyWithCount(increased-maxStackSize);
             }
         }else if(infinityMode){
-            itemMap.put(key, new ItemState(maxStackSize, now));
+            itemMap.put(key, new ItemState(original, increaseModState()));
             setChanged();
             return ItemStack.EMPTY;
         }else {
@@ -193,7 +193,6 @@ public class EndlessInventory implements SourceInventory{
         //if infinity
         if(state.count >= maxStackSize && infinityMode){
             setChanged();
-            ++modState;
             return stack.copyWithCount(count);
         }
 
@@ -201,9 +200,9 @@ public class EndlessInventory implements SourceInventory{
         ItemStack result = stack.copyWithCount(taken);
         if (taken == state.count()) {
             itemMap.remove(key);
-            ++modState;
+            increaseModState();
         } else {
-            itemMap.put(key, new ItemState(state.count() - taken, ++modState));
+            itemMap.put(key, new ItemState(state.count() - taken, increaseModState()));
         }
         setChanged();
         return result;
@@ -280,8 +279,9 @@ public class EndlessInventory implements SourceInventory{
     public void setChanged() {
         EndlessInventoryData.levelEndInvData.setDirty();
     }
-    public void increaseModState(){
+    public long increaseModState(){
         ++modState;
+        return modState;
     }
 
     public boolean stillValid(Player player) {

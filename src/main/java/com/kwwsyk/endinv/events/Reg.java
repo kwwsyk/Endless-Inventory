@@ -3,10 +3,7 @@ package com.kwwsyk.endinv.events;
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.network.ClientPayloadHandler;
 import com.kwwsyk.endinv.network.ServerPayloadHandler;
-import com.kwwsyk.endinv.network.payloads.PageChangePayload;
-import com.kwwsyk.endinv.network.payloads.PageClickPayload;
-import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
-import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.network.payloads.*;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -41,6 +38,11 @@ public class Reg {
                 PageClickPayload.TYPE,
                 PageClickPayload.STREAM_CODEC,
                 ServerPayloadHandler::handlePageClick
+        );
+        registrar.playToServer(
+                PageStatePayload.TYPE,
+                PageStatePayload.STREAM_CODEC,
+                ServerPayloadHandler::handlePageStates
         );
     }
     @SubscribeEvent

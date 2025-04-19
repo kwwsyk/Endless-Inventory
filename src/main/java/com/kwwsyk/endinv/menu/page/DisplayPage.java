@@ -4,6 +4,7 @@ package com.kwwsyk.endinv.menu.page;
 import com.kwwsyk.endinv.client.gui.page.PageClickHandler;
 import com.kwwsyk.endinv.client.gui.page.PageRenderer;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
+import com.kwwsyk.endinv.network.payloads.PageStatePayload;
 import com.kwwsyk.endinv.options.ItemClassify;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.Holder;
@@ -13,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Optional;
 
@@ -25,7 +27,7 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
     public ResourceLocation icon = null;
     public int iconX = 18;
     public int iconY = 18;
-
+    protected boolean holdOn = false;
     public DisplayPage(EndlessInventoryMenu menu, Holder<ItemClassify> itemClassify, int pageId){
         this.menu = menu;
         this.itemClassify = itemClassify;
@@ -74,6 +76,20 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
     }
     public ItemStack tryExtractItem(ItemStack item, int count){
         return ItemStack.EMPTY;
+    }
+    public void setHoldOn(){
+        if(!holdOn){
+            if(menu.getSourceInventory()== menu.REMOTE)
+                PacketDistributor.sendToServer(new PageStatePayload(true));
+            holdOn = true;
+        }
+    }
+    public void release(){
+        if(holdOn){
+            if(menu.getSourceInventory()== menu.REMOTE)
+                PacketDistributor.sendToServer(new PageStatePayload(false));
+            holdOn = false;
+        }
     }
     public abstract boolean canScroll();
 

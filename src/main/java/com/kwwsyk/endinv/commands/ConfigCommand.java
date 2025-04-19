@@ -1,7 +1,6 @@
 package com.kwwsyk.endinv.commands;
 
 import com.kwwsyk.endinv.EndlessInventory;
-import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -11,7 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import static com.kwwsyk.endinv.ModInitializer.ENDINV_SETTINGS;
+import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
 public class ConfigCommand {
 
@@ -41,7 +40,7 @@ public class ConfigCommand {
             source.sendFailure(Component.literal("This player has not EndInv."));
             return 0;
         }
-        int ret = serverPlayer.getData(ENDINV_SETTINGS).rows();
+        int ret = serverPlayer.getData(SYNCED_CONFIG).rows();
         source.sendSuccess(()-> Component.literal(""+ret),true);
         return ret;
     }
@@ -52,8 +51,8 @@ public class ConfigCommand {
             source.sendFailure(Component.literal("This player has not EndInv."));
             return 0;
         }
-        serverPlayer.setData(ENDINV_SETTINGS, new SyncedConfig(rows));
-        PacketDistributor.sendToPlayer(serverPlayer,new SyncedConfig(rows));
+        serverPlayer.setData(SYNCED_CONFIG, serverPlayer.getData(SYNCED_CONFIG).ofRowChanged(rows));
+        PacketDistributor.sendToPlayer(serverPlayer,serverPlayer.getData(SYNCED_CONFIG).ofRowChanged(rows));
         source.sendSuccess(()->Component.literal(""+rows),true);
         return rows;
     }

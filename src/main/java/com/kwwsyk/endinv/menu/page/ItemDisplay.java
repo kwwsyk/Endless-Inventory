@@ -4,6 +4,7 @@ import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.network.payloads.PageChangePayload;
+import com.kwwsyk.endinv.network.payloads.PageStatePayload;
 import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
 import com.kwwsyk.endinv.options.ItemClassify;
 import net.minecraft.client.Minecraft;
@@ -33,10 +34,11 @@ public class ItemDisplay extends DisplayPage{
     private int leftPos;
     private int topPos;
 
+    private boolean suppressRefresh = false;
 
-    private boolean supressRefresh = false;
-
-    public ItemDisplay(EndlessInventoryMenu menu, @Nullable SourceInventory sourceInventory, int startIndex, int length, Holder<ItemClassify> classify,int pageIndex) {
+    public ItemDisplay(EndlessInventoryMenu menu, @Nullable SourceInventory sourceInventory,
+                       int startIndex, int length,
+                       Holder<ItemClassify> classify,int pageIndex) {
         super(menu,classify,pageIndex);
         if(sourceInventory!=null) {
             this.sourceInventory = sourceInventory;
@@ -72,6 +74,7 @@ public class ItemDisplay extends DisplayPage{
     public void setDisplay(int startIndex, int length) {
         this.startIndex = startIndex;
         this.length = length;
+        release();
         if(this.sourceInventory==this.menu.REMOTE) {
             requestContents(startIndex,length);
         }else {
@@ -80,19 +83,12 @@ public class ItemDisplay extends DisplayPage{
     }
     //often use on server
     public void refreshItems(){
-        if(!supressRefresh) {
+        if(!suppressRefresh) {
             EndlessInventory endInv = (EndlessInventory) menu.getSourceInventory();
             List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,menu.sortType, getItemClassify().value(),menu.searching);
 
-            NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
-            for(int i=0;i< view.size();++i){
-                stacks.set(i,view.get(i));
-            }
-
-            for (int i = 0; i < length; ++i) {
-                this.items.set(i,stacks.get(i));
-            }
-            this.supressRefresh = true;
+            initializeContents(view);
+            this.suppressRefresh = true;
         }
     }
     //client
@@ -101,13 +97,17 @@ public class ItemDisplay extends DisplayPage{
     }
 
     public void tryRequestContents(int startIndex,int length){
-        if(!supressRefresh) this.requestContents(startIndex,length);
+        if(!suppressRefresh) this.requestContents(startIndex,length);
     }
-
+    private List<ItemStack> inQueueStacks = null;
     public void initializeContents(List<ItemStack> stacks){
+        if(holdOn){
+            inQueueStacks = stacks;
+            return;
+        }
         for(int i=0; i<this.length; ++i){
             if(i<stacks.size() && stacks.get(i) != null) {
-                this.items.set(i, stacks.get(i));
+                this.items.set(i, stacks.get(i)).copy();
             }else {
                 this.items.set(i,ItemStack.EMPTY);
             }
@@ -130,19 +130,21 @@ public class ItemDisplay extends DisplayPage{
         return takeItem(itemStack,itemStack.getMaxStackSize());
     }
     public ItemStack takeItem(ItemStack itemStack,int count){
-        for(ItemStack stack : items){
+        for(int i=0; i< items.size(); ++i){
+            ItemStack stack = items.get(i);
             if(ItemStack.isSameItemSameComponents(stack,itemStack)){
                 ItemStack ret = itemStack.copyWithCount(count);
                 if(!isInfinite(stack)) {
                     if (count < stack.getCount()) {
                         stack.split(count);
                     } else {
-                        stack = ItemStack.EMPTY;
                         ret.setCount(stack.getCount());
+                        stack = ItemStack.EMPTY;
+                        items.set(i,stack);
                     }
                 }
                 ItemStack result = sourceInventory.takeItem(itemStack,count);
-                if(!result.isEmpty()) ret=result;
+                if(sourceInventory instanceof EndlessInventory) ret=result;
                 return ret;
             }
         }
@@ -162,7 +164,8 @@ public class ItemDisplay extends DisplayPage{
             this.items.set(index, itemStack);
         }
         //then affect server
-        sourceInventory.takeItem(ret,count);
+        ItemStack result = sourceInventory.takeItem(itemStack,count);
+        if(sourceInventory instanceof EndlessInventory) ret=result;
         return ret;
     }
     public ItemStack takeItem(int index){
@@ -221,14 +224,22 @@ public class ItemDisplay extends DisplayPage{
 
     @Override
     public void setChanged() {
-        this.supressRefresh = false;
+        this.suppressRefresh = false;
     }
 
     public boolean stillValid(@NotNull Player player) {
         return true;
     }
-
-    public void renderPage(GuiGraphics guiGraphics,int x,int y){
+    public void release(){
+        if(holdOn){
+            if(menu.getSourceInventory()== menu.REMOTE)
+                PacketDistributor.sendToServer(new PageStatePayload(false));
+            holdOn = false;
+            if(inQueueStacks==null) return;
+            initializeContents(inQueueStacks);
+        }
+    }
+    public void renderPage(GuiGraphics guiGraphics, int x, int y){
         this.leftPos=x;
         this.topPos=y;
         guiGraphics.pose().pushPose();
@@ -305,9 +316,10 @@ public class ItemDisplay extends DisplayPage{
                 default -> {
                 }
             }
+
         }
     }
-    protected int getSlotForMouseOffset(double XOffset,double YOffset){
+    public int getSlotForMouseOffset(double XOffset,double YOffset){
         if(XOffset<0||YOffset<0||XOffset>9*18||YOffset>18*calculateRowCount()) return -1;
         return (int)XOffset/18 + 9*((int)YOffset/18);
     }

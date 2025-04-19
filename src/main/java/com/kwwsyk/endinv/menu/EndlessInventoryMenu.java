@@ -8,11 +8,13 @@ import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.menu.page.ItemDisplay;
 import com.kwwsyk.endinv.network.payloads.PageChangePayload;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.SortType;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Holder;
 import net.minecraft.util.Mth;
@@ -31,8 +33,8 @@ import java.util.List;
 import java.util.Set;
 
 import static com.kwwsyk.endinv.EndlessInventory.getEndInvForPlayer;
-import static com.kwwsyk.endinv.ModInitializer.ENDINV_SETTINGS;
 import static com.kwwsyk.endinv.ModInitializer.ENDLESS_INVENTORY_MENU_TYPE;
+import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
 public class EndlessInventoryMenu extends AbstractContainerMenu {
 
@@ -92,9 +94,25 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
 
     };
 
-    //Client constructor
-    public EndlessInventoryMenu(int id, Inventory playerInv){
-        this(id,playerInv, ClientConfig.CONFIG.ROWS.getAsInt(), null);
+    public static EndlessInventoryMenu createClient(int id, Inventory playerInv){
+        int rows = ClientConfig.CONFIG.ROWS.getAsInt();
+        if(rows==0){
+            rows = ClientConfig.CONFIG.calculateDefaultRowCount();
+        }
+        var ret = new EndlessInventoryMenu(id,playerInv,rows,null);
+        if (Minecraft.getInstance().player != null) {
+            SyncedConfig config = Minecraft.getInstance().player.getData(SYNCED_CONFIG);
+            ret.init(config);
+        }
+
+        return ret;
+    }
+    public static AbstractContainerMenu createServer(int i, Inventory inventory, Player player) {
+        EndlessInventory endlessInventory = getEndInvForPlayer(player);
+        SyncedConfig config = player.getData(SYNCED_CONFIG);
+        var ret = new EndlessInventoryMenu(i,inventory,config.rows(),endlessInventory);
+        ret.init(config);
+        return ret;
     }
     //Server constructor
     public EndlessInventoryMenu(int id , Inventory playerInv, int rows,EndlessInventory endlessInventory){
@@ -104,8 +122,6 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         this.player = playerInv.player;
         this.sourceInventory = endlessInventory!=null ? endlessInventory : REMOTE;
         this.pages = buildPages();
-        this.sortType = SortType.DEFAULT;
-        this.searching = "";
         //build data slots
         rowsData.set(rows);
         itemSize.set( endlessInventory!=null ? endlessInventory.getItemSize() : 0);
@@ -117,10 +133,17 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         addDataSlot(infinityMode);
         //build inventory slots
         this.inventoryX = 8;
-        this.inventoryY = 18*rows +18+13;
+        this.inventoryY = 18*rows+18+13;
         this.addStandardInventorySlots(playerInv,inventoryX,inventoryY);
         //build default page
-        this.switchPage(0);
+    }
+    private void init(SortType sortType, String searching, int pageId){
+        this.sortType = sortType;
+        this.searching = searching;
+        this.switchPageWithId(pageId);
+    }
+    private void init(SyncedConfig config){
+        init(config.sortType(),config.search(),config.pageId());
     }
     //build pages by default registered item classifies on server and with config hiding pages on client.
     // will change when need to compatible for reg more pages.
@@ -154,10 +177,17 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         }
     }
     //supposed to be the only method to change displaying page and index value; in order to sync.
-    public void switchPage(int index){
+    public void switchPageWithIndex(int index){
         this.displayingPageIndex = index;
         this.displayingPage = this.pages.get(index);
         this.displayingPage.scrollTo(0);
+    }
+    public void switchPageWithId(int id){
+        for(int i=0; i<pages.size(); ++i){
+            if(pages.get(i).pageId == id){
+                switchPageWithIndex(i);
+            }
+        }
     }
     public void scrollTo(float pos){
         this.displayingPage.scrollTo(pos);
@@ -187,10 +217,6 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         return maxStackSize.get();
     }
 
-    public static AbstractContainerMenu createMenu(int i, Inventory inventory, Player player) {
-        EndlessInventory endlessInventory = getEndInvForPlayer(player);
-        return new EndlessInventoryMenu(i,inventory,player.getData(ENDINV_SETTINGS).rows(),endlessInventory);
-    }
     public int getDisplayingPageId(){
         return displayingPage.pageId;
     }

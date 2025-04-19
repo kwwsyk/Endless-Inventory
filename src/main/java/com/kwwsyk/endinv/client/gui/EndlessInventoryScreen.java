@@ -8,8 +8,8 @@ import com.kwwsyk.endinv.client.gui.bg.ScreenTextureMode;
 import com.kwwsyk.endinv.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
-import com.kwwsyk.endinv.menu.page.ItemDisplay;
 import com.kwwsyk.endinv.network.payloads.PageClickPayload;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.options.SortType;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.Util;
@@ -22,11 +22,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+
+import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
 public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInventoryMenu> {
 
@@ -110,6 +113,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
                 , Component.translatable("itemGroup.search"));
         this.sortTypeSwitchBox = new SortTypeSwitchBox(this, sortTypeSwitchBoxParam);
 
+        this.searchBox.setValue(menu.searching);
 
         addRenderableWidget(configButton);
         addRenderableWidget(searchBox);
@@ -185,6 +189,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
                     } else {
                         ClickType clicktype = ClickType.PICKUP;
                         if (hasShiftDown()) {
+                            menu.getDisplayingPage().setHoldOn();
                             //this.lastQuickMoved = slot != null && slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY;
                             clicktype = ClickType.QUICK_MOVE;
                         }
@@ -213,9 +218,28 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     protected boolean hasClickedOnPage(double mouseX,double mouseY){
         return mouseX>=(double) pageX && mouseX<=(double)pageX+pageXSize && mouseY>=(double) pageY && mouseY<=(double) pageY+pageYSize;
     }
+    private int lastDraggedPageSlot = -1;
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        ItemStack itemstack = this.menu.getCarried();
+        if(!itemstack.isEmpty() || this.minecraft.options.touchscreen().get() || !hasClickedOnPage(mouseX, mouseY))
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        //handle page drag: mouse tweak style
+        if(hasShiftDown()){
+            int slotId = menu.getDisplayingPage().getSlotForMouseOffset(mouseX-pageX,mouseY-pageY);
+            if(slotId>=0 && lastDraggedPageSlot>=0 && slotId!=lastDraggedPageSlot){
+                pageClicked(mouseX-pageX,mouseY-pageY,button,ClickType.QUICK_MOVE);
+            }
+            lastDraggedPageSlot = slotId;
+            return true;
+        }else return false;
+    }
+
     public boolean mouseReleased(double mouseX, double mouseY, int keyCode){
         DisplayPage displayingPage = menu.getDisplayingPage();
+        displayingPage.release();
         if(hasClickedOnPage(mouseX,mouseY) && !isQuickCrafting){
+            lastDraggedPageSlot = -1;
             double XOffset = mouseX - pageX;
             double YOffset = mouseY - pageY;
             InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
@@ -317,16 +341,18 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         }
 
     }
+
     private void refreshSearchResults(){
         this.menu.searching = searchBox.getValue();
+        menu.getDisplayingPage().release();
         this.menu.syncContent();
     }
     protected void pageSwitched(int pageIndex){
-        menu.switchPage(pageIndex);
+        menu.switchPageWithIndex(pageIndex);
         this.searchBox.visible = menu.getDisplayingPage().hasSearchBar();
     }
     protected void pageClicked(double mouseX, double mouseY, int keyCode, ClickType clickType){
-        menu.syncContent();
+        //menu.syncContent();
         menu.getDisplayingPage().pageClicked(mouseX,mouseY,keyCode,clickType);
         PacketDistributor.sendToServer(
                 new PageClickPayload(
@@ -340,8 +366,6 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
     protected void slotClicked(@Nullable Slot slot, int slotId, int mouseButton, @NotNull ClickType type) {
         super.slotClicked(slot,slotId,mouseButton,type);
-        if(this.menu.getDisplayingPage() instanceof ItemDisplay itemDisplay)
-            itemDisplay.tryRequestContents(itemDisplay.getStartIndex(),itemDisplay.getContainerSize());
         this.menu.broadcastChanges();
 
     }
@@ -349,10 +373,18 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         this.screenTextureMode.renderBg(guiGraphics,partialTick,mouseX,mouseY);
     }
-
-
     public void switchSortTypeTo(SortType type) {
         menu.sortType = type;
+        menu.getDisplayingPage().release();
         menu.getDisplayingPage().syncContentToServer();
+    }
+
+    @Override
+    public void onClose() {
+        if (minecraft.player != null) {
+            minecraft.player.setData(SYNCED_CONFIG,new SyncedConfig(containerRows,menu.getDisplayingPageId(),menu.sortType,menu.searching));
+            PacketDistributor.sendToServer(minecraft.player.getData(SYNCED_CONFIG));
+        }
+        super.onClose();
     }
 }

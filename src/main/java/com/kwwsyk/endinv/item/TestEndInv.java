@@ -20,7 +20,7 @@ public class TestEndInv extends Item {
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(Level level, @NotNull Player player, @NotNull InteractionHand hand) {
         if(!level.isClientSide) {
-            player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createMenu,
+            player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createServer,
                     Component.literal("test")));
         }
         return InteractionResultHolder.success(player.getItemInHand(hand));

@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.options;
 
+import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import org.jetbrains.annotations.NotNull;
@@ -24,4 +25,14 @@ public enum SortType {
             o.writeByte(sortType.ordinal());
         }
     };
+    public static final Codec<SortType> CODEC = Codec.STRING.xmap(
+            name -> {
+                try {
+                    return SortType.valueOf(name.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    return SortType.DEFAULT;
+                }
+            },
+            SortType::name
+    );
 }
