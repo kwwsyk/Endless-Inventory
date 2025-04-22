@@ -7,7 +7,8 @@ import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.menu.page.ItemDisplay;
-import com.kwwsyk.endinv.network.payloads.PageChangePayload;
+import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
+import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.SortType;
@@ -24,7 +25,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.common.CommonHooks;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -36,12 +37,11 @@ import static com.kwwsyk.endinv.EndlessInventory.getEndInvForPlayer;
 import static com.kwwsyk.endinv.ModInitializer.ENDLESS_INVENTORY_MENU_TYPE;
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
-public class EndlessInventoryMenu extends AbstractContainerMenu {
+public class EndlessInventoryMenu extends AbstractContainerMenu implements PageMetaDataManager {
 
 
     private final Inventory playerInv;
     private final SourceInventory sourceInventory;
-    private int rows;
 
     public final Player player;
     int quickcraftStatus;
@@ -57,73 +57,36 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
     public final List<DisplayPage> pages;
     public SortType sortType;
     public String searching;
-    private int inventoryX;
-    private int inventoryY;
-    public final SourceInventory REMOTE = new SourceInventory() {
-        public ItemStack getItem(int i){
-            return ItemStack.EMPTY;
-        }
 
-        public int getItemSize(){
-            return EndlessInventoryMenu.this.getItemSize();
-        }
 
-        @Override
-        public ItemStack takeItem(ItemStack itemStack) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public ItemStack takeItem(ItemStack itemStack, int count) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public ItemStack addItem(ItemStack itemStack) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public void setChanged() {
-            EndlessInventoryMenu.this.displayingPage.setChanged();
-
-        }
-
-    };
-
+    //Client constructor
     public static EndlessInventoryMenu createClient(int id, Inventory playerInv){
-        int rows = ClientConfig.CONFIG.ROWS.getAsInt();
-        if(rows==0){
-            rows = ClientConfig.CONFIG.calculateDefaultRowCount();
-        }
-        var ret = new EndlessInventoryMenu(id,playerInv,rows,null);
+        var ret = new EndlessInventoryMenu(id,playerInv,null);
         if (Minecraft.getInstance().player != null) {
             SyncedConfig config = Minecraft.getInstance().player.getData(SYNCED_CONFIG);
             ret.init(config);
+            ret.addStandardInventorySlots(playerInv, 8, 18 * ret.getRowCount() + 18 + 13);
         }
 
         return ret;
     }
+    //Server constructor
     public static AbstractContainerMenu createServer(int i, Inventory inventory, Player player) {
         EndlessInventory endlessInventory = getEndInvForPlayer(player);
         SyncedConfig config = player.getData(SYNCED_CONFIG);
-        var ret = new EndlessInventoryMenu(i,inventory,config.rows(),endlessInventory);
+        var ret = new EndlessInventoryMenu(i,inventory,endlessInventory);
         ret.init(config);
+        ret.addStandardInventorySlots(inventory, 8, 18 * ret.getRowCount() + 18 + 13);
         return ret;
     }
-    //Server constructor
-    public EndlessInventoryMenu(int id , Inventory playerInv, int rows,EndlessInventory endlessInventory){
+    //Common constructor
+    public EndlessInventoryMenu(int id , Inventory playerInv, EndlessInventory endlessInventory){
         super(ENDLESS_INVENTORY_MENU_TYPE.get(),id);
-        this.rows = rows;
         this.playerInv = playerInv;
         this.player = playerInv.player;
         this.sourceInventory = endlessInventory!=null ? endlessInventory : REMOTE;
         this.pages = buildPages();
         //build data slots
-        rowsData.set(rows);
         itemSize.set( endlessInventory!=null ? endlessInventory.getItemSize() : 0);
         maxStackSize.set(endlessInventory!=null? endlessInventory.getMaxItemStackSize() : Integer.MAX_VALUE);
         infinityMode.set(endlessInventory!=null && endlessInventory.isInfinityMode() ? 1 : 0);
@@ -131,19 +94,15 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         addDataSlot(itemSize);
         addDataSlot(maxStackSize);
         addDataSlot(infinityMode);
-        //build inventory slots
-        this.inventoryX = 8;
-        this.inventoryY = 18*rows+18+13;
-        this.addStandardInventorySlots(playerInv,inventoryX,inventoryY);
-        //build default page
     }
-    private void init(SortType sortType, String searching, int pageId){
+    private void init(int rows, SortType sortType, String searching, int pageId){
+        rowsData.set(rows);
         this.sortType = sortType;
         this.searching = searching;
         this.switchPageWithId(pageId);
     }
     private void init(SyncedConfig config){
-        init(config.sortType(),config.search(),config.pageId());
+        init(config.rows()-4,config.sortType(),config.search(),config.pageId());//4: reserved rows for inventory.
     }
     //build pages by default registered item classifies on server and with config hiding pages on client.
     // will change when need to compatible for reg more pages.
@@ -180,7 +139,8 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
     public void switchPageWithIndex(int index){
         this.displayingPageIndex = index;
         this.displayingPage = this.pages.get(index);
-        this.displayingPage.scrollTo(0);
+        SyncedConfig.updateClientConfigAndSync(player.getData(SYNCED_CONFIG).pageIdChanged(displayingPage.pageId));
+        this.displayingPage.init(0,9*rowsData.get());
     }
     public void switchPageWithId(int id){
         for(int i=0; i<pages.size(); ++i){
@@ -224,12 +184,28 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
         return displayingPage;
     }
     public int getDisplayingPageIndex(){return displayingPageIndex;}
+
+    @Override
+    public AbstractContainerMenu getMenu() {
+        return this;
+    }
+
     public SourceInventory getSourceInventory(){
         return this.sourceInventory;
     }
 
+    @Override
+    public List<DisplayPage> getPages() {
+        return pages;
+    }
+
+    @Override
+    public Player getPlayer() {
+        return player;
+    }
+
     public int getRowCount(){
-        return  this.rows;
+        return  this.rowsData.get();
     }
 
     /**Override {@link AbstractContainerMenu#clicked(int, int, ClickType, Player)}
@@ -279,7 +255,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
 
     boolean tryItemClickBehaviourOverride(Player player, ClickAction action, Slot slot, ItemStack clickedItem, ItemStack carriedItem) {
         // Neo: Fire the ItemStackedOnOtherEvent, and return true if it was cancelled (meaning the event was handled). Returning true will trigger the container to stop processing further logic.
-        if (net.neoforged.neoforge.common.CommonHooks.onItemStackedOn(clickedItem, carriedItem, slot, action, player, createCarriedSlotAccess())) {
+        if (CommonHooks.onItemStackedOn(clickedItem, carriedItem, slot, action, player, createCarriedSlotAccess())) {
             return true;
         }
 
@@ -328,16 +304,48 @@ public class EndlessInventoryMenu extends AbstractContainerMenu {
     }
 
     @Override
+    public SortType sortType() {
+        return sortType;
+    }
+
+    @Override
+    public void setSortType(SortType sortType) {
+        this.sortType = sortType;
+    }
+
+    @Override
+    public String searching() {
+        return searching;
+    }
+
+    @Override
+    public void setSearching(String searching) {
+        this.searching = searching;
+    }
+
+    /**
+     *Send operation will be accomplished in {@link AbstractContainerMenu#broadcastChanges()}
+     */
+    @Override
+    public void sendEndInvMetadataToRemote(){
+        if(sourceInventory instanceof EndlessInventory endlessInventory){
+            itemSize.set(endlessInventory.getItemSize());
+            maxStackSize.set(endlessInventory.getMaxItemStackSize());
+            infinityMode.set((endlessInventory.isInfinityMode()?1:0));
+        }
+    }
+
+    @Override
+    public EndInvMetadata getEndInvMetadata() {
+        return new EndInvMetadata(itemSize.get(),maxStackSize.get(),infinityMode.get()>0);
+    }
+
+    @Override
     public boolean stillValid(@NotNull Player player) {
         return true;
     }
 
 
-    public void requestContent(int startIndex, int length) { //将要废弃
-        if(this.player instanceof LocalPlayer){
-            PacketDistributor.sendToServer(new PageChangePayload(startIndex,length, sortType, displayingPage.getItemClassify(), searching));
-        }
-    }
     public void syncContent(){
         displayingPage.syncContentToServer();
     }

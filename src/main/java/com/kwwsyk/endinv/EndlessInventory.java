@@ -209,6 +209,11 @@ public class EndlessInventory implements SourceInventory{
 
     }
 
+    @Override
+    public boolean isRemote() {
+        return false;
+    }
+
     /**
      * Take at most its max stack size count item
      * @param itemStack will take itemStack with same id and component

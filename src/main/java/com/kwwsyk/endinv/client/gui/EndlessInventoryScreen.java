@@ -4,7 +4,7 @@ import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.client.gui.bg.FromResource;
 import com.kwwsyk.endinv.client.gui.bg.ScreenLayoutMode;
 import com.kwwsyk.endinv.client.gui.bg.ScreenRectangleWidgetParam;
-import com.kwwsyk.endinv.client.gui.bg.ScreenTextureMode;
+import com.kwwsyk.endinv.client.gui.bg.ScreenRenderer;
 import com.kwwsyk.endinv.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
@@ -31,7 +31,7 @@ import java.util.Objects;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
-public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInventoryMenu> {
+public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInventoryMenu> implements SortTypeSwitcher {
 
     private int containerRows;
     private float scrollOffs = 0;
@@ -43,7 +43,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     private ScreenRectangleWidgetParam pageSwitchTabParam;
     private ScreenRectangleWidgetParam searchBoxParam;
     private ScreenRectangleWidgetParam sortTypeSwitchBoxParam;
-    private ScreenTextureMode screenTextureMode;
+    private ScreenRenderer screenRenderer;
     private int pageX;
     private int pageY;
     private int pageXSize;
@@ -69,32 +69,34 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
 
         this.refresh();
     }
-
+    public void refresh(){
+        this.containerRows = menu.getRowCount();
+        this.imageHeight = 114 + this.containerRows*18;
+        this.inventoryLabelY = this.imageHeight - 94;
+    }
     protected void setScreenTextureAndLayoutMode(){
-        if(this.clientConfig.LAYOUT.getAsInt()>0){
-            this.leftPos=0;
+        if(this.clientConfig.LAYOUT.getAsInt()!=0){
+            this.leftPos=32;
             this.topPos=0;
-            this.screenLayoutMode = new ScreenLayoutMode(0,0,true,
-                    (this.width - this.imageWidth) / 2,(this.height - this.imageHeight) / 2);
-            this.configButtonParam = new ScreenRectangleWidgetParam(0,0,18,18);
-            this.pageSwitchTabParam = new ScreenRectangleWidgetParam(0,18,18,18);
+            this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
             this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 116, this.topPos + 6, 80, 9);
-            //this.screenTextureMode =
+            this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
+            this.screenRenderer = FromResource.createLeftMode(this);
         }else {
             this.leftPos = (this.width - this.imageWidth) / 2;
             this.topPos = (this.height - this.imageHeight) / 2;
-            this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos-18,this.topPos-18,18,18);
+            this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
             this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 89, this.topPos + 5, 80, 12);
             this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
-            this.screenTextureMode = FromResource.createDefaultMode(this);
+            this.screenRenderer = FromResource.createDefaultMode(this);
         }
     }
 
     public void init(){
         setScreenTextureAndLayoutMode();
-        this.screenTextureMode.init();
-        pageX = screenTextureMode.screenLayoutMode().menuXPos()+8;
-        pageY = screenTextureMode.screenLayoutMode().menuYPos()+17;
+        this.screenRenderer.init();
+        pageX = screenRenderer.screenLayoutMode().menuXPos()+8;
+        pageY = screenRenderer.screenLayoutMode().menuYPos()+17;
         pageXSize = 9*18;
         pageYSize = containerRows*18;
 
@@ -120,11 +122,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         addRenderableWidget(sortTypeSwitchBox);
     }
 
-    public void refresh(){
-        this.containerRows = menu.getRowCount();
-        this.imageHeight = 114 + this.containerRows*18;
-        this.inventoryLabelY = this.imageHeight - 94;
-    }
+
 
     public void render(@NotNull GuiGraphics gui, int mouseX, int mouseY, float partialTick){
         this.isHoveringOnSortBox = false;
@@ -132,7 +130,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         super.render(gui,mouseX,mouseY,partialTick);
 
         //check
-        this.isHoveringOnPage = hasClickedOnPage(mouseX,mouseY) && !isHoveringOnSortBox;
+        this.isHoveringOnPage = hasClickedOnPage(mouseX,mouseY);
         this.roughMouseX = mouseX;
         this.roughMouseY = mouseY;
 
@@ -169,7 +167,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
             this.skipNextRelease = false;
             if(keyCode!=0&&keyCode!=1&&!isKeyPicking){
                 checkHotBarClicked:
-                if (this.hoveredSlot != null && this.menu.getCarried().isEmpty()) {
+                if (this.menu.getCarried().isEmpty()) {
                     if (this.minecraft.options.keySwapOffhand.matchesMouse(keyCode)) {
                         pageClicked(XOffset,YOffset,40,ClickType.SWAP);
                         break checkHotBarClicked;
@@ -181,7 +179,6 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
                         }
                     }
                 }
-                
             }else if(!this.isQuickCrafting){
                 if(menu.getCarried().isEmpty()){
                     if (this.minecraft.options.keyPickItem.isActiveAndMatches(mouseKey)) {
@@ -203,20 +200,22 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
             }
             this.lastClickedTime = clickTime;
             this.lastClickedButton = keyCode;
+            this.lastCLickedX = XOffset;
+            this.lastClickedY = YOffset;
             return true;
         }
         return super.mouseClicked(mouseX,mouseY,keyCode);
     }
     protected int hasClickedOnPageSwitchBar(double mouseX, double mouseY){
-        double XOffset=mouseX-screenTextureMode.pageSwitchBarParam().XPos();
-        double YOffset=mouseY-screenTextureMode.pageSwitchBarParam().YPos();
-        if(XOffset<0 || XOffset>screenTextureMode.pageSwitchBarParam().XSize()) return -1;
-        int index = (int)YOffset/screenTextureMode.pageSwitchBarParam().YSize();
+        double XOffset=mouseX- screenRenderer.pageSwitchBarParam().XPos();
+        double YOffset=mouseY- screenRenderer.pageSwitchBarParam().YPos();
+        if(XOffset<0 || XOffset> screenRenderer.pageSwitchBarParam().XSize()) return -1;
+        int index = (int)YOffset/ screenRenderer.pageSwitchBarParam().YSize();
         if(index<0||index>=menu.pages.size()) return -1;
         return index;
     }
     protected boolean hasClickedOnPage(double mouseX,double mouseY){
-        return mouseX>=(double) pageX && mouseX<=(double)pageX+pageXSize && mouseY>=(double) pageY && mouseY<=(double) pageY+pageYSize;
+        return mouseX>=(double) pageX && mouseX<=(double)pageX+pageXSize && mouseY>=(double) pageY && mouseY<=(double) pageY+pageYSize && !isHoveringOnSortBox;
     }
     private int lastDraggedPageSlot = -1;
     @Override
@@ -344,6 +343,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
 
     private void refreshSearchResults(){
         this.menu.searching = searchBox.getValue();
+        SyncedConfig.updateClientConfigAndSync(menu.player.getData(SYNCED_CONFIG).searchingChanged(menu.searching));
         menu.getDisplayingPage().release();
         this.menu.syncContent();
     }
@@ -371,18 +371,31 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
     @Override
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        this.screenTextureMode.renderBg(guiGraphics,partialTick,mouseX,mouseY);
+        this.screenRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
     }
+    @Override
     public void switchSortTypeTo(SortType type) {
         menu.sortType = type;
+        SyncedConfig.updateClientConfigAndSync(menu.player.getData(SYNCED_CONFIG).sortTypeChanged(type));
         menu.getDisplayingPage().release();
         menu.getDisplayingPage().syncContentToServer();
     }
 
     @Override
+    public void setHoveringOnSortBox(boolean isHovering) {
+        this.isHoveringOnSortBox = isHovering;
+    }
+
+    @Override
+    public AbstractContainerScreen<?> getScreen() {
+        return this;
+    }
+
+    @Override
     public void onClose() {
         if (minecraft.player != null) {
-            minecraft.player.setData(SYNCED_CONFIG,new SyncedConfig(containerRows,menu.getDisplayingPageId(),menu.sortType,menu.searching));
+            SyncedConfig config = minecraft.player.getData(SYNCED_CONFIG);
+            minecraft.player.setData(SYNCED_CONFIG,new SyncedConfig(containerRows,menu.getDisplayingPageId(),menu.sortType,menu.searching,config.attaching()));
             PacketDistributor.sendToServer(minecraft.player.getData(SYNCED_CONFIG));
         }
         super.onClose();

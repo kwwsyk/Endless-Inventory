@@ -25,9 +25,9 @@ public class Reg {
                 )
         );
         registrar.playToServer(
-                PageChangePayload.TYPE,
-                PageChangePayload.STREAM_CODEC,
-                ServerPayloadHandler::handleEndInvRequests
+                PageMetadata.TYPE,
+                PageMetadata.STREAM_CODEC,
+                ServerPayloadHandler::handleMenuPage
         );
         registrar.playToClient(
                 SetItemDisplayContentPayload.TYPE,
@@ -43,6 +43,16 @@ public class Reg {
                 PageStatePayload.TYPE,
                 PageStatePayload.STREAM_CODEC,
                 ServerPayloadHandler::handlePageStates
+        );
+        registrar.playToClient(
+                EndInvMetadata.TYPE,
+                EndInvMetadata.STREAM_CODEC,
+                ClientPayloadHandler::handleEndInvMetaData
+        );
+        registrar.playToServer(
+                OpenEndInvPayload.TYPE,
+                OpenEndInvPayload.STREAM_CODEC,
+                ServerPayloadHandler::handleEndInvOpening
         );
     }
     @SubscribeEvent

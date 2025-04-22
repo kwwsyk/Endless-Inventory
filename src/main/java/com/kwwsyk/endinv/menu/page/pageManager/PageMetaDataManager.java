@@ -1,0 +1,97 @@
+package com.kwwsyk.endinv.menu.page.pageManager;
+
+import com.kwwsyk.endinv.SourceInventory;
+import com.kwwsyk.endinv.menu.page.DisplayPage;
+import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
+import com.kwwsyk.endinv.options.SortType;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.List;
+
+public interface PageMetaDataManager {
+
+    AbstractContainerMenu getMenu();
+    SourceInventory getSourceInventory();
+    List<DisplayPage> getPages();
+    DisplayPage getDisplayingPage();
+    void switchPageWithIndex(int index);
+    int getRowCount();
+    Player getPlayer();
+    int getItemSize();
+    int getMaxStackSize();
+    boolean enableInfinity();
+    ItemStack quickMoveFromPage(ItemStack stack);
+    SortType sortType();
+    void setSortType(SortType sortType);
+    String searching();
+    void setSearching(String searching);
+    void sendEndInvMetadataToRemote();
+    EndInvMetadata getEndInvMetadata();
+    default void switchPageWithId(int id){
+        for(int i=0; i<getPages().size(); ++i){
+            if(getPages().get(i).pageId == id){
+                switchPageWithIndex(i);
+            }
+        }
+    }
+    default void scrollTo(float pos){
+        getDisplayingPage().scrollTo(pos);
+    }
+    default int calculateRowCount() {
+        return getDisplayingPage().calculateRowCount();
+    }
+    default float subtractInputFromScroll(float scrollOffs, double input) {
+        return Mth.clamp(scrollOffs - (float)(input / (double)this.calculateRowCount()), 0.0F, 1.0F);
+    }
+    default int getDisplayingPageId(){
+        return getDisplayingPage().pageId;
+    }
+    default int getDisplayingPageIndex(){
+        for(int i=0; i<getPages().size(); ++i){
+            if(getPages().get(i)==getDisplayingPage()){
+                return i;
+            }
+        }
+        return -1;
+    }
+    SourceInventory REMOTE = new SourceInventory() {
+        public ItemStack getItem(int i) {
+            return ItemStack.EMPTY;
+        }
+
+        public int getItemSize() {
+            return 0;
+        }
+
+        @Override
+        public boolean isRemote() {
+            return true;
+        }
+
+        @Override
+        public ItemStack takeItem(ItemStack itemStack) {
+            setChanged();
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack takeItem(ItemStack itemStack, int count) {
+            setChanged();
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack addItem(ItemStack itemStack) {
+            setChanged();
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public void setChanged() {
+
+        }
+    };
+}

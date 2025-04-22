@@ -16,10 +16,14 @@ public class ClientConfig {
     public final ModConfigSpec.IntValue ROWS;
     public final ModConfigSpec.IntValue LAYOUT;
     public final List<ModConfigSpec.BooleanValue> PAGES = new ArrayList<>();
+    public final ModConfigSpec.BooleanValue ATTACHING;
 
     private ClientConfig(ModConfigSpec.Builder builder){
+        ATTACHING = builder.comment("show endless inventory view when opening a menu.")
+                .define("attachingMenuScreen",true);
 
-        ROWS = builder.translation("config.endinv.comment.row1")
+        ROWS = builder.comment("Default rows of EndInv view, 0 for auto.")
+                .translation("config.endinv.comment.row1")
                 .translation("config.endinv.comment.row2")
                 .defineInRange("rows",0,0,Integer.MAX_VALUE);
 
@@ -40,9 +44,7 @@ public class ClientConfig {
     public int calculateDefaultRowCount(){
         Minecraft mc = Minecraft.getInstance();
         int height = mc.getWindow().getGuiScaledHeight();
-        if(LAYOUT.getAsInt()==0)
-            return Math.floorDiv(height-115,18);
-        return Math.floorDiv(height-25,18);
+        return Math.floorDiv(height-45,18);
     }
 
     static {

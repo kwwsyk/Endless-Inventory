@@ -15,7 +15,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 @EventBusSubscriber(modid = ModInitializer.MOD_ID,value = Dist.CLIENT)
-public class RenderEvents {
+public class ScreenDebug {
 
     public static int phase = 0;
 
@@ -83,7 +83,7 @@ public class RenderEvents {
         }
         if(event.getScreen() instanceof EndlessInventoryScreen EIS && EIS.getMenu().getDisplayingPage() instanceof ItemDisplay itemDisplay){
             if(button == InputConstants.KEY_R){
-                itemDisplay.tryRequestContents(itemDisplay.getStartIndex(),itemDisplay.getContainerSize());
+                itemDisplay.tryRequestContents();
             }
             if(button == InputConstants.KEY_T){
                 itemDisplay.setChanged();

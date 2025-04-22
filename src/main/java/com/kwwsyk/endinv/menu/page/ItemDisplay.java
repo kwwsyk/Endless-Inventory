@@ -1,9 +1,10 @@
 package com.kwwsyk.endinv.menu.page;
 
 import com.kwwsyk.endinv.EndlessInventory;
+import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.SourceInventory;
-import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.network.payloads.PageChangePayload;
+import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
+import com.kwwsyk.endinv.network.payloads.PageMetadata;
 import com.kwwsyk.endinv.network.payloads.PageStatePayload;
 import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
 import com.kwwsyk.endinv.options.ItemClassify;
@@ -22,13 +23,11 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 public class ItemDisplay extends DisplayPage{
-    private final NonNullList<ItemStack> items;
-    private final SourceInventory sourceInventory;
+    private NonNullList<ItemStack> items;
     private int startIndex;
     private int length;
     private int leftPos;
@@ -36,30 +35,16 @@ public class ItemDisplay extends DisplayPage{
 
     private boolean suppressRefresh = false;
 
-    public ItemDisplay(EndlessInventoryMenu menu, @Nullable SourceInventory sourceInventory,
-                       int startIndex, int length,
-                       Holder<ItemClassify> classify,int pageIndex) {
-        super(menu,classify,pageIndex);
-        if(sourceInventory!=null) {
-            this.sourceInventory = sourceInventory;
-        }else {
-            this.sourceInventory = this.menu.getSourceInventory();
-        }
-        this.items = NonNullList.withSize(length,ItemStack.EMPTY); // 预填充
-        this.startIndex = startIndex;
-        this.length = length;
-    }
-
-    public ItemDisplay(EndlessInventoryMenu menu, Holder<ItemClassify> classify,int pageIndex){
-        this(menu,menu.getSourceInventory(),0, menu.getRowCount()*9,classify,pageIndex);
+    public ItemDisplay(PageMetaDataManager metaDataManager, Holder<ItemClassify> classify, int pageId) {
+        super(metaDataManager,classify,pageId);
     }
     public boolean canScroll(){
-        return startIndex>0 || startIndex+length >= menu.getItemSize();
+        return startIndex>0 || startIndex+length <= metadata.getItemSize();
     }
 
     public void scrollTo(float pos){
         int startIndex = getRowIndexForScroll(pos)*9;
-        this.setDisplay(startIndex,this.length);
+        this.init(startIndex,this.length);
     }
 
     @Override
@@ -71,12 +56,13 @@ public class ItemDisplay extends DisplayPage{
      * @param startIndex the index of the item first displayed in EndInv
      * @param length the count of the item should be displayed, should equal to 9*rows
      */
-    public void setDisplay(int startIndex, int length) {
+    public void init(int startIndex, int length) {
         this.startIndex = startIndex;
         this.length = length;
+        this.items = NonNullList.withSize(length,ItemStack.EMPTY); // 预填充
         release();
-        if(this.sourceInventory==this.menu.REMOTE) {
-            requestContents(startIndex,length);
+        if(srcInv.isRemote()) {
+            this.syncContentToServer();
         }else {
             refreshItems();
         }
@@ -84,20 +70,16 @@ public class ItemDisplay extends DisplayPage{
     //often use on server
     public void refreshItems(){
         if(!suppressRefresh) {
-            EndlessInventory endInv = (EndlessInventory) menu.getSourceInventory();
-            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,menu.sortType, getItemClassify().value(),menu.searching);
+            EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
+            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length, metadata.sortType(), getItemClassify().value(), metadata.searching());
 
             initializeContents(view);
             this.suppressRefresh = true;
         }
     }
-    //client
-    private void requestContents(int startIndex,int length){
-        this.menu.requestContent(startIndex, length);
-    }
 
-    public void tryRequestContents(int startIndex,int length){
-        if(!suppressRefresh) this.requestContents(startIndex,length);
+    public void tryRequestContents(){
+        if(!suppressRefresh) this.syncContentToServer();
     }
     private List<ItemStack> inQueueStacks = null;
     public void initializeContents(List<ItemStack> stacks){
@@ -115,15 +97,15 @@ public class ItemDisplay extends DisplayPage{
     }
 
     public boolean isFull(ItemStack itemStack){
-        return itemStack.getCount() >= menu.getMaxStackSize();
+        return itemStack.getCount() >= metadata.getMaxStackSize();
     }
 
     public boolean isInfinite(ItemStack itemStack){
-        return  isFull(itemStack) && menu.enableInfinity();
+        return  isFull(itemStack) && metadata.enableInfinity();
     }
 
     public SourceInventory getSourceInventory(){
-        return this.sourceInventory;
+        return this.srcInv;
     }
     //May shift
     public ItemStack takeItem(ItemStack itemStack){
@@ -143,12 +125,12 @@ public class ItemDisplay extends DisplayPage{
                         items.set(i,stack);
                     }
                 }
-                ItemStack result = sourceInventory.takeItem(itemStack,count);
-                if(sourceInventory instanceof EndlessInventory) ret=result;
+                ItemStack result = srcInv.takeItem(itemStack,count);
+                if(srcInv instanceof EndlessInventory) ret=result;
                 return ret;
             }
         }
-        return this.sourceInventory.takeItem(itemStack,count);
+        return this.srcInv.takeItem(itemStack,count);
     }
     public ItemStack takeItem(int index, int count){
         //Will take Client display item firstly
@@ -164,8 +146,8 @@ public class ItemDisplay extends DisplayPage{
             this.items.set(index, itemStack);
         }
         //then affect server
-        ItemStack result = sourceInventory.takeItem(itemStack,count);
-        if(sourceInventory instanceof EndlessInventory) ret=result;
+        ItemStack result = srcInv.takeItem(itemStack,count);
+        if(srcInv instanceof EndlessInventory) ret=result;
         return ret;
     }
     public ItemStack takeItem(int index){
@@ -189,7 +171,7 @@ public class ItemDisplay extends DisplayPage{
                 if (ItemStack.isSameItemSameComponents(itemStack1, itemStack)) {
                     if(!isFull(itemStack1)) {
                         int additional = itemStack1.getCount();
-                        int max = menu.getMaxStackSize();
+                        int max = metadata.getMaxStackSize();
                         itemStack1.setCount(Math.min(count+additional,max));
                         ret = itemStack.copyWithCount(Math.max(0,count+additional-max));
                     }
@@ -197,15 +179,15 @@ public class ItemDisplay extends DisplayPage{
                     break l;
                 }
                 if (itemStack1.isEmpty()){
-                    itemStack.limitSize(menu.getMaxStackSize());
+                    itemStack.limitSize(metadata.getMaxStackSize());
                     this.items.set(i,itemStack);
-                    ret = itemStack.copyWithCount(Math.max(0,count-menu.getMaxStackSize()));
+                    ret = itemStack.copyWithCount(Math.max(0,count- metadata.getMaxStackSize()));
                     break l;
                 }
             }
         }
         // Important: use `copy()` to avoid duplicate actions due to shared ItemStack references.
-        ItemStack remain = this.sourceInventory.addItem(itemStack.copy());
+        ItemStack remain = this.srcInv.addItem(itemStack.copy());
         if(!remain.isEmpty()) ret = remain;
         return ret;
     }
@@ -232,7 +214,7 @@ public class ItemDisplay extends DisplayPage{
     }
     public void release(){
         if(holdOn){
-            if(menu.getSourceInventory()== menu.REMOTE)
+            if(srcInv.isRemote())
                 PacketDistributor.sendToServer(new PageStatePayload(false));
             holdOn = false;
             if(inQueueStacks==null) return;
@@ -334,13 +316,13 @@ public class ItemDisplay extends DisplayPage{
 
     @Override
     public void syncContentToServer() {
-        if(menu.getSourceInventory()== menu.REMOTE){
-            PacketDistributor.sendToServer(new PageChangePayload(startIndex,length,menu.sortType,getItemClassify(),menu.searching));
+        if(srcInv.isRemote()){
+            PacketDistributor.sendToServer(new PageMetadata(startIndex,length, metadata.getPlayer().getData(ModInitializer.SYNCED_CONFIG)));
         }
     }
     public void syncContentToClient(ServerPlayer player){
-        EndlessInventory endInv = (EndlessInventory) menu.getSourceInventory();
-        List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,menu.sortType, getItemClassify().value(),menu.searching);
+        EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
+        List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length, metadata.sortType(), getItemClassify().value(), metadata.searching());
 
         NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
         for(int i=0;i< view.size();++i){
@@ -350,25 +332,25 @@ public class ItemDisplay extends DisplayPage{
     }
     protected void handleQuickMove(ItemStack clicked){
         ItemStack taken = takeItem(clicked);
-        ItemStack remain = menu.quickMoveFromPage(taken);
+        ItemStack remain = metadata.quickMoveFromPage(taken);
         addItem(remain);
         setChanged();
     }
     protected void handlePickup(ItemStack clicked, int keyCode){
-        ItemStack carried = menu.getCarried();
+        ItemStack carried = metadata.getMenu().getCarried();
         if(!carried.isEmpty()){
             ItemStack remain = addItem(carried.copy());
-            menu.setCarried(remain);
+            metadata.getMenu().setCarried(remain);
             setChanged();
         }else{
             int count = Math.min(clicked.getCount(),clicked.getMaxStackSize());
             int takenCount = keyCode==0 ? count : (count + 1) / 2;
-            menu.setCarried(takeItem(clicked,takenCount));
-            if(!menu.getCarried().isEmpty()) setChanged();
+            metadata.getMenu().setCarried(takeItem(clicked,takenCount));
+            if(!metadata.getMenu().getCarried().isEmpty()) setChanged();
         }
     }
     protected void handleSwap(ItemStack clicked, int keyCode){
-        Player player = menu.player;
+        Player player = metadata.getPlayer();
         Inventory inventory = player.getInventory();
         ItemStack inventoryItem = inventory.getItem(keyCode);
         boolean a = !inventoryItem.isEmpty();
@@ -393,17 +375,17 @@ public class ItemDisplay extends DisplayPage{
         setChanged();
     }
     protected void handleThrow(ItemStack clicked){
-        Player player = menu.player;
+        Player player = metadata.getPlayer();
         ItemStack thrown = takeItem(clicked);
         player.drop(thrown,true);
         setChanged();
     }
     protected void handlePickupAll(ItemStack clicked){
-        Player player = menu.player;
-        ItemStack carried = menu.getCarried();
-        int startIndex = menu.slots.size() - 1; //changed: reversed button==0 condition
+        Player player = metadata.getPlayer();
+        ItemStack carried = metadata.getMenu().getCarried();
+        int startIndex = metadata.getMenu().slots.size() - 1; //changed: reversed button==0 condition
         for(int index = startIndex; index>=0 ; --index){
-            Slot scanning = menu.slots.get(index);
+            Slot scanning = metadata.getMenu().slots.get(index);
             if(!(scanning.container instanceof Inventory)) break;
             ItemStack scanningItem =scanning.getItem();
             if(ItemStack.isSameItemSameComponents(carried,scanningItem)){
@@ -415,9 +397,9 @@ public class ItemDisplay extends DisplayPage{
         }
     }
     protected void handleClone(ItemStack clicked){
-        Player player = menu.player;
-        if(player.hasInfiniteMaterials() && menu.getCarried().isEmpty()){
-            menu.setCarried(clicked.copyWithCount(clicked.getMaxStackSize()));
+        Player player = metadata.getPlayer();
+        if(player.hasInfiniteMaterials() && metadata.getMenu().getCarried().isEmpty()){
+            metadata.getMenu().setCarried(clicked.copyWithCount(clicked.getMaxStackSize()));
         }
     }
 

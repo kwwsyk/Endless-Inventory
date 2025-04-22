@@ -5,7 +5,7 @@ import net.minecraft.world.item.ItemStack;
 public interface SourceInventory {
 
 
-
+    boolean isRemote();
     ItemStack takeItem(ItemStack itemStack);
 
     ItemStack takeItem(ItemStack itemStack, int count);

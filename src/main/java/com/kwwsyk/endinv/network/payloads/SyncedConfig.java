@@ -22,15 +22,16 @@ import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
  *  Used before open menu.
  * @param rows
  */
-public record SyncedConfig(int rows, int pageId, SortType sortType,String search) implements CustomPacketPayload {
+public record SyncedConfig(int rows, int pageId, SortType sortType,String search,boolean attaching) implements CustomPacketPayload {
 
-    public static final SyncedConfig DEFAULT = new SyncedConfig(15,0,SortType.DEFAULT,"");
+    public static final SyncedConfig DEFAULT = new SyncedConfig(15,0,SortType.DEFAULT,"",true);
     public static final Codec<SyncedConfig> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
                     Codec.INT.optionalFieldOf("rows", 15).forGetter(SyncedConfig::rows),
                     Codec.INT.optionalFieldOf("pageId",0).forGetter(SyncedConfig::pageId),
                     SortType.CODEC.optionalFieldOf("sortType",SortType.DEFAULT).forGetter(SyncedConfig::sortType),
-                    Codec.STRING.optionalFieldOf("searching","").forGetter(SyncedConfig::search)
+                    Codec.STRING.optionalFieldOf("searching","").forGetter(SyncedConfig::search),
+                    Codec.BOOL.optionalFieldOf("attaching",true).forGetter(SyncedConfig::attaching)
             ).apply(instance, SyncedConfig::new)
     );
     public static final Type<SyncedConfig> TYPE =
@@ -40,10 +41,20 @@ public record SyncedConfig(int rows, int pageId, SortType sortType,String search
             ByteBufCodecs.INT, SyncedConfig::pageId,
             SortType.STREAM_CODEC,SyncedConfig::sortType,
             ByteBufCodecs.STRING_UTF8,SyncedConfig::search,
+            ByteBufCodecs.BOOL,SyncedConfig::attaching,
             SyncedConfig::new
     );
     public SyncedConfig ofRowChanged(int rows){
-        return new SyncedConfig(rows,this.pageId,this.sortType,this.search);
+        return new SyncedConfig(rows,this.pageId,this.sortType,this.search,this.attaching);
+    }
+    public SyncedConfig pageIdChanged(int id){
+        return new SyncedConfig(this.rows,id,this.sortType,this.search,this.attaching);
+    }
+    public SyncedConfig sortTypeChanged(SortType sortType){
+        return new SyncedConfig(this.rows,this.pageId,sortType,this.search,this.attaching);
+    }
+    public SyncedConfig searchingChanged(String searching){
+        return new SyncedConfig(this.rows,this.pageId,this.sortType,searching,this.attaching);
     }
     public static void syncClientConfigToServer(){
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
@@ -54,6 +65,17 @@ public record SyncedConfig(int rows, int pageId, SortType sortType,String search
             SyncedConfig config = player.getData(SYNCED_CONFIG).ofRowChanged(rows);
             player.setData(SYNCED_CONFIG,config);
             PacketDistributor.sendToServer(config);
+        }
+    }
+    public static void updateClientConfigAndSync(SyncedConfig config){
+        if(Minecraft.getInstance().player instanceof LocalPlayer player){
+            int rows = ClientConfig.CONFIG.ROWS.getAsInt();
+            if(rows==0){
+                rows = ClientConfig.CONFIG.calculateDefaultRowCount();
+            }
+            SyncedConfig config1 = config.ofRowChanged(rows);
+            player.setData(SYNCED_CONFIG,config1);
+            PacketDistributor.sendToServer(config1);
         }
     }
     @Override
