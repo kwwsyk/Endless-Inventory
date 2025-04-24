@@ -3,7 +3,7 @@ package com.kwwsyk.endinv.menu.page.pageManager;
 import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -19,6 +19,7 @@ public interface PageMetaDataManager {
     DisplayPage getDisplayingPage();
     void switchPageWithIndex(int index);
     int getRowCount();
+    int getColumnCount();
     Player getPlayer();
     int getItemSize();
     int getMaxStackSize();
@@ -26,6 +27,9 @@ public interface PageMetaDataManager {
     ItemStack quickMoveFromPage(ItemStack stack);
     SortType sortType();
     void setSortType(SortType sortType);
+    boolean isSortReversed();
+    void switchSortReversed();
+    void setSortReversed(boolean reversed);
     String searching();
     void setSearching(String searching);
     void sendEndInvMetadataToRemote();
@@ -40,11 +44,8 @@ public interface PageMetaDataManager {
     default void scrollTo(float pos){
         getDisplayingPage().scrollTo(pos);
     }
-    default int calculateRowCount() {
-        return getDisplayingPage().calculateRowCount();
-    }
     default float subtractInputFromScroll(float scrollOffs, double input) {
-        return Mth.clamp(scrollOffs - (float)(input / (double)this.calculateRowCount()), 0.0F, 1.0F);
+        return Mth.clamp(scrollOffs - (float)(input / (double)getRowCount()), 0.0F, 1.0F);
     }
     default int getDisplayingPageId(){
         return getDisplayingPage().pageId;
@@ -94,4 +95,6 @@ public interface PageMetaDataManager {
 
         }
     };
+
+
 }

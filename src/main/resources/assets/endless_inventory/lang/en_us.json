@@ -1,5 +1,18 @@
 {
   "config.endinv.comment.row1": "The rows of Endless Inventory.",
   "config.endinv.comment.row2": "0 is AUTO, with GUI size limited max suit rows. Too big value so.",
-  "config.endinv.comment.sort_type": "Sort type"
+  "config.endinv.comment.sort_type": "Sort type",
+  "config.endinv.comment.max_stack_size": "Max stack size of itemstack, default to 2147483647",
+  "config.endinv.comment.enable_infinite1": "Take count up to max stack size item as infinity.",
+  "config.endinv.comment.enable_infinite2": "",
+  "config.endinv.comment.hidepages": "Hide page",
+  "sorttype.endinv.default": "Default sort type",
+  "sorttype.endinv.count": "Sort by count",
+  "sorttype.endinv.name": "Sort by namespace and name",
+  "sorttype.endinv.id": "Sort by sequence item registered",
+  "sorttype.endinv.last_modified": "Sort by last modified",
+  "search.endinv.prefix.sharp": "#->search by ItemTag",
+  "search.endinv.prefix.at": "@->search by Namespace",
+  "search.endinv.prefix.xor": "^->search by tooltip content",
+  "search.endinv.prefix.star": "*->search by item id/location"
 }

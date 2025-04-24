@@ -9,9 +9,10 @@ import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.menu.page.ItemDisplay;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
+import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.options.ItemClassify;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
@@ -57,6 +58,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
     public final List<DisplayPage> pages;
     public SortType sortType;
     public String searching;
+    private boolean reverseSort;
 
 
     //Client constructor
@@ -64,7 +66,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         var ret = new EndlessInventoryMenu(id,playerInv,null);
         if (Minecraft.getInstance().player != null) {
             SyncedConfig config = Minecraft.getInstance().player.getData(SYNCED_CONFIG);
-            ret.init(config);
+            ret.init(config.pageData());
             ret.addStandardInventorySlots(playerInv, 8, 18 * ret.getRowCount() + 18 + 13);
         }
 
@@ -75,7 +77,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         EndlessInventory endlessInventory = getEndInvForPlayer(player);
         SyncedConfig config = player.getData(SYNCED_CONFIG);
         var ret = new EndlessInventoryMenu(i,inventory,endlessInventory);
-        ret.init(config);
+        ret.init(config.pageData());
         ret.addStandardInventorySlots(inventory, 8, 18 * ret.getRowCount() + 18 + 13);
         return ret;
     }
@@ -101,7 +103,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         this.searching = searching;
         this.switchPageWithId(pageId);
     }
-    private void init(SyncedConfig config){
+    private void init(PageData config){
         init(config.rows()-4,config.sortType(),config.search(),config.pageId());//4: reserved rows for inventory.
     }
     //build pages by default registered item classifies on server and with config hiding pages on client.
@@ -161,12 +163,8 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         this.itemSize.set(i);
     }
 
-    public int calculateRowCount() {
-        return displayingPage.calculateRowCount();
-    }
-
     public float subtractInputFromScroll(float scrollOffs, double input) {
-        return Mth.clamp(scrollOffs - (float)(input / (double)this.calculateRowCount()), 0.0F, 1.0F);
+        return Mth.clamp(scrollOffs - (float)(input / (double)this.rowsData.get()), 0.0F, 1.0F);
     }
 
     public boolean enableInfinity(){
@@ -206,6 +204,11 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
 
     public int getRowCount(){
         return  this.rowsData.get();
+    }
+
+    @Override
+    public int getColumnCount() {
+        return 9;
     }
 
     /**Override {@link AbstractContainerMenu#clicked(int, int, ClickType, Player)}
@@ -311,6 +314,20 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
     @Override
     public void setSortType(SortType sortType) {
         this.sortType = sortType;
+    }
+
+    @Override
+    public boolean isSortReversed() {
+        return reverseSort;
+    }
+
+    @Override
+    public void switchSortReversed() {
+        reverseSort=!reverseSort;
+    }
+    @Override
+    public void setSortReversed(boolean reversed) {
+        this.reverseSort = reversed;
     }
 
     @Override

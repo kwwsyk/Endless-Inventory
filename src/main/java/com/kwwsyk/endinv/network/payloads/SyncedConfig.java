@@ -2,11 +2,12 @@ package com.kwwsyk.endinv.network.payloads;
 
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.client.config.ClientConfig;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -20,66 +21,100 @@ import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 /**Synced endless inventory config data across server player (attached) data and
  *  client ClientConfig of player.
  *  Used before open menu.
- * @param rows
+ *
  */
-public record SyncedConfig(int rows, int pageId, SortType sortType,String search,boolean attaching) implements CustomPacketPayload {
+public record SyncedConfig(PageData pageData,boolean attaching) implements CustomPacketPayload {
 
-    public static final SyncedConfig DEFAULT = new SyncedConfig(15,0,SortType.DEFAULT,"",true);
+    public static final SyncedConfig DEFAULT = new SyncedConfig(PageData.DEFAULT,true);
     public static final Codec<SyncedConfig> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                    Codec.INT.optionalFieldOf("rows", 15).forGetter(SyncedConfig::rows),
-                    Codec.INT.optionalFieldOf("pageId",0).forGetter(SyncedConfig::pageId),
-                    SortType.CODEC.optionalFieldOf("sortType",SortType.DEFAULT).forGetter(SyncedConfig::sortType),
-                    Codec.STRING.optionalFieldOf("searching","").forGetter(SyncedConfig::search),
+                    PageData.CODEC.optionalFieldOf("page_data",PageData.DEFAULT).forGetter(SyncedConfig::pageData),
                     Codec.BOOL.optionalFieldOf("attaching",true).forGetter(SyncedConfig::attaching)
             ).apply(instance, SyncedConfig::new)
     );
     public static final Type<SyncedConfig> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"endinv_settings"));
     public static final StreamCodec<ByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.INT, SyncedConfig::rows,
-            ByteBufCodecs.INT, SyncedConfig::pageId,
-            SortType.STREAM_CODEC,SyncedConfig::sortType,
-            ByteBufCodecs.STRING_UTF8,SyncedConfig::search,
+            PageData.STREAM_CODEC,SyncedConfig::pageData,
             ByteBufCodecs.BOOL,SyncedConfig::attaching,
             SyncedConfig::new
     );
-    public SyncedConfig ofRowChanged(int rows){
-        return new SyncedConfig(rows,this.pageId,this.sortType,this.search,this.attaching);
-    }
-    public SyncedConfig pageIdChanged(int id){
-        return new SyncedConfig(this.rows,id,this.sortType,this.search,this.attaching);
-    }
-    public SyncedConfig sortTypeChanged(SortType sortType){
-        return new SyncedConfig(this.rows,this.pageId,sortType,this.search,this.attaching);
-    }
-    public SyncedConfig searchingChanged(String searching){
-        return new SyncedConfig(this.rows,this.pageId,this.sortType,searching,this.attaching);
-    }
-    public static void syncClientConfigToServer(){
+
+    /**
+     * Used when player is not viewing EndInv.
+     * e.g. player joined world or player opened menu screen with EndInv attaching allowed.
+     */
+    public static void readAndSyncClientConfigToServer(){
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
-            int rows = ClientConfig.CONFIG.ROWS.getAsInt();
-            if(rows==0){
-                rows = ClientConfig.CONFIG.calculateDefaultRowCount();
-            }
-            SyncedConfig config = player.getData(SYNCED_CONFIG).ofRowChanged(rows);
+            SyncedConfig config = readClientConfig();
             player.setData(SYNCED_CONFIG,config);
             PacketDistributor.sendToServer(config);
         }
     }
+
+    /**
+     * Used when player changed page param in client page.
+     * @param config new config
+     */
     public static void updateClientConfigAndSync(SyncedConfig config){
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
             int rows = ClientConfig.CONFIG.ROWS.getAsInt();
             if(rows==0){
                 rows = ClientConfig.CONFIG.calculateDefaultRowCount();
             }
-            SyncedConfig config1 = config.ofRowChanged(rows);
+            int columns = ClientConfig.CONFIG.COLUMNS.getAsInt();
+            if(columns==0){
+                columns = 9;
+                if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
+                && ClientConfig.CONFIG.AUTO_SUIT_COLUMN.getAsBoolean()){
+                    columns = Math.min(9,ClientConfig.CONFIG.calculateSuitInColumnCount(screen));
+                }
+            }
+            SyncedConfig config1 = new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns), config.attaching);
             player.setData(SYNCED_CONFIG,config1);
             PacketDistributor.sendToServer(config1);
         }
     }
+    public static SyncedConfig readClientConfig(){
+        if(Minecraft.getInstance().player instanceof LocalPlayer player){
+            int rows = ClientConfig.CONFIG.ROWS.getAsInt();
+            if(rows==0){
+                rows = ClientConfig.CONFIG.calculateDefaultRowCount();
+            }
+            int columns = ClientConfig.CONFIG.COLUMNS.getAsInt();
+            if(columns==0){
+                columns = 9;
+            }
+            if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
+                    && ClientConfig.CONFIG.AUTO_SUIT_COLUMN.getAsBoolean()){
+                columns = Math.min(ClientConfig.CONFIG.calculateSuitInColumnCount(screen),columns);
+            }
+            SyncedConfig config = player.getData(SYNCED_CONFIG);
+            return new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns),ClientConfig.CONFIG.ATTACHING.getAsBoolean());
+        }else throw new IllegalStateException("Unable to read client config, as running on server or player is not existing.");
+    }
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    public SyncedConfig pageIdChanged(int pageId) {
+        return new SyncedConfig(pageData.pageIdChanged(pageId),attaching);
+    }
+
+    public SyncedConfig searchingChanged(String searching) {
+        return new SyncedConfig(pageData.searchingChanged(searching),attaching);
+    }
+
+    public SyncedConfig sortTypeChanged(SortType type) {
+        return new SyncedConfig(pageData.sortTypeChanged(type),attaching);
+    }
+
+    public SyncedConfig ofReverseSort() {
+        return new SyncedConfig(pageData.ofReverseSort(),attaching);
+    }
+
+    public SyncedConfig ofRowChanged(int rows) {
+        return new SyncedConfig(pageData.ofRowChanged(rows),attaching);
     }
 }

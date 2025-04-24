@@ -2,7 +2,7 @@ package com.kwwsyk.endinv.client.gui.widget;
 
 import com.kwwsyk.endinv.client.gui.SortTypeSwitcher;
 import com.kwwsyk.endinv.client.gui.bg.ScreenRectangleWidgetParam;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -22,7 +22,7 @@ public class SortTypeSwitchBox extends AbstractWidget {
     public SortTypeSwitchBox(SortTypeSwitcher screen,int x, int y, int width, int height){
         super(x,y,width,height, Component.empty());
         this.screen = screen;
-        this.visible = screen.getMenu().getDisplayingPage().hasSortTypeSwitchBar();
+        this.visible = screen.getPageMetadata().getDisplayingPage().hasSortTypeSwitchBar();
         this.x = x;
         this.y = y;
         this.singleBoxHeight = height;
@@ -78,16 +78,18 @@ public class SortTypeSwitchBox extends AbstractWidget {
         guiGraphics.fill(x+1,y+1,x+width-1,y+singleBoxHeight-1,0xff000000);
         if(isHoveringOnSingleBox(mouseY,y))
             guiGraphics.fillGradient(RenderType.guiOverlay(),x,y,x+width,y+singleBoxHeight,0x80ffffff,0x80ffffff,0);
-        SortType sortType = screen.getMenu().sortType();
+        SortType sortType = screen.getPageMetadata().sortType();
         String s = sortType.toString();
         guiGraphics.drawString(screen.getScreen().getMinecraft().font, s,x+2,y+2,0xffffffff);
         if(isOpen){
             int y1 = y+singleBoxHeight;
             for(SortType type : SortType.values()){
-                guiGraphics.fill(x,y1,x+width,y1+singleBoxHeight,0xff888888);
-                guiGraphics.fill(x+1,y1+1,x+width-1,y1+singleBoxHeight-1,0xff000000);
-                if(isHoveringOnSingleBox(mouseY,y1))
-                    guiGraphics.fillGradient(RenderType.guiOverlay(),x,y1,x+width,y1+singleBoxHeight,0x80ffffff,0x80ffffff,0);
+                guiGraphics.fill(RenderType.gui(),x,y1,x+width,y1+singleBoxHeight,0,0xff888888);
+                guiGraphics.fill(RenderType.gui(),x+1,y1+1,x+width-1,y1+singleBoxHeight-1,0,0xff000000);
+                if(isHoveringOnSingleBox(mouseY,y1)) {
+                    guiGraphics.fillGradient(RenderType.guiOverlay(), x, y1, x + width, y1 + singleBoxHeight, 0x80ffffff, 0x80ffffff, 0);
+                    guiGraphics.renderTooltip(screen.getScreen().getMinecraft().font,Component.translatable(type.translationKey),mouseX,mouseY);
+                }
                 s = type.toString();
                 guiGraphics.drawString(screen.getScreen().getMinecraft().font, s,x+2,y1+2,0xffffffff);
                 y1+=singleBoxHeight;

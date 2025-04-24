@@ -204,7 +204,7 @@ public abstract class MenuClickHandler {
     public static void handleVanillaSwap(AbstractContainerMenu menu, int slotId, int button, Player player){
         Inventory inventory = player.getInventory();
         ItemStack inventoryItem = inventory.getItem(button);
-        Slot hoveringSlot = (Slot)menu.slots.get(slotId);
+        Slot hoveringSlot = menu.slots.get(slotId);
         ItemStack hoveringSlotItem = hoveringSlot.getItem();
         if (!inventoryItem.isEmpty() || !hoveringSlotItem.isEmpty()) {
             if (inventoryItem.isEmpty()) {
@@ -259,7 +259,7 @@ public abstract class MenuClickHandler {
     }
     public static void handleClone(AbstractContainerMenu menu, int slotId, int button,  Player player){
         if(player.hasInfiniteMaterials() && menu.getCarried().isEmpty() && slotId >= 0){
-            Slot slot4 = (Slot)menu.slots.get(slotId);
+            Slot slot4 = menu.slots.get(slotId);
             if (slot4.hasItem()) {
                 ItemStack itemstack5 = slot4.getItem();
                 menu.setCarried(itemstack5.copyWithCount(itemstack5.getMaxStackSize()));
@@ -303,7 +303,7 @@ public abstract class MenuClickHandler {
     
     public static void vanillaPickupAll(AbstractContainerMenu menu, int slotId, int button,  Player player){
         if (slotId >= 0) {
-            Slot slot2 = (Slot)menu.slots.get(slotId);
+            Slot slot2 = menu.slots.get(slotId);
             ItemStack itemstack4 = menu.getCarried();
             if (!itemstack4.isEmpty() && (!slot2.hasItem() || !slot2.mayPickup(player))) {
                 int l1 = button == 0 ? 0 : menu.slots.size() - 1;
@@ -311,7 +311,7 @@ public abstract class MenuClickHandler {
 
                 for(int l2 = 0; l2 < 2; ++l2) {
                     for(int l3 = l1; l3 >= 0 && l3 < menu.slots.size() && itemstack4.getCount() < itemstack4.getMaxStackSize(); l3 += i2) {
-                        Slot slot8 = (Slot)menu.slots.get(l3);
+                        Slot slot8 = menu.slots.get(l3);
                         if (slot8.hasItem() && canItemQuickReplace(slot8, itemstack4, true) && slot8.mayPickup(player) && menu.canTakeItemForPickAll(itemstack4, slot8)) {
                             ItemStack itemstack11 = slot8.getItem();
                             if (l2 != 0 || itemstack11.getCount() != itemstack11.getMaxStackSize()) {

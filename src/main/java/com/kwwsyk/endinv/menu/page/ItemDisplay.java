@@ -3,7 +3,10 @@ package com.kwwsyk.endinv.menu.page;
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.SourceInventory;
+import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
+import com.kwwsyk.endinv.events.ScreenAttachment;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
+import com.kwwsyk.endinv.network.payloads.ItemDisplayItemModPayload;
 import com.kwwsyk.endinv.network.payloads.PageMetadata;
 import com.kwwsyk.endinv.network.payloads.PageStatePayload;
 import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
@@ -11,11 +14,11 @@ import com.kwwsyk.endinv.options.ItemClassify;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
@@ -43,18 +46,14 @@ public class ItemDisplay extends DisplayPage{
     }
 
     public void scrollTo(float pos){
-        int startIndex = getRowIndexForScroll(pos)*9;
+        int startIndex = getRowIndexForScroll(pos)*metadata.getColumnCount();
         this.init(startIndex,this.length);
     }
 
-    @Override
-    public int calculateRowCount() {
-        return Mth.positiveCeilDiv(length,9);
-    }
 
     /**Change displayed items of EndInv
      * @param startIndex the index of the item first displayed in EndInv
-     * @param length the count of the item should be displayed, should equal to 9*rows
+     * @param length the count of the item should be displayed, should equal to rows*columns
      */
     public void init(int startIndex, int length) {
         this.startIndex = startIndex;
@@ -71,8 +70,9 @@ public class ItemDisplay extends DisplayPage{
     public void refreshItems(){
         if(!suppressRefresh) {
             EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
-            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length, metadata.sortType(), getItemClassify().value(), metadata.searching());
-
+            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,
+                    metadata.sortType(),metadata.isSortReversed(),
+                    getItemClassify().value(), metadata.searching());
             initializeContents(view);
             this.suppressRefresh = true;
         }
@@ -230,20 +230,49 @@ public class ItemDisplay extends DisplayPage{
         int columnIndex = 0;
         for(ItemStack stack : items){
             guiGraphics.renderItem(stack,x+columnIndex*18,y+rowIndex*18+1,columnIndex+rowIndex*180);
-            guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack,x+columnIndex*18,y+rowIndex*18+1);
+            if(!isHiddenBySortBox(rowIndex,columnIndex))
+                guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack,x+columnIndex*18,y+rowIndex*18+1, getDisplayAmount(stack));
             columnIndex++;
-            if(columnIndex>=9){
+            if(columnIndex>= metadata.getColumnCount()){
                 columnIndex=0;
                 rowIndex++;
             }
         }
         guiGraphics.pose().popPose();
     }
+    protected boolean isHiddenBySortBox(int rowIndex, int columnIndex){
+        return rowIndex<=2 && columnIndex<=3 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen && (
+                screen instanceof EndlessInventoryScreen EIS && EIS.sortTypeSwitchBox.isOpen() && columnIndex <=2
+                || ScreenAttachment.ATTACHMENT_MANAGER.get(screen)!=null && ScreenAttachment.ATTACHMENT_MANAGER.get(screen).sortTypeSwitchBox.isOpen()
+                );
+    }
+    public static String getDisplayAmount(ItemStack stack){
+        int count = stack.getCount();
+        double value;
+        String suffix;
+
+        if (count >= 1_000_000_000) {
+            value = count / 1_000_000_000.0;
+            suffix = "b";
+        } else if (count >= 1_000_000) {
+            value = count / 1_000_000.0;
+            suffix = "m";
+        } else if (count >= 1_000) {
+            value = count / 1_000.0;
+            suffix = "k";
+        } else {
+            return String.valueOf(count);
+        }
+
+        return String.format("%.1f%s", value, suffix);
+    }
+
     public void renderHovering(GuiGraphics graphics, int mouseX, int mouseY, float partialTick){
         renderSlotHighlight(graphics, mouseX, mouseY, partialTick);
         int hoveringSlot = getSlotForMouseOffset(mouseX-leftPos,mouseY-topPos);
         if(hoveringSlot>=0&&hoveringSlot<items.size()){
             ItemStack hovering = items.get(hoveringSlot);
+            if(hovering.isEmpty()) return;
             graphics.pose().pushPose();
             graphics.pose().translate(0,0,550.0F);
             graphics.renderTooltip(Minecraft.getInstance().font,
@@ -254,13 +283,14 @@ public class ItemDisplay extends DisplayPage{
         }
     }
     protected void renderSlotHighlight(GuiGraphics graphics, int mouseX, int mouseY, float partialTick){
-        for(int u=0;u<9;++u){
-            for(int v=0;v<calculateRowCount();++v){
+        for(int u=0;u<metadata.getColumnCount();++u){
+            for(int v=0;v<metadata.getRowCount();++v){
                 int x1 = leftPos+18*u-1;
                 int x2 = leftPos+18*u+16;
                 int y1 = topPos+18*v+1;
                 int y2 = topPos+18*v+18;
                 if(mouseX>x1 && mouseX<x2 && mouseY>y1 && mouseY<y2){
+                    if(!metadata.getMenu().getCarried().isEmpty()) return;
                     graphics.fillGradient(RenderType.guiOverlay(),x1,y1,x2,y2,0x80ffffff,0x80ffffff,0);
                 }
             }
@@ -302,8 +332,8 @@ public class ItemDisplay extends DisplayPage{
         }
     }
     public int getSlotForMouseOffset(double XOffset,double YOffset){
-        if(XOffset<0||YOffset<0||XOffset>9*18||YOffset>18*calculateRowCount()) return -1;
-        return (int)XOffset/18 + 9*((int)YOffset/18);
+        if(XOffset<0||YOffset<0||XOffset>18*metadata.getColumnCount()||YOffset>18*metadata.getRowCount()) return -1;
+        return (int)XOffset/18 + metadata.getColumnCount()*((int)YOffset/18);
     }
     @Override
     public ItemStack tryQuickMoveStackTo(ItemStack stack) {
@@ -317,12 +347,12 @@ public class ItemDisplay extends DisplayPage{
     @Override
     public void syncContentToServer() {
         if(srcInv.isRemote()){
-            PacketDistributor.sendToServer(new PageMetadata(startIndex,length, metadata.getPlayer().getData(ModInitializer.SYNCED_CONFIG)));
+            PacketDistributor.sendToServer(new PageMetadata(startIndex,length, metadata.getPlayer().getData(ModInitializer.SYNCED_CONFIG).pageData()));
         }
     }
     public void syncContentToClient(ServerPlayer player){
         EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
-        List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length, metadata.sortType(), getItemClassify().value(), metadata.searching());
+        List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length, metadata.sortType(), metadata.isSortReversed(), getItemClassify().value(), metadata.searching());
 
         NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
         for(int i=0;i< view.size();++i){
@@ -340,6 +370,9 @@ public class ItemDisplay extends DisplayPage{
         ItemStack carried = metadata.getMenu().getCarried();
         if(!carried.isEmpty()){
             ItemStack remain = addItem(carried.copy());
+            if(metadata.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu){
+                PacketDistributor.sendToServer(new ItemDisplayItemModPayload(carried.copy(),true));
+            }
             metadata.getMenu().setCarried(remain);
             setChanged();
         }else{

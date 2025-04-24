@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 /**Send to server,
  * to open {@link com.kwwsyk.endinv.menu.EndlessInventoryMenu} when player is not opening a menu,
  * or to mention server to attach an {@link com.kwwsyk.endinv.menu.page.pageManager.AttachingManager} if player is opening a menu.
- * @param menuType correspond menu type,{@link ModInitializer#ENDLESS_INVENTORY_MENU_TYPE} as default in opening a new or {@link net.minecraft.world.inventory.InventoryMenu}
  */
 public record OpenEndInvPayload(boolean openNew) implements CustomPacketPayload {
 

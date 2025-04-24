@@ -7,7 +7,7 @@ import com.kwwsyk.endinv.menu.page.pageManager.AttachingManager;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.network.payloads.*;
 import com.kwwsyk.endinv.options.ItemClassify;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
@@ -51,14 +51,15 @@ public abstract class ServerPayloadHandler {
             int startIndex = payload.startIndex();
             int length = payload.length();
             SortType sortType = payload.sortType();
-            menu.switchPageWithId(payload.config().pageId());
+            menu.switchPageWithId(payload.pageData().pageId());
             ItemClassify classify = menu.getDisplayingPage().getItemClassify().value();
             String search = payload.search();
 
             menu.setSortType(sortType);
+            menu.setSortReversed(payload.pageData().reverseSort());
             menu.setSearching(search);
 
-            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,sortType,classify,search);
+            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,sortType,payload.pageData().reverseSort(),classify,search);
 
             NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
             for(int i=0;i< view.size();++i){
@@ -117,5 +118,22 @@ public abstract class ServerPayloadHandler {
             manager.sendEndInvMetadataToRemote();
         }
 
+    }
+
+    public static void handleItemDisplayItemMod(ItemDisplayItemModPayload payload, IPayloadContext iPayloadContext) {
+        ServerPlayer player = (ServerPlayer) iPayloadContext.player();
+        if(player.containerMenu.getCarried().isEmpty() && player.hasInfiniteMaterials()){
+            PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
+            if(manager==null) return;
+            if(manager.getDisplayingPage() instanceof ItemDisplay itemDisplay){
+                if(payload.isAdding()){
+                    itemDisplay.addItem(payload.stack());
+                }else {
+                    ItemStack taken = itemDisplay.takeItem(payload.stack());
+                    if(taken.isEmpty()) return;
+                    player.containerMenu.setCarried(taken);
+                }
+            }
+        }
     }
 }

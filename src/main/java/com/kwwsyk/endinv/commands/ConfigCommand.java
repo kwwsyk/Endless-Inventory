@@ -40,7 +40,7 @@ public class ConfigCommand {
             source.sendFailure(Component.literal("This player has not EndInv."));
             return 0;
         }
-        int ret = serverPlayer.getData(SYNCED_CONFIG).rows();
+        int ret = serverPlayer.getData(SYNCED_CONFIG).pageData().rows();
         source.sendSuccess(()-> Component.literal(""+ret),true);
         return ret;
     }

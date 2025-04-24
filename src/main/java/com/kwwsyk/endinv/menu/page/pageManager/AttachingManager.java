@@ -5,9 +5,10 @@ import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
+import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.options.ItemClassify;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -33,23 +34,27 @@ public class AttachingManager implements PageMetaDataManager{
     public SortType sortType;
     public String searching;
     private int rows;
+    private int columns;
+    private boolean reverseSort;
+
     public AttachingManager(AbstractContainerMenu menu, EndlessInventory endinv, ServerPlayer player){
         this.menu = menu;
         this.endinv = endinv;
         this.player = player;
         this.pages = buildPages();
         SyncedConfig config = player.getData(SYNCED_CONFIG);
-        init(config);
+        init(config.pageData());
         this.quickMoveHandler = new PageQuickMoveHandler(this);
     }
-    private void init(int rows, SortType sortType, String searching, int pageId){
+    private void init(int rows,int columns, SortType sortType, String searching, int pageId){
         this.rows = rows;
+        this.columns = columns;
         this.sortType = sortType;
         this.searching = searching;
         this.switchPageWithId(pageId);
     }
-    private void init(SyncedConfig config){
-        init(config.rows(),config.sortType(),config.search(),config.pageId());
+    private void init(PageData data){
+        init(data.rows(),data.columns(),data.sortType(),data.search(),data.pageId());
     }
 
     private List<DisplayPage> buildPages(){
@@ -87,12 +92,17 @@ public class AttachingManager implements PageMetaDataManager{
     public void switchPageWithIndex(int index) {
         this.displayingPageIndex = index;
         this.displayingPage = pages.get(index);
-        this.displayingPage.init(0,9*rows);
+        this.displayingPage.init(0,rows*columns);
     }
 
     @Override
     public int getRowCount() {
         return rows;
+    }
+
+    @Override
+    public int getColumnCount() {
+        return columns;
     }
 
     @Override
@@ -128,6 +138,21 @@ public class AttachingManager implements PageMetaDataManager{
     @Override
     public void setSortType(SortType sortType) {
         this.sortType = sortType;
+    }
+
+    @Override
+    public boolean isSortReversed() {
+        return this.reverseSort;
+    }
+
+    @Override
+    public void switchSortReversed() {
+        this.reverseSort = !this.reverseSort;
+    }
+
+    @Override
+    public void setSortReversed(boolean reversed) {
+        this.reverseSort = reversed;
     }
 
     @Override

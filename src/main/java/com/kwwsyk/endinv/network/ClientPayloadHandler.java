@@ -24,7 +24,7 @@ public abstract class ClientPayloadHandler {
         if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen){
             AttachedScreen<?> attachedScreen = ScreenAttachment.ATTACHMENT_MANAGER.get(screen);
             if(attachedScreen==null) return null;
-            return attachedScreen.getMenu();
+            return attachedScreen.getPageMetadata();
         }
         return null;
     }

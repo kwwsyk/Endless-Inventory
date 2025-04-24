@@ -4,8 +4,10 @@ package com.kwwsyk.endinv;
 import com.kwwsyk.endinv.data.EndlessInventoryData;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.ServerConfig;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SearchUtil;
+import com.kwwsyk.endinv.util.SortType;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -47,12 +49,8 @@ public class EndlessInventory implements SourceInventory{
         this.infinityMode = ServerConfig.CONFIG.ENABLE_INFINITE.getAsBoolean();
     }
 
-    public List<ItemStack> getSortedPage(SortType type, int start, int length) {
-        List<ItemStack> base = getSortedView(type);
-        return base.subList(start, Math.min(start + length, base.size()));
-    }
 
-    private List<ItemStack> getSortedView(SortType type) {
+    private List<ItemStack> getSortedView(SortType type, boolean reverse) {
         int idx = type.ordinal();
         if (sortStates[idx] != modState || sortedViews[idx] == null) {
             List<ItemStack> view = itemMap.entrySet().stream()
@@ -61,15 +59,17 @@ public class EndlessInventory implements SourceInventory{
 
             switch (type) {
                 case COUNT -> view.sort(Comparator.comparingInt(ItemStack::getCount));
-                //case ID -> view.sort(Comparator.comparing(s -> s.getItem().builtInRegistryHolder().key().location().toString()));
-                case ID -> view.sort(byId);
+                case SPACE_AND_NAME -> view.sort(byId);
+                case ID -> view.sort(REGISTRY_ORDER_COMPARATOR);
                 case LAST_MODIFIED -> view.sort(Comparator.comparingLong(s -> itemMap.get(s.copyWithCount(1)).lastModified()));
                 default -> {}
             }
             sortedViews[idx] = view;
             sortStates[idx] = modState;
         }
-        return sortedViews[idx];
+        var ret = sortedViews[idx];
+        if(reverse) ret = ret.reversed();
+        return ret;
     }
 
     Comparator<ItemStack> byId = Comparator.comparing(
@@ -78,10 +78,16 @@ public class EndlessInventory implements SourceInventory{
                     .map(Object::toString)
                     .orElse("~") // 如果未注册，排在最前
     );
+    Comparator<ItemStack> REGISTRY_ORDER_COMPARATOR = Comparator.comparingInt(
+            stack -> BuiltInRegistries.ITEM.getId(stack.getItem())
+    );
 
-    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, ItemClassify classify, String search){
-        Stream<ItemStack> base = getSortedView(sortType).stream();
-        List<ItemStack> filtered = base.filter(classify::matches).toList();
+    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType,boolean reverse, ItemClassify classify, String search){
+        Stream<ItemStack> base = getSortedView(sortType,reverse).stream();
+        List<ItemStack> filtered = base
+                .filter(classify::matches)
+                .filter(stack -> SearchUtil.matchesSearch(stack,search))
+                .toList();
         if(startIndex>= filtered.size()) return new ArrayList<>();
         return filtered.subList(startIndex,Math.min(startIndex+length,filtered.size()));
     }

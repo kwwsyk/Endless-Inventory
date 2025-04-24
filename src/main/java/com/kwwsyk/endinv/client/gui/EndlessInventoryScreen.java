@@ -1,16 +1,16 @@
 package com.kwwsyk.endinv.client.gui;
 
-import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.client.gui.bg.FromResource;
+import com.kwwsyk.endinv.client.gui.bg.ScreenBgRenderer;
 import com.kwwsyk.endinv.client.gui.bg.ScreenLayoutMode;
 import com.kwwsyk.endinv.client.gui.bg.ScreenRectangleWidgetParam;
-import com.kwwsyk.endinv.client.gui.bg.ScreenRenderer;
 import com.kwwsyk.endinv.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
+import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.network.payloads.PageClickPayload;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,7 +27,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
@@ -35,7 +37,6 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
 
     private int containerRows;
     private float scrollOffs = 0;
-    private final ClientConfig clientConfig;
     public Button configButton;
     public EditBox searchBox;
     private ScreenLayoutMode screenLayoutMode;
@@ -43,7 +44,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     private ScreenRectangleWidgetParam pageSwitchTabParam;
     private ScreenRectangleWidgetParam searchBoxParam;
     private ScreenRectangleWidgetParam sortTypeSwitchBoxParam;
-    private ScreenRenderer screenRenderer;
+    private ScreenBgRenderer screenBgRenderer;
     private int pageX;
     private int pageY;
     private int pageXSize;
@@ -60,12 +61,11 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     public boolean isHoveringOnPageSwitchTab;
     private int roughMouseX;
     private int roughMouseY;
-    private SortTypeSwitchBox sortTypeSwitchBox;
+    public SortTypeSwitchBox sortTypeSwitchBox;
+    private Button sorttypeReverseButton;
 
     public EndlessInventoryScreen(EndlessInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-
-        this.clientConfig = ClientConfig.CONFIG;
 
         this.refresh();
     }
@@ -75,40 +75,40 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         this.inventoryLabelY = this.imageHeight - 94;
     }
     protected void setScreenTextureAndLayoutMode(){
-        if(this.clientConfig.LAYOUT.getAsInt()!=0){
-            this.leftPos=32;
-            this.topPos=0;
-            this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
-            this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 116, this.topPos + 6, 80, 9);
-            this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
-            this.screenRenderer = FromResource.createLeftMode(this);
-        }else {
-            this.leftPos = (this.width - this.imageWidth) / 2;
-            this.topPos = (this.height - this.imageHeight) / 2;
-            this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
-            this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 89, this.topPos + 5, 80, 12);
-            this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
-            this.screenRenderer = FromResource.createDefaultMode(this);
-        }
+        this.leftPos = (this.width - this.imageWidth) / 2;
+        this.topPos = (this.height - this.imageHeight) / 2;
+        this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
+        this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 89, this.topPos + 5, 80, 12);
+        this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
+        this.screenBgRenderer = FromResource.createDefaultMode(this);
     }
 
     public void init(){
         setScreenTextureAndLayoutMode();
-        this.screenRenderer.init();
-        pageX = screenRenderer.screenLayoutMode().menuXPos()+8;
-        pageY = screenRenderer.screenLayoutMode().menuYPos()+17;
+        this.screenBgRenderer.init();
+        pageX = screenBgRenderer.screenLayoutMode().menuXPos()+8;
+        pageY = screenBgRenderer.screenLayoutMode().menuYPos()+17;
         pageXSize = 9*18;
         pageYSize = containerRows*18;
 
         this.configButton = Button.builder(Component.literal("⚙"),
                         btn -> {
-                            // 打开设置界面
                             if (this.minecraft != null) {
                                 //this.minecraft.setScreen(new EndInvSettingsScreen(this)); // 你可自定义这个 Screen
                             }
                         })
                 .pos(this.configButtonParam.XPos(),this.configButtonParam.YPos())
                 .size(this.configButtonParam.XSize(),this.configButtonParam.YSize())
+                .build();
+        this.sorttypeReverseButton = Button.builder(Component.literal("⇅"),
+                btn->{
+                    menu.switchSortReversed();
+                    SyncedConfig.updateClientConfigAndSync(menu.player.getData(SYNCED_CONFIG).ofReverseSort());
+                    menu.syncContent();
+                }
+                )
+                .pos(sortTypeSwitchBoxParam.XPos()+sortTypeSwitchBoxParam.XSize()+2,sortTypeSwitchBoxParam.YPos())
+                .size(sortTypeSwitchBoxParam.YSize(),sortTypeSwitchBoxParam.YSize())
                 .build();
         this.searchBox = new EditBox(this.font,
                 this.searchBoxParam.XPos(),this.searchBoxParam.YPos(),this.searchBoxParam.XSize(),this.searchBoxParam.YSize()
@@ -120,6 +120,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         addRenderableWidget(configButton);
         addRenderableWidget(searchBox);
         addRenderableWidget(sortTypeSwitchBox);
+        addRenderableWidget(sorttypeReverseButton);
     }
 
 
@@ -136,9 +137,17 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
 
         this.menu.getDisplayingPage().renderPage(gui, pageX, pageY);
         if(!isHoveringOnSortBox) this.menu.getDisplayingPage().renderHovering(gui,mouseX,mouseY,partialTick);
+        if(searchBox.isHovered() && !searchBox.isFocused()) gui.renderTooltip(minecraft.font, List.of(
+                Component.translatable("search.endinv.prefix.sharp"),
+                Component.translatable("search.endinv.prefix.at"),
+                Component.translatable("search.endinv.prefix.xor"),
+                Component.translatable("search.endinv.prefix.star")
+        ), Optional.empty(),mouseX,mouseY);
+        if(sorttypeReverseButton.isHovered()) gui.renderTooltip(minecraft.font,Component.translatable("button.endinv.reverse"),mouseX,mouseY);
         //模仿
         this.renderTooltip(gui,mouseX,mouseY);
     }
+
     public boolean mouseClicked(double mouseX, double mouseY, int keyCode){
         for(GuiEventListener guieventlistener : this.children()) {
             if (guieventlistener.mouseClicked(mouseX, mouseY, keyCode)) {
@@ -207,10 +216,10 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         return super.mouseClicked(mouseX,mouseY,keyCode);
     }
     protected int hasClickedOnPageSwitchBar(double mouseX, double mouseY){
-        double XOffset=mouseX- screenRenderer.pageSwitchBarParam().XPos();
-        double YOffset=mouseY- screenRenderer.pageSwitchBarParam().YPos();
-        if(XOffset<0 || XOffset> screenRenderer.pageSwitchBarParam().XSize()) return -1;
-        int index = (int)YOffset/ screenRenderer.pageSwitchBarParam().YSize();
+        double XOffset=mouseX- screenBgRenderer.pageSwitchBarParam().XPos();
+        double YOffset=mouseY- screenBgRenderer.pageSwitchBarParam().YPos();
+        if(XOffset<0 || XOffset> screenBgRenderer.pageSwitchBarParam().XSize()) return -1;
+        int index = (int)YOffset/ screenBgRenderer.pageSwitchBarParam().YSize();
         if(index<0||index>=menu.pages.size()) return -1;
         return index;
     }
@@ -371,7 +380,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
     @Override
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        this.screenRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
+        this.screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
     }
     @Override
     public void switchSortTypeTo(SortType type) {
@@ -387,6 +396,11 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
 
     @Override
+    public PageMetaDataManager getPageMetadata() {
+        return menu;
+    }
+
+    @Override
     public AbstractContainerScreen<?> getScreen() {
         return this;
     }
@@ -395,8 +409,9 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     public void onClose() {
         if (minecraft.player != null) {
             SyncedConfig config = minecraft.player.getData(SYNCED_CONFIG);
-            minecraft.player.setData(SYNCED_CONFIG,new SyncedConfig(containerRows,menu.getDisplayingPageId(),menu.sortType,menu.searching,config.attaching()));
-            PacketDistributor.sendToServer(minecraft.player.getData(SYNCED_CONFIG));
+            SyncedConfig.updateClientConfigAndSync(config.sortTypeChanged(menu.sortType)
+                    .searchingChanged(menu.searching)
+                    .pageIdChanged(menu.getDisplayingPageId()));
         }
         super.onClose();
     }

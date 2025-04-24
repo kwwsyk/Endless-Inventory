@@ -3,7 +3,9 @@ package com.kwwsyk.endinv.client.gui;
 import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.client.gui.bg.FromResource;
+import com.kwwsyk.endinv.client.gui.bg.ScreenLayoutMode;
 import com.kwwsyk.endinv.client.gui.bg.ScreenRectangleWidgetParam;
+import com.kwwsyk.endinv.client.gui.widget.PoseTranslatedEditBox;
 import com.kwwsyk.endinv.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
@@ -11,9 +13,10 @@ import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.menu.page.pageManager.PageQuickMoveHandler;
 import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
 import com.kwwsyk.endinv.network.payloads.PageClickPayload;
+import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.options.ItemClassify;
-import com.kwwsyk.endinv.options.SortType;
+import com.kwwsyk.endinv.util.SortType;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -33,6 +36,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 import static net.minecraft.client.gui.screens.Screen.hasShiftDown;
@@ -65,12 +69,17 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         public void switchPageWithIndex(int index) {
             displayingPage = pages.get(index);
             SyncedConfig.updateClientConfigAndSync(player.getData(SYNCED_CONFIG).pageIdChanged(displayingPage.pageId));
-            displayingPage.init(0,9*getRowCount());
+            displayingPage.init(0,rows*columns);
         }
 
         @Override
         public int getRowCount() {
             return rows;
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columns;
         }
 
         @Override
@@ -94,7 +103,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         }
 
         @Override
-        public ItemStack quickMoveFromPage(ItemStack stack) {//todo
+        public ItemStack quickMoveFromPage(ItemStack stack) {
             return quickMoveHandler.quickMoveFromPage(stack);
         }
 
@@ -106,6 +115,21 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         @Override
         public void setSortType(SortType sortType) {
             AttachedScreen.this.sortType = sortType;
+        }
+
+        @Override
+        public boolean isSortReversed() {
+            return reverseSort;
+        }
+
+        @Override
+        public void switchSortReversed() {
+            reverseSort = !reverseSort;
+        }
+
+        @Override
+        public void setSortReversed(boolean reversed) {
+            reverseSort = reversed;
         }
 
         @Override
@@ -151,27 +175,33 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
     private boolean doubleClick;
     private boolean skipNextRelease;
     private boolean ignoreTextInput;
-    private float scrollOffs;
+    private float scrollYOffs;
     private int roughMouseX;
     private int roughMouseY;
     private DisplayPage displayingPage;
     public final List<DisplayPage> pages;
     private int rows;
+    private int columns;
+
     public SortType sortType;
     public String searching;
     private Player player;
     private EndInvMetadata endInvMetadata;
+    public SortTypeSwitchBox sortTypeSwitchBox;
+    private boolean reverseSort;
+    private Button sorttypeReverseButton;
 
     public AttachedScreen(AbstractContainerScreen<T> screen){
         this.screen = screen;
         this.pages = buildPages();
         if (Minecraft.getInstance().player != null) {
             this.player = Minecraft.getInstance().player;
-            SyncedConfig config = player.getData(SYNCED_CONFIG);
-            this.rows = config.rows();
-            this.sortType = config.sortType();
-            this.searching=config.search();
-            pageMetadata.switchPageWithId(config.pageId());
+            PageData data = player.getData(SYNCED_CONFIG).pageData();
+            this.rows = data.rows();
+            this.columns = data.columns();
+            this.sortType = data.sortType();
+            this.searching=data.search();
+            pageMetadata.switchPageWithId(data.pageId());
         }
         this.endInvMetadata = new EndInvMetadata(0,Integer.MAX_VALUE,false);
         this.quickMoveHandler = new PageQuickMoveHandler(this.pageMetadata);
@@ -196,16 +226,21 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
     }
 
     public void init(ScreenEvent.Init.Post event){
-        this.leftPos=32;
-        this.topPos=0;
-        this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos, this.topPos,18,18);
-        this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 116, this.topPos + 6, 80, 9);
-        this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
-        this.screenRenderer = FromResource.createLeftMode(screen,pageMetadata);
+        this.leftPos=20;
+        this.topPos=20;
+        this.configButtonParam = new ScreenRectangleWidgetParam(0, this.topPos,20,20);
+        int yPos = this.topPos + 17+18*rows;
+        this.searchBoxParam =
+                new ScreenRectangleWidgetParam(this.leftPos+1, yPos, Math.min(320,18*columns+13), Math.min(20,screen.height-yPos));
+        this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 6,topPos + 5,77,12);
+        ScreenLayoutMode layoutMode = new ScreenLayoutMode(leftPos,topPos,true,
+                -1,-1);
+        ScreenRectangleWidgetParam pageSwitchBarParam = new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28);
+        this.screenRenderer = FromResource.createLeftMode(screen,pageMetadata,layoutMode,pageSwitchBarParam);
         this.screenRenderer.init();
         this.pageX = screenRenderer.screenLayoutMode().menuXPos() + 8;
         this.pageY = screenRenderer.screenLayoutMode().menuYPos() + 17;
-        this.pageXSize = 9 * 18;
+        this.pageXSize = columns*18;
         this.pageYSize = rows * 18;
 
         this.configButton = Button.builder(Component.literal("⚙"),
@@ -218,16 +253,27 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
                 .pos(this.configButtonParam.XPos(),this.configButtonParam.YPos())
                 .size(this.configButtonParam.XSize(),this.configButtonParam.YSize())
                 .build();
-        this.searchBox = new EditBox(screen.getMinecraft().font,
+        this.sorttypeReverseButton = Button.builder(Component.literal("⇅"),
+                        btn->{
+                            pageMetadata.switchSortReversed();
+                            SyncedConfig.updateClientConfigAndSync(pageMetadata.getPlayer().getData(SYNCED_CONFIG).ofReverseSort());
+                            pageMetadata.getDisplayingPage().syncContentToServer();
+                        }
+                )
+                .pos(sortTypeSwitchBoxParam.XPos()+sortTypeSwitchBoxParam.XSize()+2,sortTypeSwitchBoxParam.YPos())
+                .size(sortTypeSwitchBoxParam.YSize(),sortTypeSwitchBoxParam.YSize())
+                .build();
+        this.searchBox = new PoseTranslatedEditBox(screen.getMinecraft().font,
                 this.searchBoxParam.XPos(),this.searchBoxParam.YPos(),this.searchBoxParam.XSize(),this.searchBoxParam.YSize()
-                , Component.translatable("itemGroup.search"));
-        var sortTypeSwitchBox = new SortTypeSwitchBox(this, sortTypeSwitchBoxParam);
+                , Component.translatable("itemGroup.search"), 100.0F);
+        this.sortTypeSwitchBox = new SortTypeSwitchBox(this, sortTypeSwitchBoxParam);
 
         searchBox.setValue(pageMetadata.searching());
 
         event.addListener(configButton);
         event.addListener(searchBox);
         event.addListener(sortTypeSwitchBox);
+        event.addListener(sorttypeReverseButton);
     }
 
     public void renderPre(ScreenEvent.Render.Pre event) {
@@ -247,13 +293,19 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
 
         this.pageMetadata.getDisplayingPage().renderPage(guiGraphics, pageX, pageY);
         if(!isHoveringOnSortBox) this.pageMetadata.getDisplayingPage().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
-        //模仿
-        //this.renderTooltip(guiGraphics,mouseX,mouseY);
-
+        if(searchBox.isHovered() && !searchBox.isFocused()) guiGraphics.renderTooltip(screen.getMinecraft().font, List.of(
+                Component.translatable("search.endinv.prefix.sharp"),
+                Component.translatable("search.endinv.prefix.at"),
+                Component.translatable("search.endinv.prefix.xor"),
+                Component.translatable("search.endinv.prefix.star")
+        ), Optional.empty(),mouseX,mouseY);
+        if(sorttypeReverseButton.isHovered()) guiGraphics.renderTooltip(screen.getMinecraft().font,Component.translatable("button.endinv.reverse"),mouseX,mouseY);
     }
 
     protected boolean hasClickedOnPage(double mouseX,double mouseY){
-        return mouseX>=(double) pageX && mouseX<=(double)pageX+pageXSize && mouseY>=(double) pageY && mouseY<=(double) pageY+pageYSize && !isHoveringOnSortBox;
+        return mouseX>=(double) pageX && mouseX<=(double)pageX+pageXSize
+                && mouseY>=(double) pageY && mouseY<=(double) pageY+pageYSize
+                && !isHoveringOnSortBox;
     }
 
     public void mouseClicked(ScreenEvent.MouseButtonPressed.Pre event) {
@@ -271,7 +323,6 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
             double XOffset = mouseX - pageX;
             double YOffset = mouseY - pageY;
             InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
-            //assert this.minecraft != null;
             boolean isKeyPicking = screen.getMinecraft().options.keyPickItem.isActiveAndMatches(mouseKey);//is mouse middle button and enabled for pickup or clone
             long clickTime = Util.getMillis();
             this.doubleClick = keyCode == lastClickedButton && displayingPage.doubleClicked(XOffset, YOffset, lastCLickedX, lastClickedY, clickTime - lastClickedTime);
@@ -326,15 +377,15 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         if(index<0||index>= pageMetadata.getPages().size()) return -1;
         return index;
     }
-    protected void pageClicked(double mouseX, double mouseY, int keyCode, ClickType clickType){
+    protected void pageClicked(double XOffset, double YOffset, int keyCode, ClickType clickType){
         //menu.syncContent();
-        pageMetadata.getDisplayingPage().pageClicked(mouseX,mouseY,keyCode,clickType);
+        pageMetadata.getDisplayingPage().pageClicked(XOffset,YOffset,keyCode,clickType);
         PacketDistributor.sendToServer(
                 new PageClickPayload(
                         screen.getMenu().containerId,
                         pageMetadata.getDisplayingPageId(),
-                        mouseX,
-                        mouseY,
+                        XOffset,
+                        YOffset,
                         keyCode,
                         clickType
                 ));
@@ -400,8 +451,8 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
     public void mouseScrolled(ScreenEvent.MouseScrolled event) {
         double scrollY = event.getScrollDeltaY();
         if(pageMetadata.getDisplayingPage().canScroll()){
-            this.scrollOffs = this.pageMetadata.subtractInputFromScroll(this.scrollOffs,scrollY);
-            this.pageMetadata.scrollTo(scrollOffs);
+            this.scrollYOffs = this.pageMetadata.subtractInputFromScroll(this.scrollYOffs,scrollY);
+            this.pageMetadata.scrollTo(scrollYOffs);
         }
     }
 
@@ -448,24 +499,17 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         }
     }
 
-    public boolean charTyped(char codePoint, int modifiers){
-        if (this.ignoreTextInput) {
-            return false;
-        } else if (!pageMetadata.getDisplayingPage().hasSearchBar()) {
-            return false;
-        } else {
+    public void charTyped(ScreenEvent.CharacterTyped.Pre event){
+        char codePoint = event.getCodePoint();
+        int modifiers = event.getModifiers();
+        if (!this.ignoreTextInput && pageMetadata.getDisplayingPage().hasSearchBar() && this.searchBox.isFocused()) {
             String s = this.searchBox.getValue();
             if (this.searchBox.charTyped(codePoint, modifiers)) {
                 if (!Objects.equals(s, this.searchBox.getValue())) {
                     this.refreshSearchResults();
                 }
-
-                return true;
-            } else {
-                return false;
             }
         }
-
     }
 
     private void refreshSearchResults(){
@@ -489,7 +533,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
     }
 
     @Override
-    public PageMetaDataManager getMenu() {
+    public PageMetaDataManager getPageMetadata() {
         return pageMetadata;
     }
 

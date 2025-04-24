@@ -54,6 +54,11 @@ public class Reg {
                 OpenEndInvPayload.STREAM_CODEC,
                 ServerPayloadHandler::handleEndInvOpening
         );
+        registrar.playToServer(
+                ItemDisplayItemModPayload.TYPE,
+                ItemDisplayItemModPayload.STREAM_CODEC,
+                ServerPayloadHandler::handleItemDisplayItemMod
+        );
     }
     @SubscribeEvent
     public static void registerRegistries(NewRegistryEvent event){

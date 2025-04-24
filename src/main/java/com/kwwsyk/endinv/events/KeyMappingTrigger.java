@@ -23,7 +23,7 @@ public class KeyMappingTrigger {
         if (player == null) return;
 
         while (OPEN_ENDINV_KEY.consumeClick()) {
-            SyncedConfig.syncClientConfigToServer();
+            SyncedConfig.readAndSyncClientConfigToServer();
             PacketDistributor.sendToServer(new OpenEndInvPayload(true));
         }
     }

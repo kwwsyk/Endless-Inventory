@@ -43,12 +43,11 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
     }
     public abstract void scrollTo(float pos);
     public int getRowIndexForScroll(float scrollOffs) {
-        return Math.max((int)((double)(scrollOffs * (float)this.calculateRowCount()) + 0.5), 0);
+        return Math.max((int)((double)(scrollOffs * (float)metadata.getRowCount()) + 0.5), 0);
     }
     public float getScrollForRowIndex(int rowIndex) {
-        return Mth.clamp((float)rowIndex / (float)this.calculateRowCount(), 0.0F, 1.0F);
+        return Mth.clamp((float)rowIndex / (float)metadata.getRowCount(), 0.0F, 1.0F);
     }
-    public abstract int calculateRowCount();
     public abstract void init(int startIndex, int length);
 
     public void setChanged() {

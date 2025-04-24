@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
-public class FromResource implements ScreenRenderer {
+public class FromResource implements ScreenBgRenderer {
     private static final ResourceLocation BLANK_LOCATION = ResourceLocation.withDefaultNamespace("textures/gui/demo_background.png");
     private static final ResourceLocation CONTAINER_TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("textures/gui/container/generic_54.png");
     private static final ResourceLocation SCROLLER_SPRITE = ResourceLocation.withDefaultNamespace("container/creative_inventory/scroller");
@@ -25,8 +25,9 @@ public class FromResource implements ScreenRenderer {
     public ScreenRectangleWidgetParam configButtonParam;
     public ScreenRectangleWidgetParam pageSwitchTabParam;
     public ScreenRectangleWidgetParam searchBoxParam;
-    private int imageWidth;
-    private int containerRows;
+    private final int imageWidth;
+    private final int rows;
+    private final int columns;
     private PageMetaDataManager menu;
     private boolean shouldRenderPlayerInv = true;
 
@@ -35,35 +36,32 @@ public class FromResource implements ScreenRenderer {
         this.screen = screen;
         this.imageWidth = screen.getXSize();
         this.menu = screen.getMenu();
-        this.containerRows = menu.getRowCount();
+        this.rows = menu.getRowCount();
+        this.columns = 9;
         this.leftPos = screen.getGuiLeft();
         this.topPos = screen.getGuiTop();
     }
     public FromResource(AbstractContainerScreen<?> screen, PageMetaDataManager menu){
         this.screen = screen;
-        this.imageWidth = screen.getXSize();
+        this.imageWidth = 256;
         this.menu = menu;
-        this.containerRows = menu.getRowCount();
+        this.rows = menu.getRowCount();
+        this.columns = menu.getColumnCount();
         this.leftPos = screen.getGuiLeft();
         this.topPos = screen.getGuiTop();
     }
 
     public static FromResource createDefaultMode(EndlessInventoryScreen screen){
         FromResource ret = new FromResource(screen);
-        ret.screenLayoutMode = new ScreenLayoutMode(ret.leftPos,ret.topPos,false, ret.leftPos, ret.topPos + ret.containerRows*18+25);
+        ret.screenLayoutMode = new ScreenLayoutMode(ret.leftPos,ret.topPos,false, ret.leftPos, ret.topPos + ret.rows *18+25);
         ret.pageSwitchTabParam = new ScreenRectangleWidgetParam(ret.leftPos-32,ret.topPos+1,32,28);
         return ret;
     }
-    public static FromResource createLeftMode(EndlessInventoryScreen screen){
-        FromResource ret = new FromResource(screen);
-        ret.screenLayoutMode = new ScreenLayoutMode(ret.leftPos,ret.topPos,true, (screen.width-screen.getXSize())/2, (screen.height-screen.getYSize())/2);
-        ret.pageSwitchTabParam = new ScreenRectangleWidgetParam(ret.leftPos-32,ret.topPos+1,32,28);
-        return ret;
-    }
-    public static FromResource createLeftMode(AbstractContainerScreen<?> screen, PageMetaDataManager menu){
+    public static FromResource createLeftMode(AbstractContainerScreen<?> screen, PageMetaDataManager menu,
+                                              ScreenLayoutMode screenLayoutMode, ScreenRectangleWidgetParam pageSwitchTabParam){
         FromResource ret = new FromResource(screen,menu);
-        ret.screenLayoutMode = new ScreenLayoutMode(28,18,true, (screen.width-screen.getXSize())/2, (screen.height-screen.getYSize())/2);
-        ret.pageSwitchTabParam = new ScreenRectangleWidgetParam(0,20,32,28);
+        ret.screenLayoutMode = screenLayoutMode;
+        ret.pageSwitchTabParam = pageSwitchTabParam;
         ret.shouldRenderPlayerInv = false;
         return ret;
     }
@@ -87,20 +85,28 @@ public class FromResource implements ScreenRenderer {
         int startX = screenLayoutMode.menuXPos();
         int startY = screenLayoutMode.menuYPos();
 
-        guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 0, 0,
-                imageWidth, 17, 256, 256);
-        startY += 17;
-        int rowsToRender = containerRows;
-        while (rowsToRender > 6) {
-            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY,
-                    0.0F, 17.0F, imageWidth, 108, 256, 256);
-            rowsToRender -= 6;
-            startY += 108;
-        }
-        if (rowsToRender != 0) {
-            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY,
-                    0.0F, 17.0F, imageWidth, rowsToRender * 18, 256, 256);
-            startY += rowsToRender * 18;
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0,0,0);
+
+        renderGrid:
+        {
+            if(columns!=9){
+                renderSpecialBg(guiGraphics,partialTick,mouseX,mouseY,startX,startY);
+                break renderGrid;
+            }
+
+            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 0, 0,
+                    imageWidth, 17, 256, 256);
+            startY += 17;
+            int rowsToRender = rows;
+            while (rowsToRender > 0) {
+                int height = 18*Math.min(rowsToRender,6);
+                guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY,
+                        0.0F, 17.0F, imageWidth, height, 256, 256);
+                rowsToRender -= 6;
+                startY += height;
+            }
+
         }
         if(shouldRenderPlayerInv)
             renderPlayerInv(guiGraphics,partialTick,mouseX,mouseY, startX, startY);
@@ -128,6 +134,50 @@ public class FromResource implements ScreenRenderer {
                 guiGraphics.pose().popPose();
             }
             pageY += 28;
+        }
+
+        guiGraphics.pose().popPose();
+    }
+
+    private void renderSpecialBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY,
+                                 int startX, int startY) {
+        int initialX = startX;
+
+
+        guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 0, 0,
+                7, 17, 256, 256);
+        startX+=7;
+        for (int columnsToRender = columns;columnsToRender>0;columnsToRender-=9) {
+            int width = 18 * Math.min(9,columnsToRender);
+            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 7, 0,
+                    width, 17, 256, 256);
+
+            startX+=width;
+        }
+        guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 168, 0,
+                8, 17, 256, 256);
+        startX = initialX;
+
+        startY+=17;
+        for (int rowsToRender = rows;rowsToRender > 0;rowsToRender -= 6) {
+            int height = 18*Math.min(rowsToRender,6);
+
+
+            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 0, 17,
+                    7, height, 256, 256);
+            startX+=7;
+            for (int columnsToRender = columns;columnsToRender>0;columnsToRender-=9) {
+                int width = 18 * Math.min(9,columnsToRender);
+                guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 7, 17,
+                        width, height, 256, 256);
+                startX+=width;
+            }
+            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 168, 17,
+                    8, height, 256, 256);
+            startX = initialX;
+
+
+            startY += height;
         }
     }
 

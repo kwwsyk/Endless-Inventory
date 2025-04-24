@@ -1,4 +1,4 @@
-package com.kwwsyk.endinv.options;
+package com.kwwsyk.endinv.util;
 
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
@@ -6,10 +6,17 @@ import net.minecraft.network.codec.StreamCodec;
 import org.jetbrains.annotations.NotNull;
 
 public enum SortType {
-    DEFAULT,
-    COUNT,
-    ID,
-    LAST_MODIFIED;
+    DEFAULT("sorttype.endinv.default"),
+    COUNT("sorttype.endinv.count"),
+    SPACE_AND_NAME("sorttype.endinv.name"),
+    ID("sorttype.endinv.id"),
+    LAST_MODIFIED("sorttype.endinv.last_modified");
+
+    public final String translationKey;
+
+    SortType(String translationKey){
+        this.translationKey = translationKey;
+    }
 
     public static final StreamCodec<ByteBuf,SortType> STREAM_CODEC = new StreamCodec<>() {
         @Override
