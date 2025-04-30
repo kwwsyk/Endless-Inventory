@@ -7,8 +7,6 @@ import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.ServerConfig;
-import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.core.Registry;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
@@ -22,6 +20,8 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.registries.*;
 
 import java.util.UUID;
@@ -55,11 +55,6 @@ public class ModInitializer {
                     .copyOnDeath()
                     .build()
     );
-    public static final KeyMapping OPEN_ENDINV_KEY = new KeyMapping(
-            "key.endless_inventory.open",         // 绑定的键名（语言文件中提供翻译）
-            InputConstants.KEY_I,                 // 默认键位，这里是 "O"
-            "key.categories.inventory"            // 键位分类
-    );
     public static final ResourceKey<Registry<ItemClassify>> CLASSIFY_REGISTRY_KEY =
             ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MOD_ID,"item_classify"));
     public static final Registry<ItemClassify> CLASSIFY_REGISTRY =
@@ -78,6 +73,8 @@ public class ModInitializer {
 
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
         container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);
+
+        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
 
 

@@ -7,6 +7,15 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
+/**Both stored and synced data of player and page, obtained in specific Payloads.
+ * See {@link com.kwwsyk.endinv.network.payloads.toServer.page.PageContext},{@link SyncedConfig}
+ * @param rows
+ * @param columns
+ * @param pageId
+ * @param sortType
+ * @param reverseSort
+ * @param search
+ */
 public record PageData(int rows, int columns, int pageId, SortType sortType, boolean reverseSort, String search) {
     
     public static final PageData DEFAULT = new PageData(0,9,0,SortType.DEFAULT,false,"");

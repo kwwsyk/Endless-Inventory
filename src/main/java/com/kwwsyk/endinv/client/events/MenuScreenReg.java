@@ -1,4 +1,4 @@
-package com.kwwsyk.endinv.events;
+package com.kwwsyk.endinv.client.events;
 
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;

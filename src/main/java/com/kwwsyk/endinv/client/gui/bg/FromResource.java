@@ -28,6 +28,7 @@ public class FromResource implements ScreenBgRenderer {
     private final int imageWidth;
     private final int rows;
     private final int columns;
+
     private PageMetaDataManager menu;
     private boolean shouldRenderPlayerInv = true;
 
@@ -51,10 +52,10 @@ public class FromResource implements ScreenBgRenderer {
         this.topPos = screen.getGuiTop();
     }
 
-    public static FromResource createDefaultMode(EndlessInventoryScreen screen){
+    public static FromResource createDefaultMode(EndlessInventoryScreen screen, ScreenLayoutMode layoutMode, ScreenRectangleWidgetParam pageSwitchTabParam){
         FromResource ret = new FromResource(screen);
-        ret.screenLayoutMode = new ScreenLayoutMode(ret.leftPos,ret.topPos,false, ret.leftPos, ret.topPos + ret.rows *18+25);
-        ret.pageSwitchTabParam = new ScreenRectangleWidgetParam(ret.leftPos-32,ret.topPos+1,32,28);
+        ret.screenLayoutMode = layoutMode;
+        ret.pageSwitchTabParam = pageSwitchTabParam;
         return ret;
     }
     public static FromResource createLeftMode(AbstractContainerScreen<?> screen, PageMetaDataManager menu,
@@ -67,7 +68,6 @@ public class FromResource implements ScreenBgRenderer {
     }
 
     public void init(){
-
     }
 
     @Override

@@ -1,10 +1,10 @@
-package com.kwwsyk.endinv.events;
+package com.kwwsyk.endinv.client.events;
 
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.client.gui.AttachedScreen;
 import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
-import com.kwwsyk.endinv.network.payloads.OpenEndInvPayload;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.network.payloads.toServer.OpenEndInvPayload;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;

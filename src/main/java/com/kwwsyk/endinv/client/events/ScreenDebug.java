@@ -1,8 +1,8 @@
-package com.kwwsyk.endinv.events;
+package com.kwwsyk.endinv.client.events;
 
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
-import com.kwwsyk.endinv.menu.page.ItemDisplay;
+import com.kwwsyk.endinv.menu.page.ItemPage;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -81,12 +81,12 @@ public class ScreenDebug {
             phase++;
             if(phase>2) phase=0;
         }
-        if(event.getScreen() instanceof EndlessInventoryScreen EIS && EIS.getMenu().getDisplayingPage() instanceof ItemDisplay itemDisplay){
+        if(event.getScreen() instanceof EndlessInventoryScreen EIS && EIS.getMenu().getDisplayingPage() instanceof ItemPage itemPage){
             if(button == InputConstants.KEY_R){
-                itemDisplay.tryRequestContents();
+                itemPage.tryRequestContents();
             }
             if(button == InputConstants.KEY_T){
-                itemDisplay.setChanged();
+                itemPage.setChanged();
             }
         }
     }

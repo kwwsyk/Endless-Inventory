@@ -23,6 +23,8 @@ public class SortedSaveStrategy implements EndInvCodecStrategy{
         //handle Items,size
         deserializeItems(endlessInventory,lookupProvider,invTag);
         endlessInventory.syncMapFromItems();
+
+        decodeAffinities(endlessInventory,lookupProvider, (CompoundTag) invTag.get("Affinities"));
         return  endlessInventory;
     }
 
@@ -47,9 +49,11 @@ public class SortedSaveStrategy implements EndInvCodecStrategy{
                 nbtTagList.add(saveItem(itemStack,provider, itemTag));
             }
         }
+        CompoundTag affTag = encodeAffinities(endlessInventory.affinities,provider);
         CompoundTag nbt = new CompoundTag();
         nbt.put("Items", nbtTagList);
         nbt.putInt("Size", items.size());
+        nbt.put("Affinities",affTag);
         return nbt;
     }
 

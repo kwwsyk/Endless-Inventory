@@ -4,6 +4,7 @@ package com.kwwsyk.endinv;
 import com.kwwsyk.endinv.data.EndlessInventoryData;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.ServerConfig;
+import com.kwwsyk.endinv.util.ItemStackLike;
 import com.kwwsyk.endinv.util.SearchUtil;
 import com.kwwsyk.endinv.util.SortType;
 import com.mojang.logging.LogUtils;
@@ -14,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.util.ItemStackMap;
 import org.slf4j.Logger;
 
+import javax.annotation.Nonnegative;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +38,7 @@ public class EndlessInventory implements SourceInventory{
     private long modState = 0L;
     private int maxStackSize;
     private boolean infinityMode;
+    public final EndInvAffinities affinities;
 
     public EndlessInventory(){
         this(UUID.randomUUID());
@@ -47,6 +50,7 @@ public class EndlessInventory implements SourceInventory{
         this.uuid = uuid;
         this.maxStackSize = ServerConfig.CONFIG.MAX_STACK_SIZE.getAsInt();
         this.infinityMode = ServerConfig.CONFIG.ENABLE_INFINITE.getAsBoolean();
+        this.affinities = new EndInvAffinities(this);
     }
 
 
@@ -90,6 +94,17 @@ public class EndlessInventory implements SourceInventory{
                 .toList();
         if(startIndex>= filtered.size()) return new ArrayList<>();
         return filtered.subList(startIndex,Math.min(startIndex+length,filtered.size()));
+    }
+
+    public List<ItemStackLike> getStarredItems(@Nonnegative int startIndex, @Nonnegative int length){
+        var items = affinities.getStarredItems(startIndex,length);
+        return items.stream().map(this::getStackWithZeroCount).toList();
+    }
+
+    public ItemStackLike getStackWithZeroCount(ItemStack stack){
+        var state = itemMap.get(stack.copyWithCount(1));
+        if(state==null) return ItemStackLike.asKey(stack);
+        return ItemStackLike.asKey(stack,state.count);
     }
 
     public void syncItemsFromMap() {

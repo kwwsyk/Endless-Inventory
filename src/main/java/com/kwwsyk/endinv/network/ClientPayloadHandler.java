@@ -1,13 +1,17 @@
 package com.kwwsyk.endinv.network;
 
+import com.kwwsyk.endinv.client.events.PickingUpTip;
+import com.kwwsyk.endinv.client.events.ScreenAttachment;
 import com.kwwsyk.endinv.client.gui.AttachedScreen;
-import com.kwwsyk.endinv.events.ScreenAttachment;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.menu.page.ItemDisplay;
+import com.kwwsyk.endinv.menu.page.ItemPage;
+import com.kwwsyk.endinv.menu.page.StarredItemPage;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
-import com.kwwsyk.endinv.network.payloads.SetItemDisplayContentPayload;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
+import com.kwwsyk.endinv.network.payloads.toClient.ItemPickedUpPayload;
+import com.kwwsyk.endinv.network.payloads.toClient.SetItemDisplayContentPayload;
+import com.kwwsyk.endinv.network.payloads.toClient.SetStarredPagePayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -38,8 +42,8 @@ public abstract class ClientPayloadHandler {
     public static void handleItemDisplay(SetItemDisplayContentPayload setItemDisplayContentPayload, IPayloadContext iPayloadContext) {
         Player player = iPayloadContext.player();
         PageMetaDataManager menu = checkAndGetManagerForPlayer((LocalPlayer) player);
-        if(menu!=null && menu.getDisplayingPage() instanceof ItemDisplay itemDisplay){
-            itemDisplay.initializeContents(setItemDisplayContentPayload.stacks());
+        if(menu!=null && menu.getDisplayingPage() instanceof ItemPage itemPage){
+            itemPage.initializeContents(setItemDisplayContentPayload.stacks());
         }
     }
 
@@ -51,5 +55,17 @@ public abstract class ClientPayloadHandler {
         if(attachedScreen==null) return;
         attachedScreen.setEndInvMetadata(endInvMetadata);
 
+    }
+
+    public static void handleAutoPick(ItemPickedUpPayload itemPickedUpPayload, IPayloadContext iPayloadContext) {
+        PickingUpTip.addItem(itemPickedUpPayload.stack());
+    }
+
+    public static void handleStarredItems(SetStarredPagePayload payload, IPayloadContext iPayloadContext) {
+        Player player = iPayloadContext.player();
+        PageMetaDataManager menu = checkAndGetManagerForPlayer((LocalPlayer) player);
+        if(menu!=null && menu.getDisplayingPage() instanceof StarredItemPage page){
+            page.initializeAsMap(payload.stacks());
+        }
     }
 }

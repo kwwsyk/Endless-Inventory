@@ -5,7 +5,7 @@ import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.client.gui.page.PageClickHandler;
 import com.kwwsyk.endinv.client.gui.page.PageRenderer;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.network.payloads.PageStatePayload;
+import com.kwwsyk.endinv.network.payloads.toServer.page.op.PageStatePayload;
 import com.kwwsyk.endinv.options.ItemClassify;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
@@ -22,7 +22,7 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
     public final int pageId;
     private final Holder<ItemClassify> itemClassify;
     public ResourceLocation icon = null;
-    protected boolean holdOn = false;
+    protected boolean holdOn = false;//if holding on the page view shall not change temporarily.
     public DisplayPage(PageMetaDataManager metaDataManager, Holder<ItemClassify> itemClassify, int pageId){
         this.metadata = metaDataManager;
         this.srcInv = metaDataManager.getSourceInventory().isRemote() ? REMOTE : metaDataManager.getSourceInventory();
@@ -52,13 +52,12 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
 
     public void setChanged() {
     }
-    public void syncContentToServer(){
-
-    }
-    public void syncContentToClient(ServerPlayer player){
-
-    }
+    public abstract void syncContentToServer();
+    public abstract void syncContentToClient(ServerPlayer player);
     public ItemStack tryQuickMoveStackTo(ItemStack stack){
+        if(!srcInv.isRemote()){
+            return srcInv.addItem(stack);
+        }
         return stack.copy();
     }
     public ItemStack tryExtractItem(ItemStack item, int count){
@@ -78,6 +77,9 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
             holdOn = false;
         }
     }
+
+    public abstract void handleStarItem(double XOffset, double YOffset);
+
     public abstract boolean canScroll();
 
     @FunctionalInterface

@@ -4,9 +4,10 @@ import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
-import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
+import com.kwwsyk.endinv.menu.page.StarredItemPage;
 import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.core.Holder;
@@ -59,8 +60,9 @@ public class AttachingManager implements PageMetaDataManager{
 
     private List<DisplayPage> buildPages(){
         List<DisplayPage> ret = new ArrayList<>();
-        for(int i = 0; i< ItemClassify.DEFAULT_CLASSIFIES.size(); ++i){
-            Holder<ItemClassify> classify = ItemClassify.DEFAULT_CLASSIFIES.get(i);
+        ret.add(new StarredItemPage(this,0));
+        for(int i = 1; i< ItemClassify.DEFAULT_CLASSIFIES.size()+1; ++i){
+            Holder<ItemClassify> classify = ItemClassify.DEFAULT_CLASSIFIES.get(i-1);
 
             DisplayPage page = DefaultPages.CLASSIFY2PAGE.get(classify).create(this, classify, i);
             ret.add(page);

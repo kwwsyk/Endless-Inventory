@@ -6,11 +6,11 @@ import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
-import com.kwwsyk.endinv.menu.page.ItemDisplay;
+import com.kwwsyk.endinv.menu.page.ItemPage;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
 import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.CrashReport;
@@ -237,8 +237,8 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
                     return;
                 }
             }
-            if(this.getSourceInventory() instanceof EndlessInventory && this.displayingPage instanceof ItemDisplay itemDisplay)
-                itemDisplay.refreshItems();
+            if(this.getSourceInventory() instanceof EndlessInventory && this.displayingPage instanceof ItemPage itemPage)
+                itemPage.refreshItems();
             if(this.getSourceInventory() instanceof EndlessInventory endinv){
                 this.setItemSize(endinv.getItemSize());
             }

@@ -24,6 +24,7 @@ public class FullCodecStrategy implements EndInvCodecStrategy{
         //handle Items,size
         deserializeItems(endlessInventory,lookupProvider,invTag);
 
+        decodeAffinities(endlessInventory,lookupProvider, (CompoundTag) invTag.get("Affinities"));
         return  endlessInventory;
     }
 
@@ -50,9 +51,11 @@ public class FullCodecStrategy implements EndInvCodecStrategy{
                 nbtTagList.add(saveItem(itemStack,provider, itemTag));
             }
         }
+        CompoundTag affTag = encodeAffinities(endlessInventory.affinities,provider);
         CompoundTag nbt = new CompoundTag();
         nbt.put("Items", nbtTagList);
         nbt.putInt("Size", itemMap.size());
+        nbt.put("Affinities",affTag);
         return nbt;
     }
 

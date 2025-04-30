@@ -2,25 +2,30 @@ package com.kwwsyk.endinv.network;
 
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.menu.page.ItemDisplay;
+import com.kwwsyk.endinv.menu.page.ItemPage;
 import com.kwwsyk.endinv.menu.page.pageManager.AttachingManager;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.network.payloads.*;
-import com.kwwsyk.endinv.options.ItemClassify;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.network.payloads.toServer.OpenEndInvPayload;
+import com.kwwsyk.endinv.network.payloads.toServer.page.PageContext;
+import com.kwwsyk.endinv.network.payloads.toServer.page.StarItemPayload;
+import com.kwwsyk.endinv.network.payloads.toServer.page.op.ItemDisplayItemModPayload;
+import com.kwwsyk.endinv.network.payloads.toServer.page.op.PageClickPayload;
+import com.kwwsyk.endinv.network.payloads.toServer.page.op.PageStatePayload;
+import com.kwwsyk.endinv.network.payloads.toServer.page.op.QuickMoveToPagePayload;
 import com.kwwsyk.endinv.util.SortType;
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
@@ -43,41 +48,46 @@ public abstract class ServerPayloadHandler {
         player.setData(SYNCED_CONFIG, syncedConfig);
     }
 
-    public static void handleMenuPage(PageMetadata payload, IPayloadContext iPayloadContext){
+    public static void handleMenuPage(PageContext payload, IPayloadContext iPayloadContext){
         ServerPlayer serverPlayer = (ServerPlayer) iPayloadContext.player();
         PageMetaDataManager menu = checkAndGetManagerForPlayer(serverPlayer);
         if(menu!=null){
-            EndlessInventory endInv = (EndlessInventory) menu.getSourceInventory();
-            int startIndex = payload.startIndex();
-            int length = payload.length();
-            SortType sortType = payload.sortType();
-            menu.switchPageWithId(payload.pageData().pageId());
-            ItemClassify classify = menu.getDisplayingPage().getItemClassify().value();
-            String search = payload.search();
+            syncPageContext(menu,payload,serverPlayer);
+        }
+    }
 
-            menu.setSortType(sortType);
-            menu.setSortReversed(payload.pageData().reverseSort());
-            menu.setSearching(search);
+    /**Synchronize server page context from context in payloads, if {@code serverPlayer} is not null,
+     *  will send content back to client.
+     * @param meta to change object who is holding page context.
+     * @param context page context, as independent payload or included in other payloads
+     * @param serverPlayer if not null, will send context to set client page contents.
+     */
+    private static void syncPageContext(PageMetaDataManager meta, PageContext context, @Nullable ServerPlayer serverPlayer){
+        int startIndex = context.startIndex();
+        int length = context.length();
 
-            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,sortType,payload.pageData().reverseSort(),classify,search);
+        SortType sortType = context.sortType();
+        boolean reverseSort = context.pageData().reverseSort();
+        String search = context.search();
 
-            NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
-            for(int i=0;i< view.size();++i){
-                stacks.set(i,view.get(i));//do not need copy as will be sent
-            }
-            menu.getDisplayingPage().setChanged();
-            menu.getDisplayingPage().init(startIndex,length);
-            PacketDistributor.sendToPlayer(serverPlayer,new SetItemDisplayContentPayload(stacks));
+        meta.switchPageWithId(context.pageData().pageId());
+        meta.setSortType(sortType);
+        meta.setSortReversed(reverseSort);
+        meta.setSearching(search);
+        meta.getDisplayingPage().setChanged();
+        meta.getDisplayingPage().init(startIndex,length);
+
+        if(serverPlayer!=null){
+            meta.getDisplayingPage().syncContentToClient(serverPlayer);
         }
     }
     public static void handlePageClick(PageClickPayload payload, IPayloadContext context){
         ServerPlayer player = (ServerPlayer) context.player();
         PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
         if(player.containerMenu.containerId != payload.containerId() || manager==null) return;
-        if(manager.getDisplayingPageId()!=payload.pageId()){
-            LOGGER.warn("Different pages are displaying across server and client");
-            manager.switchPageWithId(payload.pageId());
-        }
+
+        syncPageContext(manager,payload.context(),null);
+
         if(player.isSpectator()){
             manager.getMenu().sendAllDataToRemote();
             return;
@@ -87,7 +97,7 @@ public abstract class ServerPayloadHandler {
         }
         manager.getMenu().suppressRemoteUpdates();
         manager.getDisplayingPage().pageClicked(payload.XOffset(),payload.YOffset(),payload.keyCode(),payload.clickType());
-        if(manager.getDisplayingPage() instanceof ItemDisplay itemDisplay) itemDisplay.refreshItems();
+        if(manager.getDisplayingPage() instanceof ItemPage itemPage) itemPage.refreshItems();
         manager.getMenu().resumeRemoteUpdates();
 
         manager.getDisplayingPage().syncContentToClient(player);
@@ -125,15 +135,33 @@ public abstract class ServerPayloadHandler {
         if(player.containerMenu.getCarried().isEmpty() && player.hasInfiniteMaterials()){
             PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
             if(manager==null) return;
-            if(manager.getDisplayingPage() instanceof ItemDisplay itemDisplay){
+            if(manager.getDisplayingPage() instanceof ItemPage itemPage){
                 if(payload.isAdding()){
-                    itemDisplay.addItem(payload.stack());
+                    itemPage.addItem(payload.stack());
                 }else {
-                    ItemStack taken = itemDisplay.takeItem(payload.stack());
+                    ItemStack taken = itemPage.takeItem(payload.stack());
                     if(taken.isEmpty()) return;
                     player.containerMenu.setCarried(taken);
                 }
             }
         }
+    }
+
+    public static void handleItemStarred(StarItemPayload starItemPayload, IPayloadContext iPayloadContext) {
+        ServerPlayer player = (ServerPlayer) iPayloadContext.player();
+        if(starItemPayload.isAdding()) {
+            EndlessInventory.getEndInvForPlayer(player).affinities.addStarredItem(starItemPayload.stack());
+        }else {
+            EndlessInventory.getEndInvForPlayer(player).affinities.removeStarredItem(starItemPayload.stack());
+        }
+
+    }
+
+    public static void handleQuickMovePage(QuickMoveToPagePayload payload, IPayloadContext iPayloadContext) {
+        ServerPlayer player = (ServerPlayer) iPayloadContext.player();
+        PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
+        if(manager==null) return;
+        Slot slot = manager.getMenu().getSlot(payload.slotId());
+        manager.slotQuickMoved(slot);
     }
 }

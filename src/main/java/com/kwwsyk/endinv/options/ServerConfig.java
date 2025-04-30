@@ -9,6 +9,7 @@ public class ServerConfig {
     public static final ModConfigSpec CONFIG_SPEC;
     public final ModConfigSpec.IntValue MAX_STACK_SIZE;
     public final ModConfigSpec.BooleanValue ENABLE_INFINITE;
+    public final ModConfigSpec.BooleanValue ENABLE_AUTO_PICK;
 
     private ServerConfig(ModConfigSpec.Builder builder){
         MAX_STACK_SIZE = builder
@@ -18,6 +19,9 @@ public class ServerConfig {
                 .translation("config.endinv.comment.enable_infinite1")
                 .translation("config.endinv.comment.enable_infinite2")
                 .define("ItemCapacity.enableInfinite",false);
+        ENABLE_AUTO_PICK = builder
+                .comment("Will enable player to auto pick item and exp")
+                .define("Utility",true);
     }
 
     static {

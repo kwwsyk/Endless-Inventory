@@ -2,11 +2,15 @@ package com.kwwsyk.endinv.menu.page.pageManager;
 
 import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
-import com.kwwsyk.endinv.network.payloads.EndInvMetadata;
+import com.kwwsyk.endinv.menu.page.ItemPage;
+import com.kwwsyk.endinv.network.payloads.PageData;
+import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
+import com.kwwsyk.endinv.network.payloads.toServer.page.PageContext;
 import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -57,6 +61,22 @@ public interface PageMetaDataManager {
             }
         }
         return -1;
+    }
+    default void slotQuickMoved(Slot clicked) {
+        ItemStack itemStack = clicked.getItem();
+        ItemStack remain = getDisplayingPage().tryQuickMoveStackTo(itemStack);
+        clicked.set(remain);
+    }
+    default PageContext getInPageContext(){
+        DisplayPage page = getDisplayingPage();
+        return new PageContext(
+                page instanceof ItemPage itemPage ? itemPage.getStartIndex() : 0,
+                getRowCount()*getColumnCount(),
+                getPageData()
+        );
+    }
+    default PageData getPageData(){
+        return new PageData(getRowCount(),getColumnCount(),getDisplayingPageId(),sortType(),isSortReversed(),searching());
     }
     SourceInventory REMOTE = new SourceInventory() {
         public ItemStack getItem(int i) {

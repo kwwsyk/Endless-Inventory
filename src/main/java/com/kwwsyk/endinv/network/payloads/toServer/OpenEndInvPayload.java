@@ -1,4 +1,4 @@
-package com.kwwsyk.endinv.network.payloads;
+package com.kwwsyk.endinv.network.payloads.toServer;
 
 import com.kwwsyk.endinv.ModInitializer;
 import net.minecraft.network.RegistryFriendlyByteBuf;

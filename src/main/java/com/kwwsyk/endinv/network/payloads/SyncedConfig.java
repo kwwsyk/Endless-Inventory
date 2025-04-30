@@ -23,13 +23,14 @@ import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
  *  Used before open menu.
  *
  */
-public record SyncedConfig(PageData pageData,boolean attaching) implements CustomPacketPayload {
+public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicking) implements CustomPacketPayload {
 
-    public static final SyncedConfig DEFAULT = new SyncedConfig(PageData.DEFAULT,true);
+    public static final SyncedConfig DEFAULT = new SyncedConfig(PageData.DEFAULT,true,true);
     public static final Codec<SyncedConfig> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
                     PageData.CODEC.optionalFieldOf("page_data",PageData.DEFAULT).forGetter(SyncedConfig::pageData),
-                    Codec.BOOL.optionalFieldOf("attaching",true).forGetter(SyncedConfig::attaching)
+                    Codec.BOOL.optionalFieldOf("attaching",true).forGetter(SyncedConfig::attaching),
+                    Codec.BOOL.optionalFieldOf("auto_pickup",true).forGetter(SyncedConfig::autoPicking)
             ).apply(instance, SyncedConfig::new)
     );
     public static final Type<SyncedConfig> TYPE =
@@ -37,6 +38,7 @@ public record SyncedConfig(PageData pageData,boolean attaching) implements Custo
     public static final StreamCodec<ByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
             PageData.STREAM_CODEC,SyncedConfig::pageData,
             ByteBufCodecs.BOOL,SyncedConfig::attaching,
+            ByteBufCodecs.BOOL,SyncedConfig::autoPicking,
             SyncedConfig::new
     );
 
@@ -70,7 +72,7 @@ public record SyncedConfig(PageData pageData,boolean attaching) implements Custo
                     columns = Math.min(9,ClientConfig.CONFIG.calculateSuitInColumnCount(screen));
                 }
             }
-            SyncedConfig config1 = new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns), config.attaching);
+            SyncedConfig config1 = new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns), config.attaching, config.autoPicking());
             player.setData(SYNCED_CONFIG,config1);
             PacketDistributor.sendToServer(config1);
         }
@@ -90,7 +92,7 @@ public record SyncedConfig(PageData pageData,boolean attaching) implements Custo
                 columns = Math.min(ClientConfig.CONFIG.calculateSuitInColumnCount(screen),columns);
             }
             SyncedConfig config = player.getData(SYNCED_CONFIG);
-            return new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns),ClientConfig.CONFIG.ATTACHING.getAsBoolean());
+            return new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns),ClientConfig.CONFIG.ATTACHING.getAsBoolean(),true);
         }else throw new IllegalStateException("Unable to read client config, as running on server or player is not existing.");
     }
     @Override
@@ -99,22 +101,22 @@ public record SyncedConfig(PageData pageData,boolean attaching) implements Custo
     }
 
     public SyncedConfig pageIdChanged(int pageId) {
-        return new SyncedConfig(pageData.pageIdChanged(pageId),attaching);
+        return new SyncedConfig(pageData.pageIdChanged(pageId),attaching,autoPicking);
     }
 
     public SyncedConfig searchingChanged(String searching) {
-        return new SyncedConfig(pageData.searchingChanged(searching),attaching);
+        return new SyncedConfig(pageData.searchingChanged(searching),attaching,autoPicking);
     }
 
     public SyncedConfig sortTypeChanged(SortType type) {
-        return new SyncedConfig(pageData.sortTypeChanged(type),attaching);
+        return new SyncedConfig(pageData.sortTypeChanged(type),attaching,autoPicking);
     }
 
     public SyncedConfig ofReverseSort() {
-        return new SyncedConfig(pageData.ofReverseSort(),attaching);
+        return new SyncedConfig(pageData.ofReverseSort(),attaching,autoPicking);
     }
 
     public SyncedConfig ofRowChanged(int rows) {
-        return new SyncedConfig(pageData.ofRowChanged(rows),attaching);
+        return new SyncedConfig(pageData.ofRowChanged(rows),attaching,autoPicking);
     }
 }

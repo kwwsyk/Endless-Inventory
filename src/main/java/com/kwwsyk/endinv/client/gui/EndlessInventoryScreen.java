@@ -1,150 +1,48 @@
 package com.kwwsyk.endinv.client.gui;
 
-import com.kwwsyk.endinv.client.gui.bg.FromResource;
-import com.kwwsyk.endinv.client.gui.bg.ScreenBgRenderer;
-import com.kwwsyk.endinv.client.gui.bg.ScreenLayoutMode;
-import com.kwwsyk.endinv.client.gui.bg.ScreenRectangleWidgetParam;
-import com.kwwsyk.endinv.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.network.payloads.PageClickPayload;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.util.SortType;
-import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
 public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInventoryMenu> implements SortTypeSwitcher {
 
-    private int containerRows;
-    private float scrollOffs = 0;
-    public Button configButton;
-    public EditBox searchBox;
-    private ScreenLayoutMode screenLayoutMode;
-    private ScreenRectangleWidgetParam configButtonParam;
-    private ScreenRectangleWidgetParam pageSwitchTabParam;
-    private ScreenRectangleWidgetParam searchBoxParam;
-    private ScreenRectangleWidgetParam sortTypeSwitchBoxParam;
-    private ScreenBgRenderer screenBgRenderer;
-    private int pageX;
-    private int pageY;
-    private int pageXSize;
-    private int pageYSize;
-    private double lastCLickedX;
-    private double lastClickedY;
-    private long lastClickedTime;
-    private int lastClickedButton;
-    private boolean doubleClick;
-    private boolean skipNextRelease;
-    private boolean ignoreTextInput;
-    private boolean isHoveringOnPage;
+
+    private ScreenFrameWork frameWork;
     public boolean isHoveringOnSortBox;
-    public boolean isHoveringOnPageSwitchTab;
-    private int roughMouseX;
-    private int roughMouseY;
-    public SortTypeSwitchBox sortTypeSwitchBox;
-    private Button sorttypeReverseButton;
 
     public EndlessInventoryScreen(EndlessInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-
-        this.refresh();
-    }
-    public void refresh(){
-        this.containerRows = menu.getRowCount();
-        this.imageHeight = 114 + this.containerRows*18;
+        int containerRows = this.menu.getRowCount();
+        this.imageHeight = 114 + containerRows *18;
         this.inventoryLabelY = this.imageHeight - 94;
-    }
-    protected void setScreenTextureAndLayoutMode(){
-        this.leftPos = (this.width - this.imageWidth) / 2;
-        this.topPos = (this.height - this.imageHeight) / 2;
-        this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
-        this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 89, this.topPos + 5, 80, 12);
-        this.sortTypeSwitchBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
-        this.screenBgRenderer = FromResource.createDefaultMode(this);
     }
 
     public void init(){
-        setScreenTextureAndLayoutMode();
-        this.screenBgRenderer.init();
-        pageX = screenBgRenderer.screenLayoutMode().menuXPos()+8;
-        pageY = screenBgRenderer.screenLayoutMode().menuYPos()+17;
-        pageXSize = 9*18;
-        pageYSize = containerRows*18;
+        this.leftPos = (this.width - this.imageWidth) / 2;
+        this.topPos = (this.height - this.imageHeight) / 2;
+        this.frameWork = new ScreenFrameWork(this);
 
-        this.configButton = Button.builder(Component.literal("⚙"),
-                        btn -> {
-                            if (this.minecraft != null) {
-                                //this.minecraft.setScreen(new EndInvSettingsScreen(this)); // 你可自定义这个 Screen
-                            }
-                        })
-                .pos(this.configButtonParam.XPos(),this.configButtonParam.YPos())
-                .size(this.configButtonParam.XSize(),this.configButtonParam.YSize())
-                .build();
-        this.sorttypeReverseButton = Button.builder(Component.literal("⇅"),
-                btn->{
-                    menu.switchSortReversed();
-                    SyncedConfig.updateClientConfigAndSync(menu.player.getData(SYNCED_CONFIG).ofReverseSort());
-                    menu.syncContent();
-                }
-                )
-                .pos(sortTypeSwitchBoxParam.XPos()+sortTypeSwitchBoxParam.XSize()+2,sortTypeSwitchBoxParam.YPos())
-                .size(sortTypeSwitchBoxParam.YSize(),sortTypeSwitchBoxParam.YSize())
-                .build();
-        this.searchBox = new EditBox(this.font,
-                this.searchBoxParam.XPos(),this.searchBoxParam.YPos(),this.searchBoxParam.XSize(),this.searchBoxParam.YSize()
-                , Component.translatable("itemGroup.search"));
-        this.sortTypeSwitchBox = new SortTypeSwitchBox(this, sortTypeSwitchBoxParam);
-
-        this.searchBox.setValue(menu.searching);
-
-        addRenderableWidget(configButton);
-        addRenderableWidget(searchBox);
-        addRenderableWidget(sortTypeSwitchBox);
-        addRenderableWidget(sorttypeReverseButton);
+        frameWork.addWidgetToScreen(this::addRenderableWidget);
     }
 
-
-
     public void render(@NotNull GuiGraphics gui, int mouseX, int mouseY, float partialTick){
-        this.isHoveringOnSortBox = false;
+        frameWork.renderPre(gui,mouseX,mouseY,partialTick);
 
         super.render(gui,mouseX,mouseY,partialTick);
 
-        //check
-        this.isHoveringOnPage = hasClickedOnPage(mouseX,mouseY);
-        this.roughMouseX = mouseX;
-        this.roughMouseY = mouseY;
-
-        this.menu.getDisplayingPage().renderPage(gui, pageX, pageY);
-        if(!isHoveringOnSortBox) this.menu.getDisplayingPage().renderHovering(gui,mouseX,mouseY,partialTick);
-        if(searchBox.isHovered() && !searchBox.isFocused()) gui.renderTooltip(minecraft.font, List.of(
-                Component.translatable("search.endinv.prefix.sharp"),
-                Component.translatable("search.endinv.prefix.at"),
-                Component.translatable("search.endinv.prefix.xor"),
-                Component.translatable("search.endinv.prefix.star")
-        ), Optional.empty(),mouseX,mouseY);
-        if(sorttypeReverseButton.isHovered()) gui.renderTooltip(minecraft.font,Component.translatable("button.endinv.reverse"),mouseX,mouseY);
-        //模仿
+        frameWork.render(gui,mouseX,mouseY,partialTick);
         this.renderTooltip(gui,mouseX,mouseY);
     }
 
@@ -155,232 +53,41 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
                 if (keyCode == 0) {
                     this.setDragging(true);
                 }
-
                 return true;
             }
         }
-        int pageIndex = hasClickedOnPageSwitchBar(mouseX,mouseY);
-        if(pageIndex>=0){
-            pageSwitched(pageIndex);
-            return true;
-        }
-        DisplayPage displayingPage = menu.getDisplayingPage();
-        if(hasClickedOnPage(mouseX,mouseY)){
-            double XOffset = mouseX-pageX;
-            double YOffset = mouseY-pageY;
-            InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
-            assert this.minecraft != null;
-            boolean isKeyPicking = this.minecraft.options.keyPickItem.isActiveAndMatches(mouseKey);//is mouse middle button and enabled for pickup or clone
-            long clickTime = Util.getMillis();
-            this.doubleClick = keyCode==lastClickedButton && displayingPage.doubleClicked(XOffset,YOffset,lastCLickedX,lastClickedY,clickTime-lastClickedTime);
-            this.skipNextRelease = false;
-            if(keyCode!=0&&keyCode!=1&&!isKeyPicking){
-                checkHotBarClicked:
-                if (this.menu.getCarried().isEmpty()) {
-                    if (this.minecraft.options.keySwapOffhand.matchesMouse(keyCode)) {
-                        pageClicked(XOffset,YOffset,40,ClickType.SWAP);
-                        break checkHotBarClicked;
-                    }
+        return frameWork.mouseClicked(mouseX,mouseY,keyCode) || super.mouseClicked(mouseX,mouseY,keyCode);
+    }
 
-                    for (int i = 0; i < 9; i++) {
-                        if (this.minecraft.options.keyHotbarSlots[i].matchesMouse(keyCode)) {
-                            pageClicked(XOffset,YOffset, i, ClickType.SWAP);
-                        }
-                    }
-                }
-            }else if(!this.isQuickCrafting){
-                if(menu.getCarried().isEmpty()){
-                    if (this.minecraft.options.keyPickItem.isActiveAndMatches(mouseKey)) {
-                        pageClicked(XOffset, YOffset, keyCode, ClickType.CLONE);
-                    } else {
-                        ClickType clicktype = ClickType.PICKUP;
-                        if (hasShiftDown()) {
-                            menu.getDisplayingPage().setHoldOn();
-                            //this.lastQuickMoved = slot != null && slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY;
-                            clicktype = ClickType.QUICK_MOVE;
-                        }
 
-                        pageClicked(XOffset, YOffset, keyCode, clicktype);
-                    }
-                    this.skipNextRelease = true;
-                }else {//deference to vanilla
-                    pageClicked(XOffset, YOffset, keyCode, ClickType.PICKUP);
-                }
-            }
-            this.lastClickedTime = clickTime;
-            this.lastClickedButton = keyCode;
-            this.lastCLickedX = XOffset;
-            this.lastClickedY = YOffset;
-            return true;
-        }
-        return super.mouseClicked(mouseX,mouseY,keyCode);
-    }
-    protected int hasClickedOnPageSwitchBar(double mouseX, double mouseY){
-        double XOffset=mouseX- screenBgRenderer.pageSwitchBarParam().XPos();
-        double YOffset=mouseY- screenBgRenderer.pageSwitchBarParam().YPos();
-        if(XOffset<0 || XOffset> screenBgRenderer.pageSwitchBarParam().XSize()) return -1;
-        int index = (int)YOffset/ screenBgRenderer.pageSwitchBarParam().YSize();
-        if(index<0||index>=menu.pages.size()) return -1;
-        return index;
-    }
-    protected boolean hasClickedOnPage(double mouseX,double mouseY){
-        return mouseX>=(double) pageX && mouseX<=(double)pageX+pageXSize && mouseY>=(double) pageY && mouseY<=(double) pageY+pageYSize && !isHoveringOnSortBox;
-    }
-    private int lastDraggedPageSlot = -1;
-    @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        ItemStack itemstack = this.menu.getCarried();
-        if(!itemstack.isEmpty() || this.minecraft.options.touchscreen().get() || !hasClickedOnPage(mouseX, mouseY))
-            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-        //handle page drag: mouse tweak style
-        if(hasShiftDown()){
-            int slotId = menu.getDisplayingPage().getSlotForMouseOffset(mouseX-pageX,mouseY-pageY);
-            if(slotId>=0 && lastDraggedPageSlot>=0 && slotId!=lastDraggedPageSlot){
-                pageClicked(mouseX-pageX,mouseY-pageY,button,ClickType.QUICK_MOVE);
-            }
-            lastDraggedPageSlot = slotId;
-            return true;
-        }else return false;
+        return frameWork.mouseDragged(mouseX,mouseY,button,dragX,dragY) || super.mouseDragged(mouseX,mouseY,button,dragX,dragY);
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int keyCode){
-        DisplayPage displayingPage = menu.getDisplayingPage();
-        displayingPage.release();
-        if(hasClickedOnPage(mouseX,mouseY) && !isQuickCrafting){
-            lastDraggedPageSlot = -1;
-            double XOffset = mouseX - pageX;
-            double YOffset = mouseY - pageY;
-            InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
-            if (this.doubleClick) {
-                this.pageClicked(XOffset,YOffset,keyCode,ClickType.PICKUP_ALL);
-                this.doubleClick = false;
-                this.lastClickedTime = 0L;
-            }else {
-                //ignore quick craft
-                if (this.skipNextRelease) {
-                    this.skipNextRelease = false;
-                    return true;
-                }
-                if(!menu.getCarried().isEmpty()){
-                    assert this.minecraft != null;
-                    if (this.minecraft.options.keyPickItem.isActiveAndMatches(mouseKey)) {
-                        this.pageClicked(XOffset,YOffset,keyCode,ClickType.CLONE);
-                    }
-                }
-            }
-        }
-        return super.mouseReleased(mouseX,mouseY,keyCode);
-    }
-    private boolean canScroll(){
-
-        return this.menu.getDisplayingPage().canScroll();
+        return frameWork.mouseReleased(mouseX,mouseY,keyCode) || super.mouseReleased(mouseX,mouseY,keyCode);
     }
 
     public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
-        if(super.mouseScrolled(mouseX,mouseY,scrollX,scrollY)){
-            return true;
-        }else if(!this.canScroll()){
-            return false;
-        }else{
-            this.scrollOffs = this.menu.subtractInputFromScroll(this.scrollOffs,scrollY);
-            this.menu.scrollTo(scrollOffs);
-            //int startIndex = menu.getRowIndexForScroll(scrollOffs) * 9;
-            //PacketDistributor.sendToServer(new EndInvRequestContentPayload(startIndex,9*this.containerRows, SortType.DEFAULT));
-            return true;
-        }
+        return super.mouseScrolled(mouseX,mouseY,scrollX,scrollY) || frameWork.mouseScrolled(mouseX,mouseY,scrollX,scrollY);
     }
+
     public boolean keyPressed(int keyCode, int scanCode, int modifiers){
-        this.ignoreTextInput = false;
-        if(menu.getDisplayingPage().hasSearchBar()){
-            boolean isNumericKey = InputConstants.getKey(keyCode, scanCode).getNumericKeyValue().isPresent();
-            boolean flag = false;
-            if(isNumericKey && isHoveringOnPage){
-                checkHotBarKeyPressed:
-                if (this.menu.getCarried().isEmpty()) {
-                    assert this.minecraft != null;
-                    if (this.minecraft.options.keySwapOffhand.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
-                        pageClicked(roughMouseX-pageX, roughMouseY-pageY, 40, ClickType.SWAP);
-                        flag = true;
-                        break checkHotBarKeyPressed;
-                    }
-
-                    for(int i = 0; i < 9; ++i) {
-                        if (this.minecraft.options.keyHotbarSlots[i].isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
-                            pageClicked(roughMouseX-pageX, roughMouseY-pageY, i, ClickType.SWAP);
-                            flag = true;
-                            break checkHotBarKeyPressed;
-                        }
-                    }
-                }
-            }
-            if(flag){
-                this.ignoreTextInput = true;
-                return true;
-            }else {
-                String s = this.searchBox.getValue();
-                if (this.searchBox.keyPressed(keyCode, scanCode, modifiers)) {
-                    if (!Objects.equals(s, this.searchBox.getValue())) {
-                        this.refreshSearchResults();
-                    }
-                    return true;
-                } else {
-                    return this.searchBox.isFocused() && this.searchBox.isVisible() && keyCode != 256 || super.keyPressed(keyCode, scanCode, modifiers);
-                }
-            }
-        }
-        return super.keyPressed(keyCode,scanCode,modifiers);
+        return frameWork.keyPressed(keyCode,scanCode,modifiers) || super.keyPressed(keyCode,scanCode,modifiers);
     }
+
     public boolean charTyped(char codePoint, int modifiers){
-        if (this.ignoreTextInput) {
-            return false;
-        } else if (!menu.getDisplayingPage().hasSearchBar()) {
-            return false;
-        } else {
-            String s = this.searchBox.getValue();
-            if (this.searchBox.charTyped(codePoint, modifiers)) {
-                if (!Objects.equals(s, this.searchBox.getValue())) {
-                    this.refreshSearchResults();
-                }
-
-                return true;
-            } else {
-                return false;
-            }
-        }
-
+        return frameWork.charTyped(codePoint,modifiers);
     }
 
-    private void refreshSearchResults(){
-        this.menu.searching = searchBox.getValue();
-        SyncedConfig.updateClientConfigAndSync(menu.player.getData(SYNCED_CONFIG).searchingChanged(menu.searching));
-        menu.getDisplayingPage().release();
-        this.menu.syncContent();
-    }
-    protected void pageSwitched(int pageIndex){
-        menu.switchPageWithIndex(pageIndex);
-        this.searchBox.visible = menu.getDisplayingPage().hasSearchBar();
-    }
-    protected void pageClicked(double mouseX, double mouseY, int keyCode, ClickType clickType){
-        //menu.syncContent();
-        menu.getDisplayingPage().pageClicked(mouseX,mouseY,keyCode,clickType);
-        PacketDistributor.sendToServer(
-                new PageClickPayload(
-                        menu.containerId,
-                        menu.getDisplayingPageId(),
-                        mouseX,
-                        mouseY,
-                        keyCode,
-                        clickType
-                        ));
-    }
     protected void slotClicked(@Nullable Slot slot, int slotId, int mouseButton, @NotNull ClickType type) {
         super.slotClicked(slot,slotId,mouseButton,type);
         this.menu.broadcastChanges();
-
     }
+
     @Override
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        this.screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
+        this.frameWork.screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
     }
     @Override
     public void switchSortTypeTo(SortType type) {
@@ -396,6 +103,10 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
 
     @Override
+    public boolean isHoveringOnSortBox() {
+        return isHoveringOnSortBox;
+    }
+    @Override
     public PageMetaDataManager getPageMetadata() {
         return menu;
     }
@@ -405,14 +116,8 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         return this;
     }
 
-    @Override
-    public void onClose() {
-        if (minecraft.player != null) {
-            SyncedConfig config = minecraft.player.getData(SYNCED_CONFIG);
-            SyncedConfig.updateClientConfigAndSync(config.sortTypeChanged(menu.sortType)
-                    .searchingChanged(menu.searching)
-                    .pageIdChanged(menu.getDisplayingPageId()));
-        }
-        super.onClose();
+    public ScreenFrameWork getFrameWork() {
+        return frameWork;
     }
+
 }

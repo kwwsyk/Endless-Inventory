@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
-import static com.kwwsyk.endinv.events.ScreenDebug.phase;
+import static com.kwwsyk.endinv.client.events.ScreenDebug.phase;
 
 public class ScreenDebugger extends Item {
     public ScreenDebugger(Properties properties) {
