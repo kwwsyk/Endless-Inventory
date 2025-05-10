@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.network;
 
+import com.kwwsyk.endinv.client.CachedSrcInv;
 import com.kwwsyk.endinv.client.events.PickingUpTip;
 import com.kwwsyk.endinv.client.events.ScreenAttachment;
 import com.kwwsyk.endinv.client.gui.AttachedScreen;
@@ -8,10 +9,7 @@ import com.kwwsyk.endinv.menu.page.ItemPage;
 import com.kwwsyk.endinv.menu.page.StarredItemPage;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
-import com.kwwsyk.endinv.network.payloads.toClient.ItemPickedUpPayload;
-import com.kwwsyk.endinv.network.payloads.toClient.SetItemDisplayContentPayload;
-import com.kwwsyk.endinv.network.payloads.toClient.SetStarredPagePayload;
+import com.kwwsyk.endinv.network.payloads.toClient.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -48,13 +46,23 @@ public abstract class ClientPayloadHandler {
     }
 
     public static void handleEndInvMetaData(EndInvMetadata endInvMetadata, IPayloadContext iPayloadContext) {
+        CachedSrcInv.INSTANCE.syncMetadata(endInvMetadata);
 
         Screen screen = Minecraft.getInstance().screen;
         if(!(screen instanceof AbstractContainerScreen<?>)) return;
         AttachedScreen<?> attachedScreen = ScreenAttachment.ATTACHMENT_MANAGER.get(screen);
         if(attachedScreen==null) return;
         attachedScreen.setEndInvMetadata(endInvMetadata);
+    }
 
+    public static void handleEndInvContent(EndInvContent content, IPayloadContext context){
+        CachedSrcInv.INSTANCE.initializeContents(content.itemMap());
+        Player player = context.player();
+
+        PageMetaDataManager manager = checkAndGetManagerForPlayer((LocalPlayer) player);
+        if(manager!=null && manager.getDisplayingPage() instanceof ItemPage itemPage){
+            itemPage.initializeContents(CachedSrcInv.INSTANCE);
+        }
     }
 
     public static void handleAutoPick(ItemPickedUpPayload itemPickedUpPayload, IPayloadContext iPayloadContext) {

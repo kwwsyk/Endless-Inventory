@@ -16,15 +16,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-import static com.kwwsyk.endinv.options.ItemClassify.ALL;
-
 public class StarredItemPage extends ItemPage{
 
-    public ResourceLocation icon = ResourceLocation.withDefaultNamespace("nether_star");
+    public ResourceLocation icon = ResourceLocation.withDefaultNamespace("book");
     private int[] countArray;
 
-    public StarredItemPage(PageMetaDataManager metaDataManager, int pageId) {
-        super(metaDataManager, ALL, pageId);
+    public StarredItemPage(PageType type,PageMetaDataManager metaDataManager) {
+        super(type, metaDataManager);
     }
 
     public void starItem(ItemStack stack, boolean isAdding){

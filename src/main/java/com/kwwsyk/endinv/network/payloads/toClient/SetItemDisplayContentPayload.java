@@ -13,7 +13,7 @@ import java.util.List;
 public record SetItemDisplayContentPayload(List<ItemStack> stacks) implements CustomPacketPayload {
 
     public static final Type<SetItemDisplayContentPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"endinv_content"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"item_display_content"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SetItemDisplayContentPayload> STREAM_CODEC = StreamCodec.composite(
             ItemStack.OPTIONAL_LIST_STREAM_CODEC,SetItemDisplayContentPayload::stacks,

@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.kwwsyk.endinv.data.EndInvCodecStrategy.*;
+
 public class EndlessInventoryData extends SavedData {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -35,7 +37,7 @@ public class EndlessInventoryData extends SavedData {
             return; // 仅在主世界执行
         }
         Factory<EndlessInventoryData> factory = new Factory<>(EndlessInventoryData::create,EndlessInventoryData::load);
-        levelEndInvData = level.getDataStorage().computeIfAbsent(factory,"endless_inventories");
+        levelEndInvData = level.getDataStorage().computeIfAbsent(factory,END_INV_LIST_KEY);
 
         LOGGER.info("Initialized EndlessInventoryData in {} with {} inventories", level.dimension().location(), levelEndInvData.levelEndInvs.size());
     }
@@ -63,7 +65,7 @@ public class EndlessInventoryData extends SavedData {
     public static EndlessInventoryData load(final CompoundTag tag, HolderLookup.Provider lookupProvider){
         EndlessInventoryData data = create();
         //Get EndInv[]
-        ListTag listTag = tag.getList("endless_inventories",10) ;
+        ListTag listTag = tag.getList(END_INV_LIST_KEY,10) ;
 
         CompoundTag head = listTag.getCompound(0);
         checkStrategy(head);
@@ -95,14 +97,16 @@ public class EndlessInventoryData extends SavedData {
                 endlessInventory.giveNewUuid();
             }
             //{}EndInv: uuid: UUID
-            invTag.putUUID("uuid", endlessInventory.getUuid());
+            invTag.putUUID(UUID_KEY, endlessInventory.getUuid());
+            invTag.putInt(MAX_STACK_SIZE_INT_KEY,endlessInventory.getMaxItemStackSize());
+            invTag.putBoolean(INFINITY_BOOL_KEY,endlessInventory.isInfinityMode());
             //[]+{}EndInv
             nbtTagList.add(invTag);
         }
 
         CompoundTag saveTag = new CompoundTag();
         //{HEAD}: endless_inventories: []
-        saveTag.put("endless_inventories",nbtTagList);
+        saveTag.put(END_INV_LIST_KEY,nbtTagList);
         return saveTag;
     }
 

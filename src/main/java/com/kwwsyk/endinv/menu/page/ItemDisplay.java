@@ -2,20 +2,15 @@ package com.kwwsyk.endinv.menu.page;
 
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.network.payloads.toClient.SetItemDisplayContentPayload;
-import com.kwwsyk.endinv.options.ItemClassify;
-import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 
 public class ItemDisplay extends ItemPage{
 
-    public ItemDisplay(PageMetaDataManager metaDataManager, Holder<ItemClassify> classify, int pageId) {
-        super(metaDataManager,classify,pageId);
+    public ItemDisplay(PageType pageType, PageMetaDataManager metaDataManager) {
+        super(pageType,metaDataManager);
     }
 
 
@@ -33,11 +28,14 @@ public class ItemDisplay extends ItemPage{
     }
     //often use on server
     public void refreshItems(){
-
+        if(srcInv.isRemote()){
+            requestContents();
+            return;
+        }
         EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
         List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,
                 metadata.sortType(),metadata.isSortReversed(),
-                getItemClassify().value(), metadata.searching());
+                getClassify(), metadata.searching());
         initializeContents(view);
     }
 
@@ -45,16 +43,6 @@ public class ItemDisplay extends ItemPage{
         syncContentToServer();
     }
 
-    public void syncContentToClient(ServerPlayer player){
-        EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
-        List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length, metadata.sortType(), metadata.isSortReversed(), getItemClassify().value(), metadata.searching());
-
-        NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
-        for(int i=0;i< view.size();++i){
-            stacks.set(i,view.get(i));
-        }
-        PacketDistributor.sendToPlayer(player,new SetItemDisplayContentPayload(stacks));
-    }
 
     @Override
     public boolean hasSearchBar() {

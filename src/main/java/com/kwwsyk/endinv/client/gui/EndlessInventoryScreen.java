@@ -30,7 +30,8 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
 
     public void init(){
-        this.leftPos = (this.width - this.imageWidth) / 2;
+        //this.leftPos = (this.width - this.imageWidth) / 2;
+        this.leftPos = 20;
         this.topPos = (this.height - this.imageHeight) / 2;
         this.frameWork = new ScreenFrameWork(this);
 

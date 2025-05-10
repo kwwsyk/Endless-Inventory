@@ -11,5 +11,6 @@ public class Reg {
     @SubscribeEvent
     public static void registerRegistries(NewRegistryEvent event){
         event.register(ModInitializer.CLASSIFY_REGISTRY);
+        event.register(ModInitializer.PAGE_REGISTRY);
     }
 }

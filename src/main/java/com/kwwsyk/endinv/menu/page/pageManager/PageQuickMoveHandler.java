@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.menu.page.pageManager;
 
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -8,16 +9,38 @@ public class PageQuickMoveHandler {
     private final AbstractContainerMenu menu;
     private final PageMetaDataManager manager;
 
+    /**
+     * To add custom quick move action for custom menus.
+     */
+    public interface PageQuickMoveOverride{
+        ItemStack quickMoveFromPage(ItemStack stack);
+    }
+
     public PageQuickMoveHandler(PageMetaDataManager manager){
         this.manager = manager;
         this.menu = manager.getMenu();
     }
+
     public ItemStack quickMoveFromPage(ItemStack stack){
-        moveItemStackTo(stack,0,menu.slots.size()-1,true);
+        switch (menu){
+            case PageQuickMoveOverride override -> stack = override.quickMoveFromPage(stack);
+            //add extends
+            case InventoryMenu ignored -> moveItemStackTo(stack,0,menu.slots.size()-1,true);
+            default -> moveItemStackTo(stack,0,menu.slots.size()-1,false);
+        }
+
         return stack;
     }
 
-    protected boolean moveItemStackTo(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection) {
+    /**
+     * Vanilla method of handling quick move item to area of menu.
+     * @param startIndex the start Index of the area.
+     * @param endIndex the end Index of the area. Should not below than startIndex.
+     * @param reverseDirection if true, iteration is from {@code endIndex} to {@code startIndex}
+     * @param stack to move stack, attention it will be changed
+     * @return true if item was moved.
+     */
+    public boolean moveItemStackTo(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection) {
         boolean flag = false;
         int i = startIndex;
         if (reverseDirection) {

@@ -2,22 +2,18 @@ package com.kwwsyk.endinv.menu.page.pageManager;
 
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.SourceInventory;
-import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
-import com.kwwsyk.endinv.menu.page.StarredItemPage;
+import com.kwwsyk.endinv.menu.page.PageType;
 import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
-import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.util.SortType;
-import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
@@ -47,28 +43,17 @@ public class AttachingManager implements PageMetaDataManager{
         init(config.pageData());
         this.quickMoveHandler = new PageQuickMoveHandler(this);
     }
-    private void init(int rows,int columns, SortType sortType, String searching, int pageId){
+    private void init(int rows, int columns, SortType sortType, String searching, PageType type){
         this.rows = rows;
         this.columns = columns;
         this.sortType = sortType;
         this.searching = searching;
-        this.switchPageWithId(pageId);
+        this.switchPageWithType(type);
     }
     private void init(PageData data){
-        init(data.rows(),data.columns(),data.sortType(),data.search(),data.pageId());
+        init(data.rows(),data.columns(),data.sortType(),data.search(),data.pageType().value());
     }
 
-    private List<DisplayPage> buildPages(){
-        List<DisplayPage> ret = new ArrayList<>();
-        ret.add(new StarredItemPage(this,0));
-        for(int i = 1; i< ItemClassify.DEFAULT_CLASSIFIES.size()+1; ++i){
-            Holder<ItemClassify> classify = ItemClassify.DEFAULT_CLASSIFIES.get(i-1);
-
-            DisplayPage page = DefaultPages.CLASSIFY2PAGE.get(classify).create(this, classify, i);
-            ret.add(page);
-        }
-        return ret;
-    }
 
     @Override
     public AbstractContainerMenu getMenu() {

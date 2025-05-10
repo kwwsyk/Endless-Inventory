@@ -49,9 +49,8 @@ public class ScreenFrameWork {
     private final ScreenRectangleWidgetParam sortBoxParam;
     private final ScreenRectangleWidgetParam configButtonParam;
     public final ScreenBgRenderer screenBgRenderer;
-    private final int leftPos;
-    private final int topPos;
-    private final int imageWidth;
+    public final int leftPos,topPos;
+    public final int imageWidth,imageHeight;
     private final int pageX;
     private final int pageY;
     private final int rows;
@@ -74,6 +73,7 @@ public class ScreenFrameWork {
         this.leftPos = screen.getGuiLeft();
         this.topPos = screen.getGuiTop();
         this.imageWidth = screen.getXSize();
+        this.imageHeight= screen.getYSize();
         this.rows = meta.getRowCount();
         this.columns = meta.getColumnCount();
         this.sortTypeSwitcher = screen;
@@ -100,6 +100,7 @@ public class ScreenFrameWork {
         this.columns = meta.getColumnCount();
         this.sortTypeSwitcher = attachedScreen;
         this.imageWidth = 13+18*columns;
+        this.imageHeight = screen.height;
         this.configButtonParam = new ScreenRectangleWidgetParam(0, this.topPos,20,20);
         int searchBoxY = this.topPos + 17+18*rows;
         this.searchBoxParam =
@@ -233,7 +234,8 @@ public class ScreenFrameWork {
     private void slotQuickMoved(Slot clicked){
         ItemStack itemStack = clicked.getItem();
         ItemStack remain = meta.getDisplayingPage().tryQuickMoveStackTo(itemStack);
-        clicked.set(remain);
+        clicked.setByPlayer(remain);
+        clicked.onTake(meta.getPlayer(), itemStack);
         PacketDistributor.sendToServer(new QuickMoveToPagePayload(clicked.index));
     }
 

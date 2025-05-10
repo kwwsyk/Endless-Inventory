@@ -1,27 +1,22 @@
 package com.kwwsyk.endinv.client.gui;
 
 import com.kwwsyk.endinv.SourceInventory;
-import com.kwwsyk.endinv.client.config.ClientConfig;
-import com.kwwsyk.endinv.menu.page.DefaultPages;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
-import com.kwwsyk.endinv.menu.page.StarredItemPage;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.menu.page.pageManager.PageQuickMoveHandler;
 import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
-import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.core.Holder;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
@@ -54,7 +49,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         @Override
         public void switchPageWithIndex(int index) {
             displayingPage = pages.get(index);
-            SyncedConfig.updateClientConfigAndSync(player.getData(SYNCED_CONFIG).pageIdChanged(displayingPage.pageId));
+            SyncedConfig.updateClientConfigAndSync(player.getData(SYNCED_CONFIG).pageTypeChanged(displayingPage.getPageType()));
             displayingPage.init(0,rows*columns);
         }
 
@@ -153,7 +148,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
 
     public AttachedScreen(AbstractContainerScreen<T> screen){
         this.screen = screen;
-        this.pages = buildPages();
+        this.pages = pageMetadata.buildPages();
         if (Minecraft.getInstance().player != null) {
             this.player = Minecraft.getInstance().player;
             PageData data = player.getData(SYNCED_CONFIG).pageData();
@@ -161,27 +156,12 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
             this.columns = data.columns();
             this.sortType = data.sortType();
             this.searching=data.search();
-            pageMetadata.switchPageWithId(data.pageId());
+            pageMetadata.switchPageWithType(data.pageType().value());
         }
         this.endInvMetadata = new EndInvMetadata(0,Integer.MAX_VALUE,false);
         this.quickMoveHandler = new PageQuickMoveHandler(this.pageMetadata);
     }
-    private List<DisplayPage> buildPages(){
-        List<DisplayPage> ret = new ArrayList<>();
-        ret.add(new StarredItemPage(this.pageMetadata,0));
-        for(int i = 1; i< ItemClassify.DEFAULT_CLASSIFIES.size()+1; ++i){
-            Holder<ItemClassify> classify = ItemClassify.DEFAULT_CLASSIFIES.get(i-1);
 
-            boolean hidden = ClientConfig.CONFIG.PAGES.get(i-1).getAsBoolean();
-            if (!hidden) {
-                DisplayPage page = DefaultPages.CLASSIFY2PAGE.get(classify).create(pageMetadata, classify, i);
-                page.icon = DefaultPages.CLASSIFY2RSRC.get(classify);
-                ret.add(page);
-            }
-
-        }
-        return ret;
-    }
     public void setEndInvMetadata(EndInvMetadata metadata){
         this.endInvMetadata = metadata;
     }
@@ -283,4 +263,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         return frameWork;
     }
 
+    public List<Rect2i> getArea(){
+        return List.of(new Rect2i(frameWork.leftPos, frameWork.topPos, frameWork.imageWidth, frameWork.imageHeight));
+    }
 }

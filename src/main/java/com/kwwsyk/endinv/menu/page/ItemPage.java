@@ -2,22 +2,26 @@ package com.kwwsyk.endinv.menu.page;
 
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.ModInitializer;
+import com.kwwsyk.endinv.client.CachedSrcInv;
 import com.kwwsyk.endinv.client.events.ScreenAttachment;
 import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
+import com.kwwsyk.endinv.network.payloads.toClient.EndInvContent;
+import com.kwwsyk.endinv.network.payloads.toClient.SetItemDisplayContentPayload;
 import com.kwwsyk.endinv.network.payloads.toServer.page.PageContext;
 import com.kwwsyk.endinv.network.payloads.toServer.page.StarItemPayload;
 import com.kwwsyk.endinv.network.payloads.toServer.page.op.ItemDisplayItemModPayload;
 import com.kwwsyk.endinv.network.payloads.toServer.page.op.PageStatePayload;
-import com.kwwsyk.endinv.options.ItemClassify;
+import com.kwwsyk.endinv.options.ContentTransferMode;
+import com.kwwsyk.endinv.options.ServerConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
@@ -43,8 +47,8 @@ public abstract class ItemPage extends DisplayPage{
     protected boolean suppressRefresh = false;
     protected List<ItemStack> inQueueStacks = null;
 
-    public ItemPage(PageMetaDataManager metaDataManager, Holder<ItemClassify> itemClassify, int pageId) {
-        super(metaDataManager, itemClassify, pageId);
+    public ItemPage(PageType pageType, PageMetaDataManager metaDataManager) {
+        super(pageType,metaDataManager);
         this.length = metadata.getRowCount()*metadata.getColumnCount();
     }
 
@@ -87,9 +91,29 @@ public abstract class ItemPage extends DisplayPage{
         }
     }
 
+    public void initializeContents(CachedSrcInv srcInv){
+        var view = srcInv.getSortedAndFilteredItemView(startIndex,length,metadata.sortType(),metadata.isSortReversed(), getClassify(),metadata.searching());
+        initializeContents(view);
+    }
+
     public void syncContentToServer() {
         if(srcInv.isRemote()){
             PacketDistributor.sendToServer(new PageContext(startIndex,length, metadata.getPlayer().getData(ModInitializer.SYNCED_CONFIG).pageData()));
+        }
+    }
+
+    public void syncContentToClient(ServerPlayer player){
+        EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
+        if(ServerConfig.CONFIG.TRANSFER_MODE.get()== ContentTransferMode.PART) {
+            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex, length, metadata.sortType(), metadata.isSortReversed(), getClassify(), metadata.searching());
+
+            NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
+            for (int i = 0; i < view.size(); ++i) {
+                stacks.set(i, view.get(i));
+            }
+            PacketDistributor.sendToPlayer(player, new SetItemDisplayContentPayload(stacks));
+        } else if (ServerConfig.CONFIG.TRANSFER_MODE.get() == ContentTransferMode.ALL) {
+            PacketDistributor.sendToPlayer(player,new EndInvContent(endInv.getItemMap()));
         }
     }
 
@@ -108,7 +132,7 @@ public abstract class ItemPage extends DisplayPage{
 
     @Override
     public boolean canScroll() {
-        return startIndex>0 || startIndex+length <= metadata.getItemSize();
+        return startIndex>0 || startIndex+length <= Math.max(metadata.getItemSize(),srcInv.getItemSize());
     }
 
     public int getSlotForMouseOffset(double XOffset,double YOffset){

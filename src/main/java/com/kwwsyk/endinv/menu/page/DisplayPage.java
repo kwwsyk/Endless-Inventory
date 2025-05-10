@@ -2,32 +2,40 @@ package com.kwwsyk.endinv.menu.page;
 
 
 import com.kwwsyk.endinv.SourceInventory;
+import com.kwwsyk.endinv.client.CachedSrcInv;
 import com.kwwsyk.endinv.client.gui.page.PageClickHandler;
 import com.kwwsyk.endinv.client.gui.page.PageRenderer;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.network.payloads.toServer.page.op.PageStatePayload;
 import com.kwwsyk.endinv.options.ItemClassify;
 import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nullable;
+
 public abstract class DisplayPage implements PageRenderer, PageClickHandler {
 
 
+    private final PageType pageType;
     public PageMetaDataManager metadata;
     public final SourceInventory srcInv;
-    public final int pageId;
-    private final Holder<ItemClassify> itemClassify;
+    @Nullable
+    private Holder<ItemClassify> itemClassify;
     public ResourceLocation icon = null;
+    public Component name = Component.empty();
     protected boolean holdOn = false;//if holding on the page view shall not change temporarily.
-    public DisplayPage(PageMetaDataManager metaDataManager, Holder<ItemClassify> itemClassify, int pageId){
+
+    public DisplayPage(PageType pageType,PageMetaDataManager metaDataManager){
         this.metadata = metaDataManager;
-        this.srcInv = metaDataManager.getSourceInventory().isRemote() ? REMOTE : metaDataManager.getSourceInventory();
-        this.itemClassify = itemClassify;
-        this.pageId = pageId;
+        this.srcInv = metaDataManager.getSourceInventory().isRemote() ? CachedSrcInv.INSTANCE : metaDataManager.getSourceInventory();
+        this.pageType = pageType;
+        this.itemClassify = pageType.classify;
+        this.name = Component.translatable("page.endinv."+pageType.registerName);
     }
 
     /**Render page icon with page's {@link #icon}
@@ -38,8 +46,9 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
         return icon;
     }
 
-    public Holder<ItemClassify> getItemClassify(){
-        return itemClassify;
+    public ItemClassify getClassify(){
+        var holder =  itemClassify!=null? itemClassify : ItemClassify.ALL;
+        return holder.value();
     }
     public abstract void scrollTo(float pos);
     public int getRowIndexForScroll(float scrollOffs) {
@@ -82,47 +91,7 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
 
     public abstract boolean canScroll();
 
-    @FunctionalInterface
-    public interface PageConstructor{
-        DisplayPage create(PageMetaDataManager metaDataManager, Holder<ItemClassify> itemClassify, int pageIndex);
+    public PageType getPageType() {
+        return pageType;
     }
-
-    protected final SourceInventory REMOTE = new SourceInventory() {
-        public ItemStack getItem(int i) {
-            return ItemStack.EMPTY;
-        }
-
-        public int getItemSize() {
-            return 0;
-        }
-
-        @Override
-        public boolean isRemote() {
-            return true;
-        }
-
-        @Override
-        public ItemStack takeItem(ItemStack itemStack) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public ItemStack takeItem(ItemStack itemStack, int count) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public ItemStack addItem(ItemStack itemStack) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public void setChanged() {
-            DisplayPage.this.setChanged();
-
-        }
-    };
 }

@@ -3,10 +3,7 @@ package com.kwwsyk.endinv.network.payloads;
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.network.ClientPayloadHandler;
 import com.kwwsyk.endinv.network.ServerPayloadHandler;
-import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
-import com.kwwsyk.endinv.network.payloads.toClient.ItemPickedUpPayload;
-import com.kwwsyk.endinv.network.payloads.toClient.SetItemDisplayContentPayload;
-import com.kwwsyk.endinv.network.payloads.toClient.SetStarredPagePayload;
+import com.kwwsyk.endinv.network.payloads.toClient.*;
 import com.kwwsyk.endinv.network.payloads.toServer.OpenEndInvPayload;
 import com.kwwsyk.endinv.network.payloads.toServer.page.PageContext;
 import com.kwwsyk.endinv.network.payloads.toServer.page.StarItemPayload;
@@ -87,6 +84,11 @@ public class PayloadReg {
                 SetStarredPagePayload.TYPE,
                 SetStarredPagePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleStarredItems
+        );
+        registrar.playToClient(
+                EndInvContent.TYPE,
+                EndInvContent.STREAM_CODEC,
+                ClientPayloadHandler::handleEndInvContent
         );
     }
 }

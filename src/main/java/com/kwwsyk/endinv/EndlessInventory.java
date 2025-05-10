@@ -4,15 +4,18 @@ package com.kwwsyk.endinv;
 import com.kwwsyk.endinv.data.EndlessInventoryData;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.ServerConfig;
-import com.kwwsyk.endinv.util.ItemStackLike;
-import com.kwwsyk.endinv.util.SearchUtil;
-import com.kwwsyk.endinv.util.SortType;
+import com.kwwsyk.endinv.util.*;
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import net.minecraft.Util;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.util.ItemStackMap;
 import org.slf4j.Logger;
 
 import javax.annotation.Nonnegative;
@@ -27,18 +30,24 @@ import static com.kwwsyk.endinv.ModInitializer.ENDINV_UUID;
 public class EndlessInventory implements SourceInventory{
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static final EndlessInventory EMPTY = new EndlessInventory(DEFAULT_UUID);
+    public static final StreamCodec<RegistryFriendlyByteBuf,Map<ItemKey, ItemState>> ITEM_MAP_STREAM_CODEC = ByteBufCodecs.map(
+            Object2ObjectLinkedOpenHashMap::new,
+            ItemKey.STREAM_CODEC,
+            ItemState.STREAM_CODEC,
+            Integer.MAX_VALUE
+    );
 
     private UUID uuid;
     private List<ItemStack> items;
-    private final Map<ItemStack,ItemState> itemMap;
+    private final Map<ItemKey, ItemState> itemMap;
     @SuppressWarnings("unchecked")
     private final List<ItemStack>[] sortedViews = new List[SortType.values().length];
-    private final long[] sortStates = new long[SortType.values().length];
-    private long modState = 0L;
+    private final long[] lastSortedTimes = new long[SortType.values().length];
+    private long lastModTime = Util.getMillis();
     private int maxStackSize;
     private boolean infinityMode;
     public final EndInvAffinities affinities;
+    public List<ServerPlayer> viewers = new ArrayList<>();
 
     public EndlessInventory(){
         this(UUID.randomUUID());
@@ -46,7 +55,7 @@ public class EndlessInventory implements SourceInventory{
 
     public EndlessInventory(UUID uuid){
         this.items = new ArrayList<>();
-        this.itemMap = ItemStackMap.createTypeAndTagLinkedMap();
+        this.itemMap = new Object2ObjectLinkedOpenHashMap<>();
         this.uuid = uuid;
         this.maxStackSize = ServerConfig.CONFIG.MAX_STACK_SIZE.getAsInt();
         this.infinityMode = ServerConfig.CONFIG.ENABLE_INFINITE.getAsBoolean();
@@ -56,20 +65,20 @@ public class EndlessInventory implements SourceInventory{
 
     private List<ItemStack> getSortedView(SortType type, boolean reverse) {
         int idx = type.ordinal();
-        if (sortStates[idx] != modState || sortedViews[idx] == null) {
+        if (lastSortedTimes[idx] != lastModTime || sortedViews[idx] == null) {
             List<ItemStack> view = itemMap.entrySet().stream()
-                    .map(e -> e.getKey().copyWithCount(e.getValue().count()))
+                    .map(e -> e.getKey().toStack(e.getValue().count()))
                     .collect(Collectors.toList());
 
             switch (type) {
                 case COUNT -> view.sort(Comparator.comparingInt(ItemStack::getCount));
                 case SPACE_AND_NAME -> view.sort(byId);
                 case ID -> view.sort(REGISTRY_ORDER_COMPARATOR);
-                case LAST_MODIFIED -> view.sort(Comparator.comparingLong(s -> itemMap.get(s.copyWithCount(1)).lastModified()));
+                case LAST_MODIFIED -> view.sort(Comparator.comparingLong(s -> itemMap.get(ItemKey.asKey(s)).lastModTime()));
                 default -> {}
             }
             sortedViews[idx] = view;
-            sortStates[idx] = modState;
+            lastSortedTimes[idx] = lastModTime;
         }
         var ret = sortedViews[idx];
         if(reverse) ret = ret.reversed();
@@ -102,14 +111,14 @@ public class EndlessInventory implements SourceInventory{
     }
 
     public ItemStackLike getStackWithZeroCount(ItemStack stack){
-        var state = itemMap.get(stack.copyWithCount(1));
+        var state = itemMap.get(ItemKey.asKey(stack));
         if(state==null) return ItemStackLike.asKey(stack);
-        return ItemStackLike.asKey(stack,state.count);
+        return ItemStackLike.asKey(stack,state.count());
     }
 
     public void syncItemsFromMap() {
         this.items = itemMap.entrySet().stream()
-                .map(e -> e.getKey().copyWithCount(e.getValue().count()))
+                .map(e -> e.getKey().toStack(e.getValue().count()))
                 .collect(Collectors.toList());
     }
 
@@ -117,28 +126,20 @@ public class EndlessInventory implements SourceInventory{
         this.itemMap.clear();
         for (ItemStack stack : items) {
             if (stack.isEmpty()) continue;
-            long now = increaseModState();
-            ItemStack key = stack.copyWithCount(1);
+            long now = updateLastModTime();
+            var key = ItemKey.asKey(stack);
             this.itemMap.put(key, new ItemState(stack.getCount(), now));
         }
         //invalidateCaches();
     }
 
-    public Map<ItemStack,ItemState> getItemMap(){
+    public Map<ItemKey,ItemState> getItemMap(){
         return itemMap;
     }
 
-    private static EndlessInventory createForPlayer(Player player){
-        EndlessInventory endlessInventory = new EndlessInventory();
-        EndlessInventoryData.levelEndInvData.addEndInvToLevel(endlessInventory);
-        player.setData(ENDINV_UUID,endlessInventory.uuid);
-        return endlessInventory;
-    }
-
-    private static EndlessInventory createForPlayer(Player player,UUID uuid){
-        EndlessInventory endlessInventory = new EndlessInventory(uuid);
-        EndlessInventoryData.levelEndInvData.addEndInvToLevel(endlessInventory);
-        return endlessInventory;
+    public List<ItemStack> getItemsAsList(){
+        syncItemsFromMap();
+        return this.items;
     }
 
     public int getMaxItemStackSize() {
@@ -157,9 +158,6 @@ public class EndlessInventory implements SourceInventory{
         this.infinityMode = infinityMode;
     }
 
-    public List<ItemStack> getItems(){
-        return this.items;
-    }
 
     /**
      * Add item to EndInv and return remain item copy.
@@ -170,28 +168,28 @@ public class EndlessInventory implements SourceInventory{
      */
     public ItemStack addItem(ItemStack itemStack){
         if(itemStack.isEmpty()) return ItemStack.EMPTY;
-        ItemStack key = itemStack.copyWithCount(1);
+        ItemKey key = ItemKey.asKey(itemStack);
         ItemState state = itemMap.get(key);
         int count = itemStack.getCount();
         int original = 0;
 
         if (state != null) {
-            original = state.count;
+            original = state.count();
         }
         int increased;
         if(original < maxStackSize){
             increased = original+count;
             if(increased <= maxStackSize){
-                itemMap.put(key, new ItemState(increased, increaseModState()));
+                itemMap.put(key, new ItemState(increased, updateLastModTime()));
                 setChanged();
                 return ItemStack.EMPTY;
             }else {
-                itemMap.put(key, new ItemState(maxStackSize, increaseModState()));
+                itemMap.put(key, new ItemState(maxStackSize, updateLastModTime()));
                 setChanged();
                 return itemStack.copyWithCount(increased-maxStackSize);
             }
         }else if(infinityMode){
-            itemMap.put(key, new ItemState(original, increaseModState()));
+            itemMap.put(key, new ItemState(original, updateLastModTime()));
             setChanged();
             return ItemStack.EMPTY;
         }else {
@@ -208,11 +206,11 @@ public class EndlessInventory implements SourceInventory{
      */
     public ItemStack takeItem(ItemStack stack, int count){
         if(stack.isEmpty()) return ItemStack.EMPTY;
-        ItemStack key = stack.copyWithCount(1);
+        ItemKey key = ItemKey.asKey(stack);
         ItemState state = itemMap.get(key);
         if (state == null) return ItemStack.EMPTY;
         //if infinity
-        if(state.count >= maxStackSize && infinityMode){
+        if(state.count() >= maxStackSize && infinityMode){
             setChanged();
             return stack.copyWithCount(count);
         }
@@ -221,9 +219,9 @@ public class EndlessInventory implements SourceInventory{
         ItemStack result = stack.copyWithCount(taken);
         if (taken == state.count()) {
             itemMap.remove(key);
-            increaseModState();
+            updateLastModTime();
         } else {
-            itemMap.put(key, new ItemState(state.count() - taken, increaseModState()));
+            itemMap.put(key, new ItemState(state.count() - taken, updateLastModTime()));
         }
         setChanged();
         return result;
@@ -267,6 +265,20 @@ public class EndlessInventory implements SourceInventory{
             endlessInventory = createForPlayer(player);
 
         }
+        endlessInventory.viewers.add((ServerPlayer) player);
+        return endlessInventory;
+    }
+
+    private static EndlessInventory createForPlayer(Player player){
+        EndlessInventory endlessInventory = new EndlessInventory();
+        EndlessInventoryData.levelEndInvData.addEndInvToLevel(endlessInventory);
+        player.setData(ENDINV_UUID,endlessInventory.uuid);
+        return endlessInventory;
+    }
+
+    private static EndlessInventory createForPlayer(Player player,UUID uuid){
+        EndlessInventory endlessInventory = new EndlessInventory(uuid);
+        EndlessInventoryData.levelEndInvData.addEndInvToLevel(endlessInventory);
         return endlessInventory;
     }
 
@@ -305,9 +317,26 @@ public class EndlessInventory implements SourceInventory{
     public void setChanged() {
         EndlessInventoryData.levelEndInvData.setDirty();
     }
-    public long increaseModState(){
-        ++modState;
-        return modState;
+
+    public long updateLastModTime(){
+        lastModTime=Util.getMillis();
+        return lastModTime;
+    }
+
+    /**
+     * Set endinv modState to new greater state.
+     * @param newState new state should be greater than original state
+     * @return endinv's modState that has been updated
+     */
+    public long updateModState(long newState){
+        this.lastModTime = Math.max(lastModTime,newState);
+        return lastModTime;
+    }
+
+    public void broadcastChanges(){
+        this.viewers.forEach(player -> ServerLevelEndInv
+                .checkAndGetManagerForPlayer(player)
+                .ifPresent(manager -> manager.getDisplayingPage().syncContentToClient(player)));
     }
 
     public boolean stillValid(Player player) {
@@ -321,5 +350,4 @@ public class EndlessInventory implements SourceInventory{
         this.setChanged();
     }
 
-    public record ItemState(int count, long lastModified){}
 }

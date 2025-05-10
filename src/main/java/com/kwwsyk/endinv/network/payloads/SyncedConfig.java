@@ -2,13 +2,14 @@ package com.kwwsyk.endinv.network.payloads;
 
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.client.config.ClientConfig;
+import com.kwwsyk.endinv.menu.page.PageType;
 import com.kwwsyk.endinv.util.SortType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -35,7 +36,7 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
     );
     public static final Type<SyncedConfig> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"endinv_settings"));
-    public static final StreamCodec<ByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
+    public static final StreamCodec<RegistryFriendlyByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
             PageData.STREAM_CODEC,SyncedConfig::pageData,
             ByteBufCodecs.BOOL,SyncedConfig::attaching,
             ByteBufCodecs.BOOL,SyncedConfig::autoPicking,
@@ -100,9 +101,6 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
         return TYPE;
     }
 
-    public SyncedConfig pageIdChanged(int pageId) {
-        return new SyncedConfig(pageData.pageIdChanged(pageId),attaching,autoPicking);
-    }
 
     public SyncedConfig searchingChanged(String searching) {
         return new SyncedConfig(pageData.searchingChanged(searching),attaching,autoPicking);
@@ -118,5 +116,9 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
 
     public SyncedConfig ofRowChanged(int rows) {
         return new SyncedConfig(pageData.ofRowChanged(rows),attaching,autoPicking);
+    }
+
+    public SyncedConfig pageTypeChanged(PageType pageType) {
+        return new SyncedConfig(pageData.ofPageTypeChanged(pageType),attaching,autoPicking);
     }
 }

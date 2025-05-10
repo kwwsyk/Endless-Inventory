@@ -1,0 +1,8 @@
+{
+  "package": "com.kwwsyk.endinv.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "RecipeBookComponentMixin",
+    "ServerPlaceRecipeMixin"
+  ]
+}

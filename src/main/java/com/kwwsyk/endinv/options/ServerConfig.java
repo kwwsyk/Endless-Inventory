@@ -10,6 +10,7 @@ public class ServerConfig {
     public final ModConfigSpec.IntValue MAX_STACK_SIZE;
     public final ModConfigSpec.BooleanValue ENABLE_INFINITE;
     public final ModConfigSpec.BooleanValue ENABLE_AUTO_PICK;
+    public final ModConfigSpec.EnumValue<ContentTransferMode> TRANSFER_MODE;
 
     private ServerConfig(ModConfigSpec.Builder builder){
         MAX_STACK_SIZE = builder
@@ -22,6 +23,8 @@ public class ServerConfig {
         ENABLE_AUTO_PICK = builder
                 .comment("Will enable player to auto pick item and exp")
                 .define("Utility",true);
+        TRANSFER_MODE = builder
+                .defineEnum("TransferMode",ContentTransferMode.ALL);
     }
 
     static {

@@ -4,7 +4,6 @@ import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,25 +28,25 @@ public class FromResource implements ScreenBgRenderer {
     private final int rows;
     private final int columns;
 
-    private PageMetaDataManager menu;
+    private final PageMetaDataManager manager;
     private boolean shouldRenderPlayerInv = true;
 
 
     public FromResource(EndlessInventoryScreen screen){
         this.screen = screen;
         this.imageWidth = screen.getXSize();
-        this.menu = screen.getMenu();
-        this.rows = menu.getRowCount();
+        this.manager = screen.getMenu();
+        this.rows = manager.getRowCount();
         this.columns = 9;
         this.leftPos = screen.getGuiLeft();
         this.topPos = screen.getGuiTop();
     }
-    public FromResource(AbstractContainerScreen<?> screen, PageMetaDataManager menu){
+    public FromResource(AbstractContainerScreen<?> screen, PageMetaDataManager manager){
         this.screen = screen;
         this.imageWidth = 256;
-        this.menu = menu;
-        this.rows = menu.getRowCount();
-        this.columns = menu.getColumnCount();
+        this.manager = manager;
+        this.rows = manager.getRowCount();
+        this.columns = manager.getColumnCount();
         this.leftPos = screen.getGuiLeft();
         this.topPos = screen.getGuiTop();
     }
@@ -113,24 +112,23 @@ public class FromResource implements ScreenBgRenderer {
 
         int pageX = pageSwitchTabParam.XPos();
         int pageY = pageSwitchTabParam.YPos();
-        int selectedPageIndex = menu.getDisplayingPageId();
-        for (int i = 0; i < menu.getPages().size(); ++i) {
+        int selectedPageIndex = manager.getDisplayingPageIndex();
+        for (int i = 0; i < manager.getPages().size(); ++i) {
             if (i == selectedPageIndex) {
                 if (i == 1) {
                     guiGraphics.blitSprite(TAB_LEFT_TOP_SELECTED, pageX,pageY,32,28);
-                } else if (i == menu.getPages().size() - 1) {
+                } else if (i == manager.getPages().size() - 1) {
                     guiGraphics.blitSprite(TAB_LEFT_BOTTOM_SELECTED, pageX,pageY,32,28);
                 } else
                     guiGraphics.blitSprite(TAB_LEFT_MIDDLE_SELECTED, pageX,pageY,32,28);
             } else {
                 guiGraphics.blitSprite(TAB_LEFT_MIDDLE_SPRITE, pageX+4,pageY,32,28);
             }
-            menu.getPages().get(i).renderPageIcon(guiGraphics,pageX+15,pageY+5,partialTick);
+            manager.getPages().get(i).renderPageIcon(guiGraphics,pageX+15,pageY+5,partialTick);
             if(mouseX>pageX&&mouseX<pageX+32&&mouseY>pageY&&mouseY<pageY+28){
                 guiGraphics.pose().pushPose();
                 guiGraphics.pose().translate(0,0,550.0f);
-                String s = menu.getPages().get(i).getItemClassify().getRegisteredName();
-                guiGraphics.renderTooltip(screen.getMinecraft().font, Component.literal(s),mouseX,mouseY);
+                guiGraphics.renderTooltip(screen.getMinecraft().font, manager.getPages().get(i).name ,mouseX,mouseY);
                 guiGraphics.pose().popPose();
             }
             pageY += 28;

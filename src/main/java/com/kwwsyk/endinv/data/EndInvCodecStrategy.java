@@ -37,6 +37,16 @@ public interface EndInvCodecStrategy {
                             .apply(p_381569_, ItemStack::new)
             )
     );
+    String END_INV_LIST_KEY = "endless_inventories";
+    String ITEM_LIST_KEY = "Items";
+    String SIZE_INT_KEY = "Size";
+    String LAST_MOD_TIME_LONG_KEY = "modState";
+    String UUID_KEY = "uuid";
+    String MAX_STACK_SIZE_INT_KEY = "maxItemStackSize";
+    String INFINITY_BOOL_KEY = "Infinity";
+    String AFFINITY_KEY = "Affinities";
+    String BOOKMARK_LIST_KEY = "starred_items";
+
 
     EndlessInventory tagToEndInv(CompoundTag invTag, HolderLookup.Provider lookupProvider);
 
@@ -56,7 +66,7 @@ public interface EndInvCodecStrategy {
                 nbtTagList.add(saveItem(itemStack.copyWithCount(1), provider, itemTag));
             }
         }
-        ret.put("starred_items",nbtTagList);
+        ret.put(BOOKMARK_LIST_KEY,nbtTagList);
 
         return  ret;
     }
@@ -64,7 +74,7 @@ public interface EndInvCodecStrategy {
     default void decodeAffinities(EndlessInventory endlessInventory, HolderLookup.Provider provider,@Nullable CompoundTag nbt){
         EndInvAffinities aff = endlessInventory.affinities;
         if(nbt==null) return;
-        ListTag tagList = nbt.getList("starred_items", Tag.TAG_COMPOUND);
+        ListTag tagList = nbt.getList(BOOKMARK_LIST_KEY, Tag.TAG_COMPOUND);
         for (int i = 0; i < tagList.size(); i++) {
             CompoundTag itemTag = tagList.getCompound(i);
             parse(provider, itemTag).filter(it -> !it.isEmpty()).ifPresent(aff::addStarredItem);

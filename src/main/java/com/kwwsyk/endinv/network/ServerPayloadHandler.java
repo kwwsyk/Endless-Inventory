@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.network;
 
 import com.kwwsyk.endinv.EndlessInventory;
+import com.kwwsyk.endinv.ServerLevelEndInv;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.menu.page.ItemPage;
 import com.kwwsyk.endinv.menu.page.pageManager.AttachingManager;
@@ -25,23 +26,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 
 
 public abstract class ServerPayloadHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static final Map<ServerPlayer, PageMetaDataManager> PAGE_META_DATA_MANAGER = new HashMap<>();
 
-    private static PageMetaDataManager checkAndGetManagerForPlayer(ServerPlayer player){
-        if(player.containerMenu instanceof EndlessInventoryMenu menu) return menu;
-        if(PAGE_META_DATA_MANAGER.get(player) instanceof AttachingManager manager){
-            if(manager.getMenu()!=player.containerMenu) return null;
-            return manager;
-        }else return null;
-    }
 
     public static void handleEndInvSettings(SyncedConfig syncedConfig, IPayloadContext iPayloadContext){
         Player player = iPayloadContext.player();
@@ -50,10 +42,8 @@ public abstract class ServerPayloadHandler {
 
     public static void handleMenuPage(PageContext payload, IPayloadContext iPayloadContext){
         ServerPlayer serverPlayer = (ServerPlayer) iPayloadContext.player();
-        PageMetaDataManager menu = checkAndGetManagerForPlayer(serverPlayer);
-        if(menu!=null){
-            syncPageContext(menu,payload,serverPlayer);
-        }
+        var optional = ServerLevelEndInv.checkAndGetManagerForPlayer(serverPlayer);
+        optional.ifPresent(manager -> syncPageContext(manager, payload, serverPlayer));
     }
 
     /**Synchronize server page context from context in payloads, if {@code serverPlayer} is not null,
@@ -70,7 +60,7 @@ public abstract class ServerPayloadHandler {
         boolean reverseSort = context.pageData().reverseSort();
         String search = context.search();
 
-        meta.switchPageWithId(context.pageData().pageId());
+        meta.switchPageWithType(context.pageData().pageType().value());
         meta.setSortType(sortType);
         meta.setSortReversed(reverseSort);
         meta.setSearching(search);
@@ -83,8 +73,9 @@ public abstract class ServerPayloadHandler {
     }
     public static void handlePageClick(PageClickPayload payload, IPayloadContext context){
         ServerPlayer player = (ServerPlayer) context.player();
-        PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
-        if(player.containerMenu.containerId != payload.containerId() || manager==null) return;
+        Optional<PageMetaDataManager> optional = ServerLevelEndInv.checkAndGetManagerForPlayer(player);
+        if(player.containerMenu.containerId != payload.containerId() || optional.isEmpty()) return;
+        PageMetaDataManager manager = optional.get();
 
         syncPageContext(manager,payload.context(),null);
 
@@ -107,8 +98,9 @@ public abstract class ServerPayloadHandler {
     public static void handlePageStates(PageStatePayload payload, IPayloadContext context){
         ServerPlayer player = (ServerPlayer) context.player();
         boolean holdOn = payload.holdOn();
-        PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
-        if(manager!=null){
+        var optional = ServerLevelEndInv.checkAndGetManagerForPlayer(player);
+        if(optional.isPresent()){
+            PageMetaDataManager manager = optional.get();
             if(holdOn){
                 manager.getDisplayingPage().setHoldOn();
             }else {
@@ -124,7 +116,7 @@ public abstract class ServerPayloadHandler {
             player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createServer, Component.empty()));
         }else if(!openEndInvPayload.openNew()){
             AttachingManager manager = new AttachingManager(player.containerMenu, EndlessInventory.getEndInvForPlayer(player),player);
-            PAGE_META_DATA_MANAGER.put(player,manager);
+            ServerLevelEndInv.PAGE_META_DATA_MANAGER.put(player,manager);
             manager.sendEndInvMetadataToRemote();
         }
 
@@ -133,8 +125,9 @@ public abstract class ServerPayloadHandler {
     public static void handleItemDisplayItemMod(ItemDisplayItemModPayload payload, IPayloadContext iPayloadContext) {
         ServerPlayer player = (ServerPlayer) iPayloadContext.player();
         if(player.containerMenu.getCarried().isEmpty() && player.hasInfiniteMaterials()){
-            PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
-            if(manager==null) return;
+            var optional = ServerLevelEndInv.checkAndGetManagerForPlayer(player);
+            if(optional.isEmpty()) return;
+            PageMetaDataManager manager = optional.get();
             if(manager.getDisplayingPage() instanceof ItemPage itemPage){
                 if(payload.isAdding()){
                     itemPage.addItem(payload.stack());
@@ -159,9 +152,11 @@ public abstract class ServerPayloadHandler {
 
     public static void handleQuickMovePage(QuickMoveToPagePayload payload, IPayloadContext iPayloadContext) {
         ServerPlayer player = (ServerPlayer) iPayloadContext.player();
-        PageMetaDataManager manager = checkAndGetManagerForPlayer(player);
-        if(manager==null) return;
-        Slot slot = manager.getMenu().getSlot(payload.slotId());
-        manager.slotQuickMoved(slot);
+        var optional = ServerLevelEndInv.checkAndGetManagerForPlayer(player);
+        optional.ifPresent(manager -> {
+            Slot slot = manager.getMenu().getSlot(payload.slotId());
+            manager.slotQuickMoved(slot);
+        });
+
     }
 }
