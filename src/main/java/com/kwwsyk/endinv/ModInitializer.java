@@ -41,13 +41,19 @@ public class ModInitializer {
     public static final UUID DEFAULT_UUID = UUID.fromString("f47ac10b-58cc-4372-a567-0e02b2c3d479");
 
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, MOD_ID);
+
     public static final DeferredHolder<MenuType<?>, MenuType<EndlessInventoryMenu>> ENDLESS_INVENTORY_MENU_TYPE = MENUS.register("endless_inventory",
             ()->new MenuType<>(EndlessInventoryMenu::createClient, FeatureFlags.DEFAULT_FLAGS));
+
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
+
     public static final DeferredItem<Item> testEndInv = ITEMS.registerItem("test_endinv", TestEndInv::new);
+
     public static final DeferredItem<Item> SCREEN_DEBUGGER = ITEMS.registerItem("screen_debugger", ScreenDebugger::new);
+
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES,
             MOD_ID);
+
     public static final Supplier<AttachmentType<UUID>> ENDINV_UUID = ATTACHMENT_TYPES.register(
             "endinv_uuid",
             ()->AttachmentType
@@ -56,21 +62,27 @@ public class ModInitializer {
                     .copyOnDeath()
                     .build()
     );
+
     public static final ResourceKey<Registry<ItemClassify>> CLASSIFY_REGISTRY_KEY =
             ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MOD_ID,"item_classify"));
+
     public static final ResourceKey<Registry<PageType>> PAGE_REG_KEY =
             ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MOD_ID,"display_page"));
+
     public static final Registry<ItemClassify> CLASSIFY_REGISTRY =
             new RegistryBuilder<>(CLASSIFY_REGISTRY_KEY)
                     .sync(true)
                     .defaultKey(ResourceLocation.fromNamespaceAndPath(MOD_ID,"all"))
                     .create();
+
     public static final Registry<PageType> PAGE_REGISTRY =
             new RegistryBuilder<>(PAGE_REG_KEY)
                     .sync(true)
                     .defaultKey(ResourceLocation.fromNamespaceAndPath(MOD_ID,"all_items"))
                     .create();
+
    public static final DeferredRegister<ItemClassify> CLASSIFIES = DeferredRegister.create(CLASSIFY_REGISTRY,MOD_ID);
+
    public static final DeferredRegister<PageType> PAGES = DeferredRegister.create(PAGE_REGISTRY,MOD_ID);
 
     public static final Holder<PageType> ALL_ITEMS = registerPageTypes("all_items", ItemDisplay::new, ALL, "chest");

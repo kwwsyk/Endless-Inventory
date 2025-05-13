@@ -2,7 +2,6 @@ package com.kwwsyk.endinv.menu.page;
 
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
-import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -11,20 +10,6 @@ public class ItemDisplay extends ItemPage{
 
     public ItemDisplay(PageType pageType, PageMetaDataManager metaDataManager) {
         super(pageType,metaDataManager);
-    }
-
-
-
-    public void init(int startIndex, int length) {
-        this.startIndex = startIndex;
-        this.length = length;
-        this.items = NonNullList.withSize(length,ItemStack.EMPTY); // 预填充
-        release();
-        if(srcInv.isRemote()) {
-            requestContents();
-        }else {
-            refreshItems();
-        }
     }
     //often use on server
     public void refreshItems(){

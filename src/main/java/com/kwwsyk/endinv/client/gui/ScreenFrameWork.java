@@ -3,7 +3,6 @@ package com.kwwsyk.endinv.client.gui;
 import com.kwwsyk.endinv.client.events.KeyMappingReg;
 import com.kwwsyk.endinv.client.gui.bg.FromResource;
 import com.kwwsyk.endinv.client.gui.bg.ScreenBgRenderer;
-import com.kwwsyk.endinv.client.gui.bg.ScreenLayoutMode;
 import com.kwwsyk.endinv.client.gui.bg.ScreenRectangleWidgetParam;
 import com.kwwsyk.endinv.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
@@ -40,10 +39,12 @@ import static net.minecraft.client.gui.screens.Screen.hasShiftDown;
 
 public class ScreenFrameWork {
 
+    private static ScreenFrameWork INSTANCE;
+
     private final Minecraft mc;
-    private final PageMetaDataManager meta;
-    private final AbstractContainerScreen<?> screen;
-    private final AbstractContainerMenu menu;
+    public final PageMetaDataManager meta;
+    public final AbstractContainerScreen<?> screen;
+    public final AbstractContainerMenu menu;
     private final SortTypeSwitcher sortTypeSwitcher;
     private final ScreenRectangleWidgetParam searchBoxParam;
     private final ScreenRectangleWidgetParam sortBoxParam;
@@ -80,15 +81,16 @@ public class ScreenFrameWork {
         this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
         this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 89, this.topPos + 5, 80, 12);
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
-        this.screenBgRenderer = FromResource.createDefaultMode(screen,
-                new ScreenLayoutMode(leftPos,topPos,false, leftPos, topPos + screen.getMenu().getRowCount() *18 +25),
-                new ScreenRectangleWidgetParam(leftPos-32,topPos+1,32,28));
-        pageX = screenBgRenderer.screenLayoutMode().menuXPos()+8;
-        pageY = screenBgRenderer.screenLayoutMode().menuYPos()+17;
+        this.screenBgRenderer = new FromResource.MenuMode(screen,new ScreenRectangleWidgetParam(leftPos-32,topPos+1,32,28));
+
+        pageX = leftPos+8;
+        pageY = topPos+17;
         pageXSize = columns*18;
         pageYSize = rows*18;
         addWidgets();
+        INSTANCE = this;
     }
+
     public ScreenFrameWork(AttachedScreen<?> attachedScreen){
         this.screen = attachedScreen.screen;
         this.mc = screen.getMinecraft();
@@ -106,20 +108,20 @@ public class ScreenFrameWork {
         this.searchBoxParam =
                 new ScreenRectangleWidgetParam(this.leftPos+1, searchBoxY, Math.min(320,imageWidth), Math.min(20,screen.height-searchBoxY));
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 6,topPos + 5,77,12);
-        this.screenBgRenderer = FromResource.createLeftMode(screen,meta,
-                new ScreenLayoutMode(leftPos,topPos,true, -1,-1),
-                new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28));
-        pageX = screenBgRenderer.screenLayoutMode().menuXPos()+8;
-        pageY = screenBgRenderer.screenLayoutMode().menuYPos()+17;
+        this.screenBgRenderer = new FromResource.LeftLayout(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28));
+
+        pageX = leftPos+8;
+        pageY = topPos+17;
         pageXSize = columns*18;
         pageYSize = rows*18;
         addWidgets();
+        INSTANCE = this;
     }
     
     private void addWidgets(){
         this.configButton = Button.builder(Component.literal("⚙"),
                         btn -> {
-
+                            screen.getMinecraft().setScreen(new EndInvSettingScreen(screen));
                         })
                 .pos(this.configButtonParam.XPos(),this.configButtonParam.YPos())
                 .size(this.configButtonParam.XSize(),this.configButtonParam.YSize())
@@ -155,12 +157,18 @@ public class ScreenFrameWork {
         sortTypeSwitcher.setHoveringOnSortBox(false);
     }
 
+    public void renderBg(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick){
+        screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
+        meta.getDisplayingPage().renderBg(screenBgRenderer,guiGraphics,partialTick,mouseX,mouseY);
+    }
+
     private boolean isHoveringOnPage;
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick){
         roughMouseX = mouseX;
         roughMouseY = mouseY;
 
         isHoveringOnPage = hasClickedOnPage(mouseX,mouseY);
+
 
         meta.getDisplayingPage().renderPage(guiGraphics,pageX,pageY);
         if(!sortTypeSwitcher.isHoveringOnSortBox()) meta.getDisplayingPage().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
@@ -191,7 +199,7 @@ public class ScreenFrameWork {
     protected int hasClickedOnPageSwitchBar(double mouseX, double mouseY){
         double XOffset=mouseX- screenBgRenderer.pageSwitchBarParam().XPos();
         double YOffset=mouseY- screenBgRenderer.pageSwitchBarParam().YPos();
-        if(XOffset<0 || XOffset> screenBgRenderer.pageSwitchBarParam().XSize()) return -1;
+        if(XOffset<0 || XOffset> screenBgRenderer.pageSwitchBarParam().XSize() || YOffset<0) return -1;
         int index = (int)YOffset/ screenBgRenderer.pageSwitchBarParam().YSize();
         if(index<0||index>=meta.getPages().size()) return -1;
         return index;
@@ -249,6 +257,9 @@ public class ScreenFrameWork {
 
 
     public boolean mouseClicked(double mouseX, double mouseY, int keyCode){
+        if(!searchBoxParam.hasCLickedOn((int) mouseX, (int) mouseY)){
+            searchBox.setFocused(false);
+        }
         //handle menu item quick move
         if(KeyMappingReg.QUICK_MOVE_KEY.get().isActiveAndMatches(InputConstants.Type.MOUSE.getOrCreate(keyCode))){
             Slot clicked = findSlot(mouseX,mouseY);
@@ -375,7 +386,9 @@ public class ScreenFrameWork {
         return false;
     }
 
+
     private boolean ignoreTextInput;
+
     public boolean keyPressed(int keyCode, int scanCode, int modifiers){
         this.ignoreTextInput = false;
 
@@ -449,11 +462,15 @@ public class ScreenFrameWork {
         }
     }
 
-    private void refreshSearchResults(){
+    public void refreshSearchResults(){
         String searching = searchBox.getValue();
         meta.setSearching(searching);
         SyncedConfig.updateClientConfigAndSync(meta.getPlayer().getData(SYNCED_CONFIG).searchingChanged(searching));
         meta.getDisplayingPage().release();
         meta.getDisplayingPage().syncContentToServer();
+    }
+
+    public static @Nullable ScreenFrameWork getInstance(){
+        return INSTANCE;
     }
 }

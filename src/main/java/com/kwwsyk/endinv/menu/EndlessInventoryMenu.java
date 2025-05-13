@@ -102,7 +102,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
     }
 
     private void init(PageData pageData){
-        init(pageData.rows()-4,pageData.sortType(),pageData.search(),pageData.pageType().value());//4: reserved rows for inventory.
+        init(pageData.rows(),pageData.sortType(),pageData.search(),pageData.pageType().value());//4: reserved rows for inventory.
     }
 
     private void addStandardInventorySlots(Inventory playerInventory, int x, int y){

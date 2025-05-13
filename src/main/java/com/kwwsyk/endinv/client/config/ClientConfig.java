@@ -1,14 +1,14 @@
 package com.kwwsyk.endinv.client.config;
 
-import com.kwwsyk.endinv.options.ItemClassify;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.core.Holder;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager.defaultPages;
 
 public class ClientConfig {
 
@@ -27,9 +27,8 @@ public class ClientConfig {
 
         ROWS = builder.comment("Default rows of EndInv view, 0 for auto.")
                 .translation("config.endinv.comment.row1")
-                .translation("config.endinv.comment.row2")
                 .defineInRange("rows",0,0,Integer.MAX_VALUE);
-        COLUMNS = builder.comment("Defaut columns of EndInv view, 0 for auto.")
+        COLUMNS = builder.comment("Default columns of EndInv view, 0 for auto.")
                 .defineInRange("columns",9,0,Integer.MAX_VALUE);
         AUTO_SUIT_COLUMN = builder.comment("auto suit in columns if GUI Size is too big.")
                 .define("auto_suit_column",true);
@@ -37,15 +36,11 @@ public class ClientConfig {
         TEXTURE = builder.comment("Texture mode of EndInv view, transparent or vanilla menu style")
                 .defineInRange("texture_mode",0,0,Integer.MAX_VALUE);
 
-        int index = 0;
-        for (Holder<ItemClassify> classify : ItemClassify.DEFAULT_CLASSIFIES) {
-            String name = classify.getRegisteredName();
-            boolean hidden = ItemClassify.INDEX2HIDING.get(index)>0;
-            ModConfigSpec.BooleanValue builderEntry = builder.comment("Hide "+name+" page, true for hidden")
-                    .translation("config.endinv.comment.hidepages")
-                    .define("hide_pages."+name, hidden);
-            PAGES.add(builderEntry);
-            index++;
+        for (net.minecraft.core.Holder<com.kwwsyk.endinv.menu.page.PageType> pageHolder : defaultPages) {
+            ModConfigSpec.BooleanValue pageEntry = builder
+                    .comment("Hide page: " + pageHolder.getRegisteredName())
+                    .define("hide_pages." + pageHolder.getRegisteredName(), false);
+            PAGES.add(pageEntry);
         }
     }
 

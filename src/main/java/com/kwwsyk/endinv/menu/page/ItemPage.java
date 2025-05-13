@@ -65,7 +65,9 @@ public abstract class ItemPage extends DisplayPage{
     public void init(int startIndex, int length) {
         this.startIndex = startIndex;
         this.length = Math.min(length,metadata.getRowCount()*metadata.getColumnCount());
-        this.items = NonNullList.withSize(length, ItemStack.EMPTY);
+        if(items==null || length!=this.items.size()){
+            this.items = NonNullList.withSize(length,ItemStack.EMPTY);
+        }
         refreshItems();
     }
 
@@ -132,7 +134,9 @@ public abstract class ItemPage extends DisplayPage{
 
     @Override
     public boolean canScroll() {
-        return startIndex>0 || startIndex+length <= Math.max(metadata.getItemSize(),srcInv.getItemSize());
+        return startIndex>0
+                ||( srcInv instanceof CachedSrcInv cache ? startIndex+length <= cache.getSortedAndFilteredItemView(0,Integer.MAX_VALUE,  metadata.sortType(), metadata.isSortReversed(), getClassify(), metadata.searching()).size()
+                : startIndex+length< metadata.getItemSize());
     }
 
     public int getSlotForMouseOffset(double XOffset,double YOffset){
@@ -247,6 +251,7 @@ public abstract class ItemPage extends DisplayPage{
             }
         }
     }
+
     @Override
     public boolean doubleClicked(double XOffset, double YOffset, double lastX, double lastY, long clickInterval) {
         return clickedInOneSlot(XOffset, YOffset,lastX,lastY) && clickInterval<=250;

@@ -182,7 +182,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         GuiGraphics guiGraphics = event.getGuiGraphics();
         float partialTick = event.getPartialTick();
 
-        frameWork.screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
+        frameWork.renderBg(guiGraphics,mouseX,mouseY,partialTick);
         frameWork.render(guiGraphics,mouseX,mouseY,partialTick);
     }
 
@@ -228,7 +228,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
     public void charTyped(ScreenEvent.CharacterTyped.Pre event) {
         char codePoint = event.getCodePoint();
         int modifiers = event.getModifiers();
-        frameWork.charTyped(codePoint, modifiers);
+        event.setCanceled(frameWork.charTyped(codePoint,modifiers));
     }
 
     @Override

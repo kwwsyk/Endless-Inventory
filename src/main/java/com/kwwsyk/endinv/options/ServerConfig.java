@@ -18,11 +18,10 @@ public class ServerConfig {
                 .defineInRange("ItemCapacity.maxStackSize",Integer.MAX_VALUE,0,Integer.MAX_VALUE);
         ENABLE_INFINITE = builder
                 .translation("config.endinv.comment.enable_infinite1")
-                .translation("config.endinv.comment.enable_infinite2")
                 .define("ItemCapacity.enableInfinite",false);
         ENABLE_AUTO_PICK = builder
                 .comment("Will enable player to auto pick item and exp")
-                .define("Utility",true);
+                .define("autoPickUtility",true);
         TRANSFER_MODE = builder
                 .defineEnum("TransferMode",ContentTransferMode.ALL);
     }

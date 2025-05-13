@@ -30,8 +30,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
 
     public void init(){
-        //this.leftPos = (this.width - this.imageWidth) / 2;
-        this.leftPos = 20;
+        this.leftPos = (this.width - this.imageWidth) / 2;
         this.topPos = (this.height - this.imageHeight) / 2;
         this.frameWork = new ScreenFrameWork(this);
 
@@ -88,7 +87,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
 
     @Override
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        this.frameWork.screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
+        this.frameWork.renderBg(guiGraphics,mouseX,mouseY,partialTick);
     }
     @Override
     public void switchSortTypeTo(SortType type) {

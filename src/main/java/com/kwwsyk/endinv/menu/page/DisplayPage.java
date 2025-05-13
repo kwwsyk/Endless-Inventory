@@ -22,13 +22,21 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
 
 
     private final PageType pageType;
+
     public PageMetaDataManager metadata;
+
     public final SourceInventory srcInv;
+
     @Nullable
     private Holder<ItemClassify> itemClassify;
+
     public ResourceLocation icon = null;
+
     public Component name = Component.empty();
+
     protected boolean holdOn = false;//if holding on the page view shall not change temporarily.
+
+
 
     public DisplayPage(PageType pageType,PageMetaDataManager metaDataManager){
         this.metadata = metaDataManager;
@@ -50,28 +58,37 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
         var holder =  itemClassify!=null? itemClassify : ItemClassify.ALL;
         return holder.value();
     }
+
     public abstract void scrollTo(float pos);
+
     public int getRowIndexForScroll(float scrollOffs) {
         return Math.max((int)((double)(scrollOffs * (float)metadata.getRowCount()) + 0.5), 0);
     }
+
     public float getScrollForRowIndex(int rowIndex) {
         return Mth.clamp((float)rowIndex / (float)metadata.getRowCount(), 0.0F, 1.0F);
     }
+
     public abstract void init(int startIndex, int length);
 
     public void setChanged() {
     }
+
     public abstract void syncContentToServer();
+
     public abstract void syncContentToClient(ServerPlayer player);
+
     public ItemStack tryQuickMoveStackTo(ItemStack stack){
         if(!srcInv.isRemote()){
             return srcInv.addItem(stack);
         }
         return stack.copy();
     }
+
     public ItemStack tryExtractItem(ItemStack item, int count){
         return ItemStack.EMPTY;
     }
+
     public void setHoldOn(){
         if(!holdOn){
             if(srcInv.isRemote())
@@ -79,6 +96,7 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
             holdOn = true;
         }
     }
+
     public void release(){
         if(holdOn){
             if(srcInv.isRemote())
@@ -93,5 +111,13 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
 
     public PageType getPageType() {
         return pageType;
+    }
+
+    public PageRenderer getPageRenderer(){
+        return this;
+    }
+
+    public PageClickHandler getPageClickHandler(){
+        return this;
     }
 }

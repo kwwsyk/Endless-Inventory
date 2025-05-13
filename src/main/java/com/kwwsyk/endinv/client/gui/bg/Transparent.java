@@ -1,26 +1,15 @@
 package com.kwwsyk.endinv.client.gui.bg;
 
-import net.minecraft.client.gui.GuiGraphics;
-import org.jetbrains.annotations.NotNull;
+import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
+import com.kwwsyk.endinv.client.gui.ScreenFrameWork;
 
-public class Transparent implements ScreenBgRenderer {
-    @Override
-    public void renderBg(@NotNull GuiGraphics guiGraphics, float v, int i0, int i1) {
+public abstract class Transparent extends ScreenBgRendererImpl {
 
+    public Transparent(ScreenFrameWork frameWork) {
+        super(frameWork);
     }
 
-    @Override
-    public void init() {
-
-    }
-
-    @Override
-    public ScreenLayoutMode screenLayoutMode() {
-        return null;
-    }
-
-    @Override
-    public ScreenRectangleWidgetParam pageSwitchBarParam() {
-        return null;
+    public Transparent(EndlessInventoryScreen screen) {
+        super(screen);
     }
 }

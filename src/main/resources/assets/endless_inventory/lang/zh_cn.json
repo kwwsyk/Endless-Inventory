@@ -1,4 +1,8 @@
 {
+  "item.endless_inventory.test_endinv": "无尽背包访问器",
+
+  "title.endinv.settings": "EndInv设置",
+
   "config.endinv.comment.row1": "Endless Inventory的行数",
   "config.endinv.comment.row2": "0=根据GUI大小自动适应最大行数，设置过大行数也如此",
   "config.endinv.comment.sort_type": "排序方式",
