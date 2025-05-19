@@ -1,8 +1,11 @@
 package com.kwwsyk.endinv.client.events;
 
 import com.kwwsyk.endinv.ModInitializer;
+import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.menu.page.ItemPage;
+import com.kwwsyk.endinv.network.payloads.PageData;
+import com.kwwsyk.endinv.network.payloads.SyncedConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,6 +17,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
+import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
+
 @EventBusSubscriber(modid = ModInitializer.MOD_ID,value = Dist.CLIENT)
 public class ScreenDebug {
 
@@ -21,6 +26,7 @@ public class ScreenDebug {
 
     @SubscribeEvent
     public static void renderScreen(ScreenEvent.Render.Post event){
+        if(!ClientConfig.CONFIG.ENABLE_DEBUG.getAsBoolean()) return;
         Screen screen = event.getScreen();
         int width = screen.width;
         int height = screen.height;
@@ -75,6 +81,22 @@ public class ScreenDebug {
                 graphics.drawString(mc.font, Component.literal("GUITop: " + guiTop), width - 128, 60, 0xFFFFFF00);
                 graphics.drawString(mc.font, Component.literal("mouseX: " + mouseX), width - 128, 70, 0xFFFFFF00);
                 graphics.drawString(mc.font, Component.literal("mouseY: " + mouseY), width - 128, 80, 0xFFFFFF00);
+
+                if(mc.player!=null) {
+                    SyncedConfig syncedConfig = mc.player.getData(SYNCED_CONFIG);
+                    PageData pageData = syncedConfig.pageData();
+                    graphics.drawString(mc.font, Component.literal("Page data: "), 0, 10, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Page: "+pageData.pageType().getRegisteredName()), 0, 20, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Rows: "+pageData.rows()), 10, 30, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Columns: "+pageData.columns()), 10, 40, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Sort type: "+pageData.sortType()), 10, 50, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Sort reversed: "+pageData.reverseSort()), 10, 60, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Searching: "+pageData.search()), 10, 70, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Configurations: "), 0, 80, 0xFFFFFF00);
+                    var config = ClientConfig.CONFIG;
+                    graphics.drawString(mc.font, Component.literal("Auto suit in columns: "+ config.AUTO_SUIT_COLUMN.getAsBoolean()), 10, 90, 0xFFFFFF00);
+                    graphics.drawString(mc.font, Component.literal("Texture mode: "+ config.TEXTURE.get().name()), 10, 100, 0xFFFFFF00);
+                }
             }
         }
         pose.popPose();
@@ -82,8 +104,9 @@ public class ScreenDebug {
 
     @SubscribeEvent
     public static void click(ScreenEvent.KeyPressed.Post event){
+        if(!ClientConfig.CONFIG.ENABLE_DEBUG.getAsBoolean()) return;
         int button = event.getKeyCode();
-        if(button == InputConstants.KEY_0){
+        if(button == InputConstants.KEY_F3){
             phase++;
             if(phase>2) phase=0;
         }

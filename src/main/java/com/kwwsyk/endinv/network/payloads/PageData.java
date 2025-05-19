@@ -10,6 +10,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
+import java.util.Objects;
+
 /**Both stored and synced data of player and page, obtained in specific Payloads.
  * See {@link com.kwwsyk.endinv.network.payloads.toServer.page.PageContext},{@link SyncedConfig}
  */
@@ -56,5 +58,16 @@ public record PageData(Holder<PageType> pageType, int rows, int columns, SortTyp
     }
     public PageData ofPageTypeChanged(PageType pageType) {
         return new PageData(Holder.direct(pageType),this.rows,this.columns,this.sortType,!this.reverseSort,this.search);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof PageData(
+                Holder<PageType> type, int rows1, int columns1, SortType sortType1, boolean sort, String search1
+        )
+                && type.value().equals(pageType.value())
+                && rows1 == rows && columns1 ==columns
+                && sort == reverseSort && sortType ==sortType1
+                && Objects.equals(search1,search);
     }
 }

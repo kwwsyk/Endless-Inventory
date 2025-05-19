@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.mixin;
 
 import com.kwwsyk.endinv.EndlessInventory;
+import com.kwwsyk.endinv.ServerLevelEndInv;
 import com.kwwsyk.endinv.util.recipeTransferHelper.RecipeItemProvider;
 import net.minecraft.recipebook.ServerPlaceRecipe;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,7 +33,7 @@ public class ServerPlaceRecipeMixin<I extends RecipeInput, R extends Recipe<I>>{
 
     @Inject(method = "recipeClicked", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/inventory/RecipeBookMenu;fillCraftSlotsStackedContents(Lnet/minecraft/world/entity/player/StackedContents;)V"))
     private void fillEndInvStackedContents(ServerPlayer player, RecipeHolder<R> recipe, boolean placeAll, CallbackInfo ci){
-        endInv = EndlessInventory.getEndInvForPlayer(player);
+        endInv = ServerLevelEndInv.getEndInvForPlayer(player);
         //if(endInv==null) return;
         RecipeItemProvider.fillStackedContents(endInv.getItemsAsList(), this.stackedContents);
     }

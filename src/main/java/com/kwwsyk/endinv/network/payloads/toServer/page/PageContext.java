@@ -10,6 +10,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**In page context used on Page operations.
  * @param startIndex
  * @param length
@@ -39,5 +41,16 @@ public record PageContext(int startIndex, int length, PageData pageData) impleme
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof PageContext(int index, int length1, PageData data))) return false;
+        return length == length1 && startIndex == index && Objects.equals(pageData,data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startIndex, length, pageData);
     }
 }

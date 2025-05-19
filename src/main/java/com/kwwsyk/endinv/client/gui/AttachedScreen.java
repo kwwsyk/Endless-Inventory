@@ -49,7 +49,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         @Override
         public void switchPageWithIndex(int index) {
             displayingPage = pages.get(index);
-            SyncedConfig.updateClientConfigAndSync(player.getData(SYNCED_CONFIG).pageTypeChanged(displayingPage.getPageType()));
+            SyncedConfig.updateSyncedConfig(player.getData(SYNCED_CONFIG).pageTypeChanged(displayingPage.getPageType()));
             displayingPage.init(0,rows*columns);
         }
 
@@ -234,7 +234,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
     @Override
     public void switchSortTypeTo(SortType type) {
         this.sortType = type;
-        SyncedConfig.updateClientConfigAndSync(player.getData(SYNCED_CONFIG).sortTypeChanged(type));
+        SyncedConfig.updateSyncedConfig(player.getData(SYNCED_CONFIG).sortTypeChanged(type));
         pageMetadata.getDisplayingPage().release();
         pageMetadata.getDisplayingPage().syncContentToServer();
     }

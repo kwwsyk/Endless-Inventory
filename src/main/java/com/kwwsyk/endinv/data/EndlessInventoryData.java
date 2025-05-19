@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.data;
 
 import com.kwwsyk.endinv.EndlessInventory;
+import com.kwwsyk.endinv.ServerLevelEndInv;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -21,7 +22,6 @@ import static com.kwwsyk.endinv.data.EndInvCodecStrategy.*;
 public class EndlessInventoryData extends SavedData {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static EndlessInventoryData levelEndInvData;
     private final List<EndlessInventory> levelEndInvs;
 
     public static EndInvCodecStrategy LoadStrategy = new FullCodecStrategy();
@@ -37,9 +37,9 @@ public class EndlessInventoryData extends SavedData {
             return; // 仅在主世界执行
         }
         Factory<EndlessInventoryData> factory = new Factory<>(EndlessInventoryData::create,EndlessInventoryData::load);
-        levelEndInvData = level.getDataStorage().computeIfAbsent(factory,END_INV_LIST_KEY);
+        ServerLevelEndInv.levelEndInvData = level.getDataStorage().computeIfAbsent(factory,END_INV_LIST_KEY);
 
-        LOGGER.info("Initialized EndlessInventoryData in {} with {} inventories", level.dimension().location(), levelEndInvData.levelEndInvs.size());
+        LOGGER.info("Initialized EndlessInventoryData in {} with {} inventories", level.dimension().location(), ServerLevelEndInv.levelEndInvData.levelEndInvs.size());
     }
 
 

@@ -54,6 +54,8 @@ public class EndInvSettingScreen extends Screen {
         addConfigEntry("endinv.setting.auto_suit",CONFIG.AUTO_SUIT_COLUMN);
         addConfigEntry("endinv.setting.attaching",CONFIG.ATTACHING);
         addConfigEntry("endinv.setting.texture",CONFIG.TEXTURE);
+        addConfigEntry("endinv.setting.max_page_bar", CONFIG.MAX_PAGE_BARS);
+        addConfigEntry(Component.literal("Screen debug"),CONFIG.ENABLE_DEBUG);
         for (var entry : entries){
             entry.build();
             entry.syncConfig();

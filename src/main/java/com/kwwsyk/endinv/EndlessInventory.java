@@ -1,7 +1,6 @@
 package com.kwwsyk.endinv;
 
 
-import com.kwwsyk.endinv.data.EndlessInventoryData;
 import com.kwwsyk.endinv.options.ItemClassify;
 import com.kwwsyk.endinv.options.ServerConfig;
 import com.kwwsyk.endinv.util.*;
@@ -22,9 +21,6 @@ import javax.annotation.Nonnegative;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.kwwsyk.endinv.ModInitializer.DEFAULT_UUID;
-import static com.kwwsyk.endinv.ModInitializer.ENDINV_UUID;
 
 
 public class EndlessInventory implements SourceInventory{
@@ -252,56 +248,6 @@ public class EndlessInventory implements SourceInventory{
     }
 
     /**
-     * Get player's EndInv, if player has not or has invalid, create new.
-     * @param player the player
-     * @return Player's EndInv, original or created
-     */
-    public static EndlessInventory getEndInvForPlayer(Player player){
-        EndlessInventory endlessInventory;
-        if(hasEndInvUuid(player)){
-            endlessInventory = getPlayerDefaultEndInv(player);
-            if(endlessInventory==null) endlessInventory = createForPlayer(player,player.getData(ENDINV_UUID));
-        }else{
-            endlessInventory = createForPlayer(player);
-
-        }
-        endlessInventory.viewers.add((ServerPlayer) player);
-        return endlessInventory;
-    }
-
-    private static EndlessInventory createForPlayer(Player player){
-        EndlessInventory endlessInventory = new EndlessInventory();
-        EndlessInventoryData.levelEndInvData.addEndInvToLevel(endlessInventory);
-        player.setData(ENDINV_UUID,endlessInventory.uuid);
-        return endlessInventory;
-    }
-
-    private static EndlessInventory createForPlayer(Player player,UUID uuid){
-        EndlessInventory endlessInventory = new EndlessInventory(uuid);
-        EndlessInventoryData.levelEndInvData.addEndInvToLevel(endlessInventory);
-        return endlessInventory;
-    }
-
-    /**
-     * Check whether player has a valid uuid, which is not {@link ModInitializer#DEFAULT_UUID}
-     * @param player player to check endInv uuid
-     * @return true if player has uuid and the uuid is valid.
-     */
-    public static boolean hasEndInvUuid(Player player){
-        if(player.hasData(ENDINV_UUID)){
-            if(player.getData(ENDINV_UUID)==DEFAULT_UUID){
-                LOGGER.warn("Player {} has default endless inventory UUID.", player.getName().getString());
-                return false;
-            }
-            return true;
-        }else return false;
-    }
-
-    private static EndlessInventory getPlayerDefaultEndInv(Player player){
-        return EndlessInventoryData.levelEndInvData.fromUUID(player.getData(ENDINV_UUID));
-    }
-
-    /**
      * @return Size of Endless Inventory.
      */
     public int getItemSize() {
@@ -315,7 +261,7 @@ public class EndlessInventory implements SourceInventory{
 
 
     public void setChanged() {
-        EndlessInventoryData.levelEndInvData.setDirty();
+        ServerLevelEndInv.levelEndInvData.setDirty();
     }
 
     public long updateLastModTime(){

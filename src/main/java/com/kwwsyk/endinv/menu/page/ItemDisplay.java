@@ -11,6 +11,7 @@ public class ItemDisplay extends ItemPage{
     public ItemDisplay(PageType pageType, PageMetaDataManager metaDataManager) {
         super(pageType,metaDataManager);
     }
+
     //often use on server
     public void refreshItems(){
         if(srcInv.isRemote()){
@@ -64,6 +65,7 @@ public class ItemDisplay extends ItemPage{
         }
         return this.srcInv.takeItem(itemStack,count);
     }
+
     public ItemStack takeItem(int index, int count){
         //Will take Client display item firstly
         ItemStack itemStack = this.items.get(index);

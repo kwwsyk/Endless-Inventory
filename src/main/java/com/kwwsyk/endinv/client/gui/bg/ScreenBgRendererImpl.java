@@ -1,11 +1,13 @@
 package com.kwwsyk.endinv.client.gui.bg;
 
-import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.client.gui.ScreenFrameWork;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
 public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
+
+    protected final ScreenFrameWork frameWork;
 
     protected final int menuLeft;
     protected final int menuTop;
@@ -20,19 +22,8 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
 
     protected final PageMetaDataManager manager;
 
-    public ScreenBgRendererImpl(EndlessInventoryScreen screen){
-        this.screen = screen;
-        this.imageWidth = screen.getXSize();
-        this.manager = screen.getMenu();
-        this.rows = manager.getRowCount();
-        this.columns = 9;
-        this.menuLeft = screen.getGuiLeft();
-        this.menuTop = screen.getGuiTop();
-        this.pageLeft = menuLeft;
-        this.pageTop = menuTop;
-    }
-
     public ScreenBgRendererImpl(ScreenFrameWork frameWork){
+        this.frameWork = frameWork;
         this.screen = frameWork.screen;
         this.imageWidth = 256;
         this.manager = frameWork.meta;
@@ -42,6 +33,22 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
         this.menuTop = screen.getGuiTop();
         this.pageLeft = frameWork.leftPos;
         this.pageTop = frameWork.topPos;
+    }
+
+    protected void renderPageBarContent(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY){
+        int pageX = pageSwitchTabParam.XPos();
+        int pageY = pageSwitchTabParam.YPos();
+        int selectedPageIndex = manager.getDisplayingPageIndex();
+        for (int i = frameWork.firstPageIndex; i < frameWork.firstPageIndex+ frameWork.pageBarCount; ++i) {
+            manager.getPages().get(i).getPageRenderer().renderPageIcon(guiGraphics, pageX + 15, pageY + 5, partialTick);
+            if (mouseX > pageX && mouseX < pageX + 32 && mouseY > pageY && mouseY < pageY + 28) {
+                guiGraphics.pose().pushPose();
+                guiGraphics.pose().translate(0, 0, 550.0f);
+                guiGraphics.renderTooltip(screen.getMinecraft().font, manager.getPages().get(i).name, mouseX, mouseY);
+                guiGraphics.pose().popPose();
+            }
+            pageY += 28;
+        }
     }
 
     @Override

@@ -34,7 +34,8 @@ public abstract class ClientPayloadHandler {
     public static void handleEndInvSettings(SyncedConfig syncedConfig, IPayloadContext iPayloadContext){
         Player player = iPayloadContext.player();
         player.setData(SYNCED_CONFIG,syncedConfig);
-        //ClientConfig.CONFIG.ROWS.set(syncedConfig.rows());
+        //ClientConfig.CONFIG.ROWS.set(syncedConfig.pageData().rows());
+        //ClientConfig.CONFIG.COLUMNS.set(syncedConfig.pageData().columns());
     }
 
     public static void handleItemDisplay(SetItemDisplayContentPayload setItemDisplayContentPayload, IPayloadContext iPayloadContext) {

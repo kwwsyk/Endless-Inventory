@@ -6,6 +6,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 public class PageType {
 
@@ -44,5 +45,13 @@ public class PageType {
         } catch (Exception e) {
             return super.toString();
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof PageType pageType
+                && Objects.equals(pageType.constructor,constructor)
+                && Objects.equals(pageType.classify,classify)
+                && Objects.equals(pageType.registerName, registerName);
     }
 }

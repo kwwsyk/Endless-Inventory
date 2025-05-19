@@ -1,6 +1,5 @@
 package com.kwwsyk.endinv.network;
 
-import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.ServerLevelEndInv;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.menu.page.ItemPage;
@@ -26,6 +25,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
@@ -53,19 +53,25 @@ public abstract class ServerPayloadHandler {
      * @param serverPlayer if not null, will send context to set client page contents.
      */
     private static void syncPageContext(PageMetaDataManager meta, PageContext context, @Nullable ServerPlayer serverPlayer){
-        int startIndex = context.startIndex();
-        int length = context.length();
 
-        SortType sortType = context.sortType();
-        boolean reverseSort = context.pageData().reverseSort();
-        String search = context.search();
+        if(!Objects.equals(meta.getInPageContext(),context)) {
 
-        meta.switchPageWithType(context.pageData().pageType().value());
-        meta.setSortType(sortType);
-        meta.setSortReversed(reverseSort);
-        meta.setSearching(search);
-        meta.getDisplayingPage().setChanged();
-        meta.getDisplayingPage().init(startIndex,length);
+            int startIndex = context.startIndex();
+            int length = context.length();
+
+            SortType sortType = context.sortType();
+            boolean reverseSort = context.pageData().reverseSort();
+            String search = context.search();
+
+
+            meta.setSortType(sortType);
+            meta.setSortReversed(reverseSort);
+            meta.setSearching(search);
+            meta.getDisplayingPage().setChanged();
+            if(!Objects.equals(context.pageData().pageType().value(),meta.getDisplayingPageType())) {
+                meta.switchPageWithType(context.pageData().pageType().value());
+            }else meta.getDisplayingPage().init(startIndex,length);
+        }
 
         if(serverPlayer!=null){
             meta.getDisplayingPage().syncContentToClient(serverPlayer);
@@ -115,7 +121,7 @@ public abstract class ServerPayloadHandler {
         if(player.containerMenu == player.inventoryMenu && openEndInvPayload.openNew()){
             player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createServer, Component.empty()));
         }else if(!openEndInvPayload.openNew()){
-            AttachingManager manager = new AttachingManager(player.containerMenu, EndlessInventory.getEndInvForPlayer(player),player);
+            AttachingManager manager = new AttachingManager(player.containerMenu, ServerLevelEndInv.getEndInvForPlayer(player),player);
             ServerLevelEndInv.PAGE_META_DATA_MANAGER.put(player,manager);
             manager.sendEndInvMetadataToRemote();
         }
@@ -143,9 +149,9 @@ public abstract class ServerPayloadHandler {
     public static void handleItemStarred(StarItemPayload starItemPayload, IPayloadContext iPayloadContext) {
         ServerPlayer player = (ServerPlayer) iPayloadContext.player();
         if(starItemPayload.isAdding()) {
-            EndlessInventory.getEndInvForPlayer(player).affinities.addStarredItem(starItemPayload.stack());
+            ServerLevelEndInv.getEndInvForPlayer(player).affinities.addStarredItem(starItemPayload.stack());
         }else {
-            EndlessInventory.getEndInvForPlayer(player).affinities.removeStarredItem(starItemPayload.stack());
+            ServerLevelEndInv.getEndInvForPlayer(player).affinities.removeStarredItem(starItemPayload.stack());
         }
 
     }

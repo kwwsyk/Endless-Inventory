@@ -37,7 +37,7 @@ public class ScreenAttachment {
 
     @SubscribeEvent
     public static void opening(ScreenEvent.Opening event){
-        SyncedConfig.readAndSyncClientConfigToServer();
+        SyncedConfig.readAndSyncClientConfigToServer(false);
     }
 
     @SubscribeEvent
@@ -53,19 +53,13 @@ public class ScreenAttachment {
         if(event.getScreen() instanceof AbstractContainerScreen<?> screen && !(screen instanceof EndlessInventoryScreen)){
             Player player = screen.getMinecraft().player;
             if(player==null) return;
-            SyncedConfig.readAndSyncClientConfigToServer();
+            SyncedConfig.readAndSyncClientConfigToServer(false);
             if(!player.getData(SYNCED_CONFIG).attaching()) return;
 
-            PacketDistributor.sendToServer(new OpenEndInvPayload(false));
-
-            AttachedScreen<?> attachedScreen = new AttachedScreen<>(screen);
-            ATTACHMENT_MANAGER.put(screen,attachedScreen);
-
-        }
-
-        var attached = checkAndGetAttached(event);
-        if(attached!=null){
-            attached.init(event);
+            ATTACHMENT_MANAGER.computeIfAbsent(screen, screen1 -> {
+                PacketDistributor.sendToServer(new OpenEndInvPayload(false));
+                return new AttachedScreen<>(screen);
+            }).init(event);
         }
     }
 

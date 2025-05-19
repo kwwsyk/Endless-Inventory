@@ -3,6 +3,19 @@
 
   "title.endinv.settings": "EndInv Settings",
 
+  "button.endinv.reverse": "Reverse sort",
+
+  "page.endinv.all_items": "All items",
+  "page.endinv.block_items": "Block items",
+  "page.endinv.weapons": "Weapons",
+  "page.endinv.tools": "Tools",
+  "page.endinv.equipments": "Equipments",
+  "page.endinv.consumable": "Food&Potion",
+  "page.endinv.enchanted_books": "Enchanted Books",
+  "page.endinv.vanishing_enchantable": "Vanishing Enchantable",
+  "page.endinv.bookmark": "Bookmark",
+
+
   "config.endinv.comment.row1": "The rows of Endless Inventory.",
   "config.endinv.comment.row2": "0 is AUTO, with GUI size limited max suit rows. Too big value so.",
   "config.endinv.comment.sort_type": "Sort type",
@@ -26,6 +39,10 @@
   "endinv.setting.auto_suit": "Auto suit in columns",
   "endinv.setting.attaching": "Attaching menu screen",
   "endinv.setting.texture": "Texture mode",
+  "endinv.setting.max_page_bar": "Max page switch bars",
+
+  "endinv.setting.entry.FROM_RESOURCE": "Menu Texture",
+  "endinv.setting.entry.TRANSPARENT": "Transparent",
 
   "endless_inventory.configuration.ItemCapacity": "Item Capacity Configurations",
   "endless_inventory.configuration.maxStackSize": "Max Item Stack Size in End Inv",

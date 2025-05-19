@@ -25,6 +25,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -115,7 +116,7 @@ public class ModInitializer {
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
         container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);
 
-        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+        if(FMLEnvironment.dist.isClient())  container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
 
 

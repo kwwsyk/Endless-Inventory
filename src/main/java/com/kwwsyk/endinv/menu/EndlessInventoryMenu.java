@@ -30,9 +30,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.kwwsyk.endinv.EndlessInventory.getEndInvForPlayer;
 import static com.kwwsyk.endinv.ModInitializer.ENDLESS_INVENTORY_MENU_TYPE;
 import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
+import static com.kwwsyk.endinv.ServerLevelEndInv.getEndInvForPlayer;
 
 public class EndlessInventoryMenu extends AbstractContainerMenu implements PageMetaDataManager {
 
@@ -121,7 +121,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
     public void switchPageWithIndex(int index){
         this.displayingPageIndex = index;
         this.displayingPage = this.pages.get(index);
-        SyncedConfig.updateClientConfigAndSync(player.getData(SYNCED_CONFIG).pageTypeChanged(displayingPage.getPageType()));
+        SyncedConfig.updateSyncedConfig(player.getData(SYNCED_CONFIG).pageTypeChanged(displayingPage.getPageType()));
         this.displayingPage.init(0,9*rowsData.get());
     }
 

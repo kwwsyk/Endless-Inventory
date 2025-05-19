@@ -1,6 +1,5 @@
 package com.kwwsyk.endinv.client.gui.bg;
 
-import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.client.gui.ScreenFrameWork;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -20,18 +19,14 @@ public abstract class FromResource extends ScreenBgRendererImpl {
     private static final ResourceLocation TAB_LEFT_MIDDLE_SELECTED = ResourceLocation.withDefaultNamespace("advancements/tab_left_middle_selected");
     private static final ResourceLocation TAB_LEFT_BOTTOM_SELECTED = ResourceLocation.withDefaultNamespace("advancements/tab_left_bottom_selected");
 
-    public FromResource(EndlessInventoryScreen screen){
-        super(screen);
-    }
-
     public FromResource(ScreenFrameWork frameWork){
         super(frameWork);
     }
 
     public static class MenuMode extends FromResource{
 
-        public MenuMode(EndlessInventoryScreen screen, ScreenRectangleWidgetParam pageSwitchTabParam) {
-            super(screen);
+        public MenuMode(ScreenFrameWork frameWork, ScreenRectangleWidgetParam pageSwitchTabParam) {
+            super(frameWork);
             this.pageSwitchTabParam = pageSwitchTabParam;
         }
 
@@ -79,6 +74,7 @@ public abstract class FromResource extends ScreenBgRendererImpl {
                     startY += height;
                 }
             }
+            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION,startX,pageTop+17+18*rows,0,124,imageWidth,12,256,256);
         }
 
         private void renderSpecialBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY,
@@ -134,25 +130,20 @@ public abstract class FromResource extends ScreenBgRendererImpl {
         int pageX = pageSwitchTabParam.XPos();
         int pageY = pageSwitchTabParam.YPos();
         int selectedPageIndex = manager.getDisplayingPageIndex();
-        for (int i = 0; i < manager.getPages().size(); ++i) {
+        for (int i = frameWork.firstPageIndex; i < frameWork.firstPageIndex + frameWork.pageBarCount; ++i) {
             if (i == selectedPageIndex) {
-                if (i == 1) {
+                if (i == 0) {
                     guiGraphics.blitSprite(TAB_LEFT_TOP_SELECTED, pageX,pageY,32,28);
-                } else if (i == manager.getPages().size() - 1) {
+                } else if (i == frameWork.firstPageIndex + frameWork.pageBarCount-1) {
                     guiGraphics.blitSprite(TAB_LEFT_BOTTOM_SELECTED, pageX,pageY,32,28);
                 } else
                     guiGraphics.blitSprite(TAB_LEFT_MIDDLE_SELECTED, pageX,pageY,32,28);
             } else {
                 guiGraphics.blitSprite(TAB_LEFT_MIDDLE_SPRITE, pageX+4,pageY,32,28);
             }
-            manager.getPages().get(i).getPageRenderer().renderPageIcon(guiGraphics,pageX+15,pageY+5,partialTick);
-            if(mouseX>pageX&&mouseX<pageX+32&&mouseY>pageY&&mouseY<pageY+28){
-                guiGraphics.pose().pushPose();
-                guiGraphics.pose().translate(0,0,550.0f);
-                guiGraphics.renderTooltip(screen.getMinecraft().font, manager.getPages().get(i).name ,mouseX,mouseY);
-                guiGraphics.pose().popPose();
-            }
-            pageY += 28;
+            pageY+=28;
         }
+
+        renderPageBarContent(guiGraphics, partialTick, mouseX, mouseY);
     }
 }

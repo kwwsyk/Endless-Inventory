@@ -21,7 +21,7 @@ public class ServerConfig {
                 .define("ItemCapacity.enableInfinite",false);
         ENABLE_AUTO_PICK = builder
                 .comment("Will enable player to auto pick item and exp")
-                .define("autoPickUtility",true);
+                .define("autoPickUtility",false);
         TRANSFER_MODE = builder
                 .defineEnum("TransferMode",ContentTransferMode.ALL);
     }

@@ -28,6 +28,7 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,6 +69,7 @@ public abstract class ItemPage extends DisplayPage{
         if(items==null || length!=this.items.size()){
             this.items = NonNullList.withSize(length,ItemStack.EMPTY);
         }
+        release();
         refreshItems();
     }
 
@@ -326,11 +328,12 @@ public abstract class ItemPage extends DisplayPage{
     public ItemStack tryExtractItem(ItemStack stack,int count){
         return takeItem(stack,count);
     }
+
     protected void handlePickup(ItemStack clicked, int keyCode){
         ItemStack carried = metadata.getMenu().getCarried();
         if(!carried.isEmpty()){
             ItemStack remain = addItem(carried.copy());
-            if(metadata.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu){
+            if(FMLEnvironment.dist.isClient() && metadata.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu){
                 PacketDistributor.sendToServer(new ItemDisplayItemModPayload(carried.copy(),true));
             }
             metadata.getMenu().setCarried(remain);
@@ -342,6 +345,7 @@ public abstract class ItemPage extends DisplayPage{
             if(!metadata.getMenu().getCarried().isEmpty()) setChanged();
         }
     }
+
     protected void handleSwap(ItemStack clicked, int inventorySlotId){
         Player player = metadata.getPlayer();
         Inventory inventory = player.getInventory();

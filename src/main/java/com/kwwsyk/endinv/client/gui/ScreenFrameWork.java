@@ -1,9 +1,12 @@
 package com.kwwsyk.endinv.client.gui;
 
+import com.kwwsyk.endinv.client.TextureMode;
+import com.kwwsyk.endinv.client.config.ClientConfig;
 import com.kwwsyk.endinv.client.events.KeyMappingReg;
 import com.kwwsyk.endinv.client.gui.bg.FromResource;
 import com.kwwsyk.endinv.client.gui.bg.ScreenBgRenderer;
 import com.kwwsyk.endinv.client.gui.bg.ScreenRectangleWidgetParam;
+import com.kwwsyk.endinv.client.gui.bg.Transparent;
 import com.kwwsyk.endinv.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
@@ -49,7 +52,11 @@ public class ScreenFrameWork {
     private final ScreenRectangleWidgetParam searchBoxParam;
     private final ScreenRectangleWidgetParam sortBoxParam;
     private final ScreenRectangleWidgetParam configButtonParam;
+    private final ScreenRectangleWidgetParam pageBarScrollUpButtonParam,pageBarScrollDownButtonParam;
     public final ScreenBgRenderer screenBgRenderer;
+    public final int pageBarCount;
+    public int firstPageIndex = 0;
+    //Always pageBarCount + firstPageIndex <= meta.getPages.size()
     public final int leftPos,topPos;
     public final int imageWidth,imageHeight;
     private final int pageX;
@@ -78,10 +85,13 @@ public class ScreenFrameWork {
         this.rows = meta.getRowCount();
         this.columns = meta.getColumnCount();
         this.sortTypeSwitcher = screen;
+        this.pageBarCount = Math.min(ClientConfig.CONFIG.MAX_PAGE_BARS.getAsInt(),meta.getPages().size());
+        this.pageBarScrollUpButtonParam = new ScreenRectangleWidgetParam(leftPos-32,topPos-16,30,14);
+        this.pageBarScrollDownButtonParam = new ScreenRectangleWidgetParam(leftPos-32,topPos+2+28*pageBarCount,30,14);
         this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
         this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 89, this.topPos + 5, 80, 12);
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
-        this.screenBgRenderer = new FromResource.MenuMode(screen,new ScreenRectangleWidgetParam(leftPos-32,topPos+1,32,28));
+        this.screenBgRenderer = new FromResource.MenuMode(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+1,32,28));
 
         pageX = leftPos+8;
         pageY = topPos+17;
@@ -101,14 +111,19 @@ public class ScreenFrameWork {
         this.rows = meta.getRowCount();
         this.columns = meta.getColumnCount();
         this.sortTypeSwitcher = attachedScreen;
+        this.pageBarCount = Math.min(ClientConfig.CONFIG.MAX_PAGE_BARS.getAsInt(),meta.getPages().size());
         this.imageWidth = 13+18*columns;
         this.imageHeight = screen.height;
-        this.configButtonParam = new ScreenRectangleWidgetParam(0, this.topPos,20,20);
-        int searchBoxY = this.topPos + 17+18*rows;
+        int searchBoxY = this.topPos + 17+18*rows + 12;
         this.searchBoxParam =
-                new ScreenRectangleWidgetParam(this.leftPos+1, searchBoxY, Math.min(320,imageWidth), Math.min(20,screen.height-searchBoxY));
+                new ScreenRectangleWidgetParam(this.leftPos+1, searchBoxY, Math.min(200,imageWidth), Math.min(20,screen.height-searchBoxY));
+        this.configButtonParam = new ScreenRectangleWidgetParam(0, searchBoxY,20,20);
+        this.pageBarScrollUpButtonParam = new ScreenRectangleWidgetParam(0,topPos,20,14);
+        this.pageBarScrollDownButtonParam = new ScreenRectangleWidgetParam(0,topPos+22+28*pageBarCount,20,14);
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 6,topPos + 5,77,12);
-        this.screenBgRenderer = new FromResource.LeftLayout(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28));
+        this.screenBgRenderer = ClientConfig.CONFIG.TEXTURE.get() == TextureMode.FROM_RESOURCE ?
+                new FromResource.LeftLayout(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28)) :
+                new Transparent(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28));
 
         pageX = leftPos+8;
         pageY = topPos+17;
@@ -129,7 +144,7 @@ public class ScreenFrameWork {
         this.reverseSortButton = Button.builder(Component.literal("⇅"),
                         btn->{
                             meta.switchSortReversed();
-                            SyncedConfig.updateClientConfigAndSync(meta.getPlayer().getData(SYNCED_CONFIG).ofReverseSort());
+                            SyncedConfig.updateSyncedConfig(meta.getPlayer().getData(SYNCED_CONFIG).ofReverseSort());
                             meta.getDisplayingPage().syncContentToServer();
                         }
                 )
@@ -142,6 +157,23 @@ public class ScreenFrameWork {
         this.sortTypeSwitchBox = new SortTypeSwitchBox(sortTypeSwitcher, sortBoxParam);
 
         this.searchBox.setValue(meta.searching());
+
+        if(pageBarCount<meta.getPages().size()){
+            Button up = Button.builder(Component.literal("^"),btn->{if(firstPageIndex>0)firstPageIndex--;})
+                    .pos(pageBarScrollUpButtonParam.XPos(),pageBarScrollUpButtonParam.YPos())
+                    .size(pageBarScrollUpButtonParam.XSize(),pageBarScrollUpButtonParam.YSize())
+                    .build();
+            Button down = Button.builder(Component.literal("v"),btn-> {
+                if(firstPageIndex + pageBarCount<meta.getPages().size())
+                        firstPageIndex++;
+                    })
+                    .pos(pageBarScrollDownButtonParam.XPos(),pageBarScrollDownButtonParam.YPos())
+                    .size(pageBarScrollDownButtonParam.XSize(),pageBarScrollDownButtonParam.YSize())
+                    .build();
+            widgets.add(up);
+            widgets.add(down);
+        }
+
 
         widgets.add(configButton);
         widgets.add(reverseSortButton);
@@ -201,12 +233,12 @@ public class ScreenFrameWork {
         double YOffset=mouseY- screenBgRenderer.pageSwitchBarParam().YPos();
         if(XOffset<0 || XOffset> screenBgRenderer.pageSwitchBarParam().XSize() || YOffset<0) return -1;
         int index = (int)YOffset/ screenBgRenderer.pageSwitchBarParam().YSize();
-        if(index<0||index>=meta.getPages().size()) return -1;
+        if(index<0||index>=pageBarCount) return -1;
         return index;
     }
 
     protected void pageSwitched(int index){
-        meta.switchPageWithIndex(index);
+        meta.switchPageWithIndex(index + firstPageIndex);
         //meta.getDisplayingPage().syncContentToServer();
         this.searchBox.setVisible(meta.getDisplayingPage().hasSearchBar());
         this.sortTypeSwitchBox.visible = meta.getDisplayingPage().hasSortTypeSwitchBar();
@@ -465,7 +497,7 @@ public class ScreenFrameWork {
     public void refreshSearchResults(){
         String searching = searchBox.getValue();
         meta.setSearching(searching);
-        SyncedConfig.updateClientConfigAndSync(meta.getPlayer().getData(SYNCED_CONFIG).searchingChanged(searching));
+        SyncedConfig.updateSyncedConfig(meta.getPlayer().getData(SYNCED_CONFIG).searchingChanged(searching));
         meta.getDisplayingPage().release();
         meta.getDisplayingPage().syncContentToServer();
     }

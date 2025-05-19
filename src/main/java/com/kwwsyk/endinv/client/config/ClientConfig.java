@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.client.config;
 
+import com.kwwsyk.endinv.client.TextureMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -17,9 +18,11 @@ public class ClientConfig {
     public final ModConfigSpec.IntValue ROWS;
     public final ModConfigSpec.IntValue COLUMNS;
     public final ModConfigSpec.BooleanValue AUTO_SUIT_COLUMN;
-    public final ModConfigSpec.IntValue TEXTURE;
+    public final ModConfigSpec.EnumValue<TextureMode> TEXTURE;
     public final List<ModConfigSpec.BooleanValue> PAGES = new ArrayList<>();
     public final ModConfigSpec.BooleanValue ATTACHING;
+    public final ModConfigSpec.BooleanValue ENABLE_DEBUG;
+    public final ModConfigSpec.IntValue MAX_PAGE_BARS;
 
     private ClientConfig(ModConfigSpec.Builder builder){
         ATTACHING = builder.comment("show endless inventory view when opening a menu.")
@@ -30,11 +33,18 @@ public class ClientConfig {
                 .defineInRange("rows",0,0,Integer.MAX_VALUE);
         COLUMNS = builder.comment("Default columns of EndInv view, 0 for auto.")
                 .defineInRange("columns",9,0,Integer.MAX_VALUE);
+
         AUTO_SUIT_COLUMN = builder.comment("auto suit in columns if GUI Size is too big.")
                 .define("auto_suit_column",true);
 
         TEXTURE = builder.comment("Texture mode of EndInv view, transparent or vanilla menu style")
-                .defineInRange("texture_mode",0,0,Integer.MAX_VALUE);
+                .defineEnum("texture_mode",TextureMode.FROM_RESOURCE);
+
+        ENABLE_DEBUG = builder.comment("Press F3 in screen can show some information of menu screen")
+                .define("enable_debug",false);
+
+        MAX_PAGE_BARS = builder
+                .defineInRange("max_page_bars",10,1,255);
 
         for (net.minecraft.core.Holder<com.kwwsyk.endinv.menu.page.PageType> pageHolder : defaultPages) {
             ModConfigSpec.BooleanValue pageEntry = builder
@@ -44,10 +54,10 @@ public class ClientConfig {
         }
     }
 
-    public int calculateDefaultRowCount(){
+    public int calculateDefaultRowCount(boolean ofMenu){
         Minecraft mc = Minecraft.getInstance();
         int height = mc.getWindow().getGuiScaledHeight();
-        return Math.floorDiv(height-45,18);
+        return Math.floorDiv(height-60,18)-(ofMenu?4:0);
     }
     public int calculateSuitInColumnCount(AbstractContainerScreen<?> screen){
         int leftPos = screen.getGuiLeft();

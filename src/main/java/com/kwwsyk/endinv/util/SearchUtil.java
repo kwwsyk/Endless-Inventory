@@ -1,6 +1,5 @@
 package com.kwwsyk.endinv.util;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -53,7 +52,7 @@ public class SearchUtil {
 
     private static boolean matchesTooltip(ItemStack stack, String tooltipSearch) {
         List<Component> tooltip = stack.getTooltipLines(
-                Item.TooltipContext.of(Minecraft.getInstance().level),
+                Item.TooltipContext.EMPTY,
                 null,
                 TooltipFlag.Default.NORMAL
         );

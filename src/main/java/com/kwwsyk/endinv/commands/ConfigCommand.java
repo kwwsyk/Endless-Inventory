@@ -1,6 +1,6 @@
 package com.kwwsyk.endinv.commands;
 
-import com.kwwsyk.endinv.EndlessInventory;
+import com.kwwsyk.endinv.ServerLevelEndInv;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -36,7 +36,7 @@ public class ConfigCommand {
 
     private static int getRows(CommandSourceStack source) throws CommandSyntaxException {
         ServerPlayer serverPlayer = source.getPlayerOrException();
-        if(!EndlessInventory.hasEndInvUuid(serverPlayer)){
+        if(!ServerLevelEndInv.hasEndInvUuid(serverPlayer)){
             source.sendFailure(Component.literal("This player has not EndInv."));
             return 0;
         }
@@ -47,7 +47,7 @@ public class ConfigCommand {
 
     private static int setRows(CommandSourceStack source, int rows) throws CommandSyntaxException{
         ServerPlayer serverPlayer = source.getPlayerOrException();
-        if(!EndlessInventory.hasEndInvUuid(serverPlayer)){
+        if(!ServerLevelEndInv.hasEndInvUuid(serverPlayer)){
             source.sendFailure(Component.literal("This player has not EndInv."));
             return 0;
         }

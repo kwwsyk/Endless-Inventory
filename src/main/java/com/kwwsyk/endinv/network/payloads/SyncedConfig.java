@@ -47,11 +47,10 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
      * Used when player is not viewing EndInv.
      * e.g. player joined world or player opened menu screen with EndInv attaching allowed.
      */
-    public static void readAndSyncClientConfigToServer(){
+    public static void readAndSyncClientConfigToServer(boolean ofMenu){
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
-            SyncedConfig config = readClientConfig();
-            player.setData(SYNCED_CONFIG,config);
-            PacketDistributor.sendToServer(config);
+            SyncedConfig config = readClientConfig(ofMenu);
+            updateSyncedConfig(config);
         }
     }
 
@@ -59,30 +58,31 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
      * Used when player changed page param in client page.
      * @param config new config
      */
-    public static void updateClientConfigAndSync(SyncedConfig config){
+    public static void updateSyncedConfig(SyncedConfig config){
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
             int rows = ClientConfig.CONFIG.ROWS.getAsInt();
+            int syncedRows = config.pageData.rows();
             if(rows==0){
-                rows = ClientConfig.CONFIG.calculateDefaultRowCount();
+                rows = syncedRows;
             }
             int columns = ClientConfig.CONFIG.COLUMNS.getAsInt();
             if(columns==0){
                 columns = 9;
-                if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
-                && ClientConfig.CONFIG.AUTO_SUIT_COLUMN.getAsBoolean()){
-                    columns = Math.min(9,ClientConfig.CONFIG.calculateSuitInColumnCount(screen));
-                }
+            }
+            if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
+                    && ClientConfig.CONFIG.AUTO_SUIT_COLUMN.getAsBoolean()){
+                columns = Math.min(columns,ClientConfig.CONFIG.calculateSuitInColumnCount(screen));
             }
             SyncedConfig config1 = new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns), config.attaching, config.autoPicking());
             player.setData(SYNCED_CONFIG,config1);
             PacketDistributor.sendToServer(config1);
         }
     }
-    public static SyncedConfig readClientConfig(){
+    public static SyncedConfig readClientConfig(boolean ofMenu){
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
             int rows = ClientConfig.CONFIG.ROWS.getAsInt();
             if(rows==0){
-                rows = ClientConfig.CONFIG.calculateDefaultRowCount();
+                rows = ClientConfig.CONFIG.calculateDefaultRowCount(ofMenu);
             }
             int columns = ClientConfig.CONFIG.COLUMNS.getAsInt();
             if(columns==0){
