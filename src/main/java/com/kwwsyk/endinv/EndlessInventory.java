@@ -187,6 +187,10 @@ public class EndlessInventory implements SourceInventory{
         return level.getPlayers(pl->Objects.equals(pl.getUUID(),owner)).stream().findAny();
     }
 
+    public boolean isOwner(Player player){
+        return Objects.equals(player.getUUID(),owner);
+    }
+
     public UUID getOwnerUUID(){
         return owner;
     }
@@ -326,7 +330,7 @@ public class EndlessInventory implements SourceInventory{
                 .ifPresent(manager -> manager.getDisplayingPage().syncContentToClient(player)));
     }
 
-    public boolean stillValid(Player player) {
+    public boolean accessible(Player player) {
         return accessibility==Accessibility.PUBLIC || (owner!=null && owner.equals(player.getUUID())) || white_list.contains(player.getUUID()) && accessibility==Accessibility.RESTRICTED;
     }
 

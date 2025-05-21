@@ -16,12 +16,30 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 
+/**
+ * Registers and handles all commands related to the Endless Inventory system.
+ *
+ * <p>This includes opening player inventories, saving data, clearing contents,
+ * querying inventory state, and printing debug information.</p>
+ *
+ * <ul>
+ *   <li><b>Permission:</b> Requires operator permission level ≥ 2 to execute commands.</li>
+ *   <li><b>Context:</b> Server-side only; client calls will be ignored or rejected.</li>
+ *   <li><b>Integration:</b> Invoked during mod initialization phase to register command tree.</li>
+ *   <li><b>Future:</b> May support tab completion, asynchronous tasks, or scoped user groups.</li>
+ * </ul>
+ *
+ * @author Kay Zhang
+ * @since 2025-05-21
+ * @version 1.0.0
+ */
 public class EndInvCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher){
         dispatcher.register(Commands.literal("endinv")
                 .then(
-                        Commands.literal("backup")
+                        Commands.literal("backup")// /endinv backup
+                        .requires(src->src.hasPermission(1))
                         .executes(
                                 context -> {
                                     var result = EndlessInventoryData.backup(context.getSource().getLevel());
@@ -30,13 +48,13 @@ public class EndInvCommand {
                                         return 1;
                                     }else {
                                         context.getSource().sendFailure(Component.literal("Cannot backup as"+result.message()));
-                                        return 0;
+                                        return -1;
                                     }
                                 }
                         )
                 )
                 .then(
-                        Commands.literal("ofIndex")
+                        Commands.literal("ofIndex")// /endinv ofIndex <::anyone>
                         .executes(
                                 context->
                                         getCurrentIndex(context.getSource()))
@@ -44,46 +62,46 @@ public class EndInvCommand {
                                 Commands.argument("index", IntegerArgumentType.integer())
                                 .executes(
                                     context ->
-                                            byIndexGet(context.getSource(),
-                                                    IntegerArgumentType.getInteger(context,"index")
-                                            )
+                                            byIndexGet(context.getSource(), IntegerArgumentType.getInteger(context,"index"))
                                 )
                                 .then(
-                                        Commands.literal("open")
+                                        Commands.literal("open")// /endinv ofIndex <index> open <::anyone>
                                         .executes(
                                             context ->
                                                     byIndexOpen(context.getSource(),IntegerArgumentType.getInteger(context,"index"))
                                         )
                                 )
                                 .then(
-                                        Commands.literal("setDefault")
+                                        Commands.literal("setDefault")// ...setDefault :set executor's default endInv to
+                                        .requires(src->src.hasPermission(1))
                                         .executes(context ->
                                                 byIndexSetDefault(context.getSource(),IntegerArgumentType.getInteger(context,"index"))
                                         )
                                 )
                                 .then(
-                                        Commands.literal("setOwner")
+                                        Commands.literal("setOwner")// ...setOwner :set executor to owner
+                                        .requires(src->src.hasPermission(1))
                                         .executes(
                                                 context ->
                                                         byIndexSetOwner(context.getSource(),IntegerArgumentType.getInteger(context,"index"))
                                         )
                                 )
                                 .then(
-                                        Commands.literal("addWhitelist")
+                                        Commands.literal("addWhitelist")// ... <::anyone>
                                         .executes(
                                                 context ->
                                                         byIndexAddWhitelist(context.getSource(),IntegerArgumentType.getInteger(context,"index"))
                                         )
                                 )
                                 .then(
-                                        Commands.literal("removeWhitelist")
+                                        Commands.literal("removeWhitelist")//... <::anyone>
                                         .executes(
                                                 context ->
                                                         byIndexRemoveWhitelist(context.getSource(),IntegerArgumentType.getInteger(context,"index"))
                                         )
                                 )
                                 .then(
-                                        Commands.literal("setAccessibility")
+                                        Commands.literal("setAccessibility")//... <::anyone>
                                         .then(
                                                 Commands.literal("public")
                                                 .executes(
@@ -105,7 +123,8 @@ public class EndInvCommand {
                                         )
                                 )
                                 .then(
-                                        Commands.literal("remove")
+                                        Commands.literal("remove")// ... :backup file and remove indexed endInv
+                                        .requires(src->src.hasPermission(1))
                                         .then(
                                                 Commands.argument("forceRemove", BoolArgumentType.bool())
                                                 .executes(
@@ -117,7 +136,8 @@ public class EndInvCommand {
                         )
                 )
                 .then(
-                        Commands.literal("new")
+                        Commands.literal("new")// /endinv new :create a new andInv with accessibility (default to public)
+                        .requires(src->src.hasPermission(1))
                         .executes(
                                 context ->
                                         createNew(context.getSource(),Accessibility.PUBLIC)
@@ -152,7 +172,7 @@ public class EndInvCommand {
         EndlessInventory endlessInventory = ServerLevelEndInv.levelEndInvData.fromIndex(index);
         if(endlessInventory==null){
             source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-            return 0;
+            return -1;
         }
         //try backup
         EndlessInventoryData.BackupResult result = EndlessInventoryData.backup(source.getLevel());
@@ -164,7 +184,7 @@ public class EndInvCommand {
                 return index;
             }else {
                 source.sendFailure(Component.literal("Cannot backup as "+ result.message()));
-                return 0;
+                return -1;
             }
         }else {
             source.sendSuccess(() -> Component.literal("Backed up at "+result.message()), true);
@@ -180,16 +200,21 @@ public class EndInvCommand {
 
             if(endlessInventory==null){
                 source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-                return 0;
+                return -1;
             }
             {
-                endlessInventory.white_list.add(player.getUUID());
-                source.sendSuccess(()->Component.literal("Add "+player.getName().getString()+" to "+endlessInventory.getUuid()+"'s whitelist."),true);
+                if(endlessInventory.isOwner(player)||source.hasPermission(1)) {
+                    endlessInventory.white_list.add(player.getUUID());
+                    source.sendSuccess(() -> Component.literal("Add " + player.getName().getString() + " to " + endlessInventory.getUuid() + "'s whitelist."), true);
+                }else {
+                    source.sendFailure(Component.translatable("endinv.callback.not_owner"));
+                    return -1;
+                }
             }
             return index;
         }catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 
@@ -200,20 +225,25 @@ public class EndInvCommand {
 
             if(endlessInventory==null){
                 source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-                return 0;
+                return -1;
             }
             {
-                if(endlessInventory.white_list.remove(player.getUUID())) {
-                    source.sendSuccess(() -> Component.literal("Remove " + player.getName().getString() + " from " + endlessInventory.getUuid() + "'s whitelist."), true);
+                if(endlessInventory.isOwner(player)||source.hasPermission(1)) {
+                    if(endlessInventory.white_list.remove(player.getUUID())) {
+                        source.sendSuccess(() -> Component.literal("Remove " + player.getName().getString() + " from " + endlessInventory.getUuid() + "'s whitelist."), true);
+                    }else {
+                        source.sendFailure(Component.literal(player.getName().getString() + " is not in " + endlessInventory.getUuid() + "'s whitelist."));
+                        return -1;
+                    }
                 }else {
-                    source.sendFailure(Component.literal(player.getName().getString() + " is not in " + endlessInventory.getUuid() + "'s whitelist."));
+                    source.sendFailure(Component.translatable("endinv.callback.not_owner"));
                     return -1;
                 }
             }
             return index;
         }catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 
@@ -224,16 +254,21 @@ public class EndInvCommand {
 
             if(endlessInventory==null){
                 source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-                return 0;
+                return -1;
             }
             {
-                endlessInventory.setAccessibility(accessibility);
-                source.sendSuccess(()->Component.literal("Set "+endlessInventory.getUuid()+"'s accessibility to"+accessibility),true);
+                if(endlessInventory.isOwner(player)||source.hasPermission(1)) {
+                    endlessInventory.setAccessibility(accessibility);
+                    source.sendSuccess(()->Component.literal("Set "+endlessInventory.getUuid()+"'s accessibility to"+accessibility),true);
+                }else {
+                    source.sendFailure(Component.translatable("endinv.callback.not_owner"));
+                    return -1;
+                }
             }
             return index;
         }catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 
@@ -244,7 +279,7 @@ public class EndInvCommand {
 
             if(endlessInventory==null){
                 source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-                return 0;
+                return -1;
             }
             {
                 endlessInventory.setOwner(player.getUUID());
@@ -253,7 +288,7 @@ public class EndInvCommand {
             return index;
         }catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 
@@ -286,7 +321,7 @@ public class EndInvCommand {
             return 1;
         }catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 
@@ -297,7 +332,7 @@ public class EndInvCommand {
 
             if(endlessInventory==null){
                 source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-                return 0;
+                return -1;
             }
             {
                 player.setData(ModInitializer.ENDINV_UUID,endlessInventory.getUuid());
@@ -306,26 +341,40 @@ public class EndInvCommand {
             return index;
         }catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 
+    /**
+     * Open EndInv by index, anyone can as the completed Accessibility feature is not implemented.
+     * @param source not enough permission src will be limited to open accessible endInv.
+     * @return index for success and -1 for failure.
+     */
     private static int byIndexOpen(CommandSourceStack source, int index) {
         try {
             ServerPlayer player = source.getPlayerOrException();
             EndlessInventory endlessInventory = ServerLevelEndInv.levelEndInvData.fromIndex(index);
             if(endlessInventory==null){
                 source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-                return 0;
+                return -1;
             }
             {
-                ServerLevelEndInv.TEMP_ENDINV_REG.put(player, endlessInventory);
-                player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createWithTemp, Component.empty()));
+                if(endlessInventory.accessible(player)){
+                    ServerLevelEndInv.TEMP_ENDINV_REG.put(player, endlessInventory);
+                    player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createWithTemp, Component.empty()));
+                }else if(source.hasPermission(1)){
+                    ServerLevelEndInv.TEMP_ENDINV_REG.put(player, endlessInventory);
+                    player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createWithTemp, Component.empty()));
+                    source.sendSuccess(()->Component.literal("Opened an unaccessible endInv for op"),true);
+                }else {
+                    source.sendFailure(Component.translatable("endinv.callback.no_access"));
+                    return -1;
+                }
             }
             return index;
         }catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 
@@ -334,7 +383,7 @@ public class EndInvCommand {
             EndlessInventory endlessInventory = ServerLevelEndInv.levelEndInvData.fromIndex(index);
             if(endlessInventory==null){
                 source.sendFailure(Component.literal("Cannot get EndInv by index "+index));
-                return 0;
+                return -1;
             }
             source.sendSuccess(()->Component.literal("Found endInv with uuid: "+endlessInventory.getUuid()),true);
             return index;
@@ -348,7 +397,7 @@ public class EndInvCommand {
             ServerPlayer serverPlayer = source.getPlayerOrException();
             if (!ServerLevelEndInv.hasEndInvUuid(serverPlayer)) {
                 source.sendFailure(Component.literal("This player has not EndInv."));
-                return 0;
+                return -1;
             }
             var optional = ServerLevelEndInv.getEndInvForPlayer(serverPlayer);
             if(optional.isPresent()){
@@ -358,12 +407,12 @@ public class EndInvCommand {
                 return index;
             }else {
                 source.sendFailure(Component.literal("Cannot get EndInv for player."));
-                return 0;
+                return -1;
             }
 
         } catch (CommandSyntaxException e) {
             source.sendFailure(Component.literal("A player must execute this command."));
-            return 0;
+            return -1;
         }
     }
 }
