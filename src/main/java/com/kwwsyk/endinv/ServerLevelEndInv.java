@@ -4,6 +4,8 @@ import com.kwwsyk.endinv.data.EndlessInventoryData;
 import com.kwwsyk.endinv.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.menu.page.pageManager.AttachingManager;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
+import com.kwwsyk.endinv.options.ServerConfig;
+import com.kwwsyk.endinv.util.Accessibility;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -12,7 +14,6 @@ import org.slf4j.Logger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.kwwsyk.endinv.ModInitializer.DEFAULT_UUID;
 import static com.kwwsyk.endinv.ModInitializer.ENDINV_UUID;
@@ -22,6 +23,8 @@ public final class ServerLevelEndInv {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final Map<ServerPlayer, PageMetaDataManager> PAGE_META_DATA_MANAGER = new HashMap<>();
+
+    public static final Map<ServerPlayer, EndlessInventory> TEMP_ENDINV_REG = new HashMap<>();
 
     public static EndlessInventoryData levelEndInvData;
 
@@ -41,29 +44,50 @@ public final class ServerLevelEndInv {
      * @param player the player
      * @return Player's EndInv, original or created
      */
-    public static EndlessInventory getEndInvForPlayer(Player player){
-        EndlessInventory endlessInventory;
+    public static Optional<EndlessInventory> getEndInvForPlayer(Player player){
+        EndlessInventory endlessInventory = null;
         if(hasEndInvUuid(player)){
             endlessInventory = getPlayerDefaultEndInv(player);
-            if(endlessInventory==null) endlessInventory = createForPlayer(player,player.getData(ENDINV_UUID));
-        }else{
-            endlessInventory = createForPlayer(player);
-
         }
-        endlessInventory.viewers.add((ServerPlayer) player);
+        if(endlessInventory==null){
+            switch (ServerConfig.CONFIG.CREATION_MODE.get()){
+                case CREATE_PER_PLAYER -> endlessInventory = createForPlayer(player);
+                case USE_GLOBAL_SHARED -> {
+                    endlessInventory = getFirstPublicEndInv();
+                    player.setData(ENDINV_UUID,endlessInventory.getUuid());
+                }
+            }
+        }
+        if(endlessInventory!=null) endlessInventory.viewers.add((ServerPlayer) player);
+        return Optional.ofNullable(endlessInventory);
+    }
+
+    public static EndlessInventory createPublicEndInv(){
+        EndlessInventory endlessInventory = new EndlessInventory();
+        levelEndInvData.addEndInvToLevel(endlessInventory);
+        endlessInventory.setAccessibility(Accessibility.PUBLIC);
         return endlessInventory;
+    }
+
+    public static EndlessInventory getFirstPublicEndInv(){
+        var optional = levelEndInvData.levelEndInvs.stream()
+                .filter(endInv->endInv.getOwnerUUID()==null&&endInv.getAccessibility()==Accessibility.PUBLIC)
+                .findFirst();
+        if(optional.isPresent()){
+            return optional.get();
+        }
+        optional = levelEndInvData.levelEndInvs.stream()
+                .filter(endInv->endInv.getAccessibility()==Accessibility.PUBLIC)
+                .findFirst();
+        return optional.orElseGet(ServerLevelEndInv::createPublicEndInv);
     }
 
     private static EndlessInventory createForPlayer(Player player){
         EndlessInventory endlessInventory = new EndlessInventory();
         levelEndInvData.addEndInvToLevel(endlessInventory);
+        endlessInventory.setAccessibility(ServerConfig.CONFIG.DEFAULT_ACCESSIBILITY.get());
+        endlessInventory.setOwner(player.getUUID());
         player.setData(ENDINV_UUID,endlessInventory.getUuid());
-        return endlessInventory;
-    }
-
-    private static EndlessInventory createForPlayer(Player player, UUID uuid){
-        EndlessInventory endlessInventory = new EndlessInventory(uuid);
-        levelEndInvData.addEndInvToLevel(endlessInventory);
         return endlessInventory;
     }
 

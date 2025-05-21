@@ -121,9 +121,12 @@ public abstract class ServerPayloadHandler {
         if(player.containerMenu == player.inventoryMenu && openEndInvPayload.openNew()){
             player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createServer, Component.empty()));
         }else if(!openEndInvPayload.openNew()){
-            AttachingManager manager = new AttachingManager(player.containerMenu, ServerLevelEndInv.getEndInvForPlayer(player),player);
-            ServerLevelEndInv.PAGE_META_DATA_MANAGER.put(player,manager);
-            manager.sendEndInvMetadataToRemote();
+            ServerLevelEndInv.getEndInvForPlayer(player).ifPresent(endInv->{
+                AttachingManager manager = new AttachingManager(player.containerMenu, endInv ,player);
+                ServerLevelEndInv.PAGE_META_DATA_MANAGER.put(player,manager);
+                manager.sendEndInvData();
+            });
+
         }
 
     }
@@ -148,12 +151,13 @@ public abstract class ServerPayloadHandler {
 
     public static void handleItemStarred(StarItemPayload starItemPayload, IPayloadContext iPayloadContext) {
         ServerPlayer player = (ServerPlayer) iPayloadContext.player();
-        if(starItemPayload.isAdding()) {
-            ServerLevelEndInv.getEndInvForPlayer(player).affinities.addStarredItem(starItemPayload.stack());
-        }else {
-            ServerLevelEndInv.getEndInvForPlayer(player).affinities.removeStarredItem(starItemPayload.stack());
-        }
-
+        ServerLevelEndInv.getEndInvForPlayer(player).ifPresent(endInv->{
+            if(starItemPayload.isAdding()) {
+                endInv.affinities.addStarredItem(starItemPayload.stack());
+            }else {
+                endInv.affinities.removeStarredItem(starItemPayload.stack());
+            }
+        });
     }
 
     public static void handleQuickMovePage(QuickMoveToPagePayload payload, IPayloadContext iPayloadContext) {

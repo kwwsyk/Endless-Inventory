@@ -12,12 +12,14 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 
 import javax.annotation.Nonnegative;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +28,7 @@ import java.util.stream.Stream;
 public class EndlessInventory implements SourceInventory{
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
     public static final StreamCodec<RegistryFriendlyByteBuf,Map<ItemKey, ItemState>> ITEM_MAP_STREAM_CODEC = ByteBufCodecs.map(
             Object2ObjectLinkedOpenHashMap::new,
             ItemKey.STREAM_CODEC,
@@ -34,16 +37,32 @@ public class EndlessInventory implements SourceInventory{
     );
 
     private UUID uuid;
+
     private List<ItemStack> items;
+
     private final Map<ItemKey, ItemState> itemMap;
+
     @SuppressWarnings("unchecked")
     private final List<ItemStack>[] sortedViews = new List[SortType.values().length];
+
     private final long[] lastSortedTimes = new long[SortType.values().length];
+
     private long lastModTime = Util.getMillis();
+
     private int maxStackSize;
+
     private boolean infinityMode;
+
     public final EndInvAffinities affinities;
+
     public List<ServerPlayer> viewers = new ArrayList<>();
+
+    @Nullable
+    private UUID owner;
+
+    public final List<UUID> white_list = new ArrayList<>();
+
+    private Accessibility accessibility;
 
     public EndlessInventory(){
         this(UUID.randomUUID());
@@ -55,6 +74,7 @@ public class EndlessInventory implements SourceInventory{
         this.uuid = uuid;
         this.maxStackSize = ServerConfig.CONFIG.MAX_STACK_SIZE.getAsInt();
         this.infinityMode = ServerConfig.CONFIG.ENABLE_INFINITE.getAsBoolean();
+        this.accessibility = ServerConfig.CONFIG.DEFAULT_ACCESSIBILITY.get();
         this.affinities = new EndInvAffinities(this);
     }
 
@@ -154,6 +174,27 @@ public class EndlessInventory implements SourceInventory{
         this.infinityMode = infinityMode;
     }
 
+    public Accessibility getAccessibility() {
+        return accessibility;
+    }
+
+    public void setAccessibility(Accessibility accessibility) {
+        this.accessibility = accessibility;
+    }
+
+    @Nullable
+    public Optional<ServerPlayer> getOwner(ServerLevel level) {
+        return level.getPlayers(pl->Objects.equals(pl.getUUID(),owner)).stream().findAny();
+    }
+
+    public UUID getOwnerUUID(){
+        return owner;
+    }
+
+
+    public void setOwner(@Nullable UUID owner) {
+        this.owner = owner;
+    }
 
     /**
      * Add item to EndInv and return remain item copy.
@@ -271,7 +312,7 @@ public class EndlessInventory implements SourceInventory{
 
     /**
      * Set endinv modState to new greater state.
-     * @param newState new state should be greater than original state
+     * @param newState should be greater than its original state
      * @return endinv's modState that has been updated
      */
     public long updateModState(long newState){
@@ -286,8 +327,7 @@ public class EndlessInventory implements SourceInventory{
     }
 
     public boolean stillValid(Player player) {
-        //TODO ACCESSIBLE?
-        return true;
+        return accessibility==Accessibility.PUBLIC || (owner!=null && owner.equals(player.getUUID())) || white_list.contains(player.getUUID()) && accessibility==Accessibility.RESTRICTED;
     }
 
 

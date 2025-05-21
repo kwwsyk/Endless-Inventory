@@ -153,13 +153,8 @@ public class AttachingManager implements PageMetaDataManager{
     }
 
     @Override
-    public void sendEndInvMetadataToRemote() {
-        PacketDistributor.sendToPlayer( player,new EndInvMetadata(endinv.getItemSize(),endinv.getMaxItemStackSize(),endinv.isInfinityMode()));
-    }
-
-    @Override
-    public EndInvMetadata getEndInvMetadata() {
-        return new EndInvMetadata(endinv.getItemSize(),endinv.getMaxItemStackSize(),endinv.isInfinityMode());
+    public void sendEndInvData() {
+        PacketDistributor.sendToPlayer(player,EndInvMetadata.getWith(endinv));
     }
 
 

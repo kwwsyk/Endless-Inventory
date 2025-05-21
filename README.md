@@ -7,7 +7,7 @@ Endless Inventory is a Minecraft mod providing an RPG like, infinite space inven
 Versions
 ----
 
-v 0.0.1 (Alpha) - Minecraft-1.21.1  
+v 1.0.0 (Release) - Minecraft-1.21.1  
 It's now under test, many features are expected to be implemented.
 
 Features

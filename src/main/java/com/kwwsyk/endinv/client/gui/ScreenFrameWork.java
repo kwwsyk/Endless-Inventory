@@ -59,8 +59,8 @@ public class ScreenFrameWork {
     //Always pageBarCount + firstPageIndex <= meta.getPages.size()
     public final int leftPos,topPos;
     public final int imageWidth,imageHeight;
-    private final int pageX;
-    private final int pageY;
+    public final int pageX;
+    public final int pageY;
     private final int rows;
     private final int columns;
     private final int pageXSize;
@@ -191,7 +191,7 @@ public class ScreenFrameWork {
 
     public void renderBg(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick){
         screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
-        meta.getDisplayingPage().renderBg(screenBgRenderer,guiGraphics,partialTick,mouseX,mouseY);
+        meta.getDisplayingPage().getPageRenderer().renderBg(screenBgRenderer,guiGraphics,partialTick,mouseX,mouseY);
     }
 
     private boolean isHoveringOnPage;
@@ -202,8 +202,8 @@ public class ScreenFrameWork {
         isHoveringOnPage = hasClickedOnPage(mouseX,mouseY);
 
 
-        meta.getDisplayingPage().renderPage(guiGraphics,pageX,pageY);
-        if(!sortTypeSwitcher.isHoveringOnSortBox()) meta.getDisplayingPage().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
+        meta.getDisplayingPage().getPageRenderer().renderPage(guiGraphics,pageX,pageY);
+        if(!sortTypeSwitcher.isHoveringOnSortBox()) meta.getDisplayingPage().getPageRenderer().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
 
         if(searchBox.isHovered() && !searchBox.isFocused()) guiGraphics.renderTooltip(screen.getMinecraft().font, List.of(
                 Component.translatable("search.endinv.prefix.sharp"),
@@ -223,7 +223,7 @@ public class ScreenFrameWork {
 
     protected void pageClicked(double mouseX, double mouseY, int keyCode, ClickType clickType){
         //menu.syncContent();
-        meta.getDisplayingPage().pageClicked(mouseX,mouseY,keyCode,clickType);
+        meta.getDisplayingPage().getPageClickHandler().pageClicked(mouseX,mouseY,keyCode,clickType);
         PacketDistributor.sendToServer(
                 new PageClickPayload(menu.containerId, meta.getInPageContext(), mouseX, mouseY, keyCode, clickType));
     }
@@ -300,7 +300,7 @@ public class ScreenFrameWork {
                 return true;
             }
         }
-        //handle clicked on page switch bar
+        //handle clicked on the page switch bar
         int pageIndex = hasClickedOnPageSwitchBar(mouseX,mouseY);
         if(pageIndex>=0){
             pageSwitched(pageIndex);
@@ -313,7 +313,7 @@ public class ScreenFrameWork {
         InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
         boolean isKeyPicking = this.mc.options.keyPickItem.isActiveAndMatches(mouseKey);//is mouse middle button and enabled for pickup or clone
         long clickTime = Util.getMillis();
-        this.doubleClick = keyCode==lastClickedButton && meta.getDisplayingPage().doubleClicked(XOffset,YOffset,lastCLickedX,lastClickedY,clickTime-lastClickedTime);
+        this.doubleClick = keyCode==lastClickedButton && meta.getDisplayingPage().getPageClickHandler().doubleClicked(XOffset,YOffset,lastCLickedX,lastClickedY,clickTime-lastClickedTime);
         this.skipNextRelease = false;
         if(keyCode!=0&&keyCode!=1&&!isKeyPicking){
             checkHotBarClicked:
@@ -370,7 +370,7 @@ public class ScreenFrameWork {
         if(!hasClickedOnPage(mouseX, mouseY)) return false;
         //handle page drag: mouse tweak style
         if(hasShiftDown()){
-            int slotId = meta.getDisplayingPage().getSlotForMouseOffset(mouseX-pageX,mouseY-pageY);
+            int slotId = meta.getDisplayingPage().getPageClickHandler().getSlotForMouseOffset(mouseX-pageX,mouseY-pageY);
             if(slotId>=0 && lastDraggedPageSlot>=0 && slotId!=lastDraggedPageSlot){
                 pageClicked(mouseX-pageX,mouseY-pageY,button,ClickType.QUICK_MOVE);
             }

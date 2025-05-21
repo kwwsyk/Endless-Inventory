@@ -21,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
+import javax.annotation.Nullable;
+
 @Mixin(ServerPlaceRecipe.class)
 public class ServerPlaceRecipeMixin<I extends RecipeInput, R extends Recipe<I>>{
 
@@ -28,19 +30,20 @@ public class ServerPlaceRecipeMixin<I extends RecipeInput, R extends Recipe<I>>{
     @Shadow
     protected StackedContents stackedContents;
     @Unique
+    @Nullable
     private EndlessInventory endInv;
 
 
     @Inject(method = "recipeClicked", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/inventory/RecipeBookMenu;fillCraftSlotsStackedContents(Lnet/minecraft/world/entity/player/StackedContents;)V"))
     private void fillEndInvStackedContents(ServerPlayer player, RecipeHolder<R> recipe, boolean placeAll, CallbackInfo ci){
-        endInv = ServerLevelEndInv.getEndInvForPlayer(player);
-        //if(endInv==null) return;
+        endInv = ServerLevelEndInv.getEndInvForPlayer(player).orElse(null);
+        if(endInv==null) return;
         RecipeItemProvider.fillStackedContents(endInv.getItemsAsList(), this.stackedContents);
     }
 
     @Inject(method = "moveItemToGrid",at = @At("RETURN"),locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
     private void getAttachedItems(Slot slot, ItemStack stack, int maxAmount, CallbackInfoReturnable<Integer> cir, int i){
-        if(i!=-1) return;
+        if(i!=-1 || endInv==null) return;
         ItemStack itemStack = endInv.takeItem(stack,maxAmount);
         endInv.broadcastChanges();
         if(itemStack.isEmpty()){

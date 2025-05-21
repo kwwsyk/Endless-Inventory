@@ -1,11 +1,14 @@
 package com.kwwsyk.endinv.client.gui.bg;
 
+import com.kwwsyk.endinv.client.gui.ScreenFrameWork;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
 public interface ScreenBgRenderer {
+
+    ScreenFrameWork getScreenFrameWork();
 
     void renderBg(@NotNull GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY);
 

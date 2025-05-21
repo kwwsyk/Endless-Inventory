@@ -6,7 +6,6 @@ import com.kwwsyk.endinv.menu.page.DisplayPage;
 import com.kwwsyk.endinv.menu.page.ItemPage;
 import com.kwwsyk.endinv.menu.page.PageType;
 import com.kwwsyk.endinv.network.payloads.PageData;
-import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.network.payloads.toServer.page.PageContext;
 import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.core.Holder;
@@ -61,9 +60,7 @@ public interface PageMetaDataManager {
 
     void setSearching(String searching);
 
-    void sendEndInvMetadataToRemote();
-
-    EndInvMetadata getEndInvMetadata();
+    void sendEndInvData();
 
     default void scrollTo(float pos){
         getDisplayingPage().scrollTo(pos);

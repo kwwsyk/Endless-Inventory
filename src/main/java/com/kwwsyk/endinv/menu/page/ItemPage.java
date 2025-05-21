@@ -5,6 +5,8 @@ import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.client.CachedSrcInv;
 import com.kwwsyk.endinv.client.events.ScreenAttachment;
 import com.kwwsyk.endinv.client.gui.EndlessInventoryScreen;
+import com.kwwsyk.endinv.client.gui.page.PageClickHandler;
+import com.kwwsyk.endinv.client.gui.page.PageRenderer;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.network.payloads.toClient.EndInvContent;
 import com.kwwsyk.endinv.network.payloads.toClient.SetItemDisplayContentPayload;
@@ -37,15 +39,20 @@ import java.util.List;
 /**
  * DisplayPage that has a list of ItemStack, and items are linked to EndInv.
  */
-public abstract class ItemPage extends DisplayPage{
+public abstract class ItemPage extends DisplayPage implements PageRenderer, PageClickHandler {
 
     protected NonNullList<ItemStack> items;
+
     protected int startIndex = 0;
+
     protected int length;
+
     //leftPos and topPos are used as Renderer param
     protected int leftPos;
     protected int topPos;
+
     protected boolean suppressRefresh = false;
+
     protected List<ItemStack> inQueueStacks = null;
 
     public ItemPage(PageType pageType, PageMetaDataManager metaDataManager) {
@@ -398,5 +405,13 @@ public abstract class ItemPage extends DisplayPage{
         if(player.hasInfiniteMaterials() && metadata.getMenu().getCarried().isEmpty()){
             metadata.getMenu().setCarried(clicked.copyWithCount(clicked.getMaxStackSize()));
         }
+    }
+
+    public PageRenderer getPageRenderer(){
+        return this;
+    }
+
+    public PageClickHandler getPageClickHandler(){
+        return this;
     }
 }

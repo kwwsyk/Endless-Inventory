@@ -151,12 +151,13 @@ public class ItemEntryDisplay extends ItemDisplay{
     @Override
     public void renderBg(ScreenBgRenderer screenBgRenderer, GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
         super.renderBg(screenBgRenderer, guiGraphics, partialTicks, mouseX, mouseY);
-        int startY = topPos;
+        int pageX = screenBgRenderer.getScreenFrameWork().pageX;
+        int startY = screenBgRenderer.getScreenFrameWork().pageY;
         int bgColor = ClientConfig.CONFIG.TEXTURE.get() == TextureMode.FROM_RESOURCE ? 0xFF8b8b8b : 0x37606037;
         for(int i=0; i< metadata.getRowCount(); ++i){
-            guiGraphics.fill(leftPos,startY,leftPos+18*metadata.getColumnCount()-2,startY+1,0xFF373737);
-            guiGraphics.fill(leftPos,startY+1,leftPos+18*metadata.getColumnCount()-2,startY+17,bgColor);
-            guiGraphics.fill(leftPos,startY+17,leftPos+18*metadata.getColumnCount()-2,startY+18,0xFFFFFFFF);
+            guiGraphics.fill(pageX,startY,pageX+18*metadata.getColumnCount()-2,startY+1,0xFF373737);
+            guiGraphics.fill(pageX,startY+1,pageX+18*metadata.getColumnCount()-2,startY+17,bgColor);
+            guiGraphics.fill(pageX,startY+17,pageX+18*metadata.getColumnCount()-2,startY+18,0xFFFFFFFF);
             startY+=18;
         }
     }

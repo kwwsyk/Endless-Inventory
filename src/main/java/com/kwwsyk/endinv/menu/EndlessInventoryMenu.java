@@ -2,6 +2,7 @@ package com.kwwsyk.endinv.menu;
 
 import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.ModInitializer;
+import com.kwwsyk.endinv.ServerLevelEndInv;
 import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.client.CachedSrcInv;
 import com.kwwsyk.endinv.menu.page.DisplayPage;
@@ -10,12 +11,12 @@ import com.kwwsyk.endinv.menu.page.PageType;
 import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Inventory;
@@ -70,9 +71,20 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
 
     //Server constructor
     public static AbstractContainerMenu createServer(int i, Inventory inventory, Player player) {
-        EndlessInventory endlessInventory = getEndInvForPlayer(player);
+        EndlessInventory endlessInventory = getEndInvForPlayer(player).orElse(null);
+        if(endlessInventory==null) return null;
         SyncedConfig config = player.getData(SYNCED_CONFIG);
         var ret = new EndlessInventoryMenu(i,inventory,endlessInventory);
+        ret.init(config.pageData());
+        ret.addStandardInventorySlots(inventory, 8, 18 * ret.getRowCount() + 18 + 13);
+        return ret;
+    }
+
+    public static EndlessInventoryMenu createWithTemp(int i,Inventory inventory, Player player){
+        EndlessInventory endInv = ServerLevelEndInv.TEMP_ENDINV_REG.get((ServerPlayer) player);
+        if(endInv==null) throw new IllegalStateException("Try to create tmp menu without tmp EndInv.");
+        var ret = new EndlessInventoryMenu(i,inventory,endInv);
+        SyncedConfig config = player.getData(SYNCED_CONFIG);
         ret.init(config.pageData());
         ret.addStandardInventorySlots(inventory, 8, 18 * ret.getRowCount() + 18 + 13);
         return ret;
@@ -315,17 +327,12 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
      *Send operation will be accomplished in {@link AbstractContainerMenu#broadcastChanges()}
      */
     @Override
-    public void sendEndInvMetadataToRemote(){
+    public void sendEndInvData(){
         if(sourceInventory instanceof EndlessInventory endlessInventory){
             itemSize.set(endlessInventory.getItemSize());
             maxStackSize.set(endlessInventory.getMaxItemStackSize());
             infinityMode.set((endlessInventory.isInfinityMode()?1:0));
         }
-    }
-
-    @Override
-    public EndInvMetadata getEndInvMetadata() {
-        return new EndInvMetadata(itemSize.get(),maxStackSize.get(),infinityMode.get()>0);
     }
 
     @Override

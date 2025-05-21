@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.events;
 
 import com.kwwsyk.endinv.ModInitializer;
-import com.kwwsyk.endinv.commands.ConfigCommand;
+import com.kwwsyk.endinv.commands.EndInvCommand;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -10,6 +10,6 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 public class CommandsReg {
     @SubscribeEvent
     public static void regCommands(final RegisterCommandsEvent event){
-        ConfigCommand.register(event.getDispatcher());
+        EndInvCommand.register(event.getDispatcher());
     }
 }

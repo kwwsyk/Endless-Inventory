@@ -82,5 +82,9 @@
   "endless_inventory.configuration.section.endless.inventory.server.toml": "Endless Inventory Server Config",
   "endless_inventory.configuration.ItemCapacity.tooltip": "Configuration of item capacity",
   "endless_inventory.configuration.columns.tooltip": "columns, 0 for auto",
-  "endless_inventory.configuration.TransferMode.tooltip": "Item network transfer mode, PART will only transfer to render items"
+  "endless_inventory.configuration.TransferMode.tooltip": "Item network transfer mode, PART will only transfer to render items",
+  "endinv.attr.accessibility": "Accessibility",
+  "endinv.info.accessibility": "Accessibility",
+  "endinv.info.owner_uuid": "Owner UUID",
+  "endinv.info.white_list_size": "White List Size"
 }

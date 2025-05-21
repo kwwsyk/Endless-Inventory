@@ -3,10 +3,7 @@ package com.kwwsyk.endinv.client;
 import com.kwwsyk.endinv.SourceInventory;
 import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.options.ItemClassify;
-import com.kwwsyk.endinv.util.ItemKey;
-import com.kwwsyk.endinv.util.ItemState;
-import com.kwwsyk.endinv.util.SearchUtil;
-import com.kwwsyk.endinv.util.SortType;
+import com.kwwsyk.endinv.util.*;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -32,8 +29,14 @@ public class CachedSrcInv implements SourceInventory {
     LocalPlayer player = mc.player;
     private List<ItemStack> items;
     private Map<ItemKey, ItemState> itemMap = new Object2ObjectLinkedOpenHashMap<>();
+
     private int maxStackSize;
     private boolean infinityMode;
+
+    private Accessibility accessibilty;
+    @Nullable
+    private UUID owner;
+    public List<UUID> white_list = new ArrayList<>();
 
     private CachedSrcInv(){}
 
@@ -181,5 +184,20 @@ public class CachedSrcInv implements SourceInventory {
     public void syncMetadata(EndInvMetadata endInvMetadata) {
         this.maxStackSize = endInvMetadata.maxStackSize();
         this.infinityMode = endInvMetadata.infinityMode();
+        this.accessibilty =endInvMetadata.config().accessibility();
+        this.owner = endInvMetadata.config().owner();
+        this.white_list = endInvMetadata.config().white_list();
+    }
+
+    public Accessibility getAccessibility() {
+        return this.accessibilty;
+    }
+
+    public void setAccessibility(Accessibility accessibility) {
+        this.accessibilty = accessibility;
+    }
+
+    public UUID getOwnerUUID(){
+        return owner;
     }
 }

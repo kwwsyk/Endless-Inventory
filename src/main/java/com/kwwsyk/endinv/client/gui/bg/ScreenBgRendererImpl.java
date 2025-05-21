@@ -55,4 +55,9 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
     public ScreenRectangleWidgetParam pageSwitchBarParam() {
         return pageSwitchTabParam;
     }
+
+    @Override
+    public ScreenFrameWork getScreenFrameWork(){
+        return frameWork;
+    }
 }

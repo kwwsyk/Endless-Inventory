@@ -1,6 +1,5 @@
 package com.kwwsyk.endinv.events;
 
-import com.kwwsyk.endinv.EndlessInventory;
 import com.kwwsyk.endinv.ModInitializer;
 import com.kwwsyk.endinv.ServerLevelEndInv;
 import com.kwwsyk.endinv.network.payloads.toClient.EndInvContent;
@@ -26,9 +25,10 @@ public class PlayerEvents {
             if(tickRefresh) {
                 PacketDistributor.sendToPlayer(serverPlayer, serverPlayer.getData(SYNCED_CONFIG));
                 if(ServerConfig.CONFIG.TRANSFER_MODE.get()== ContentTransferMode.ALL){
-                    EndlessInventory endInv = ServerLevelEndInv.getEndInvForPlayer(serverPlayer);
-                    PacketDistributor.sendToPlayer(serverPlayer,new EndInvContent(endInv.getItemMap()));
-                    PacketDistributor.sendToPlayer(serverPlayer,new EndInvMetadata(endInv.getItemSize(), endInv.getMaxItemStackSize(), endInv.isInfinityMode()));
+                    ServerLevelEndInv.getEndInvForPlayer(serverPlayer).ifPresent(endInv -> {
+                        PacketDistributor.sendToPlayer(serverPlayer,new EndInvContent(endInv.getItemMap()));
+                        PacketDistributor.sendToPlayer(serverPlayer,EndInvMetadata.getWith(endInv));
+                    });
                 }
                 tickRefresh = false ;
             }

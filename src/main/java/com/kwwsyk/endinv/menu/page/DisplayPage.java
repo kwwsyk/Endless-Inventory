@@ -13,12 +13,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 
-public abstract class DisplayPage implements PageRenderer, PageClickHandler {
+public abstract class DisplayPage{
 
 
     private final PageType pageType;
@@ -49,7 +50,7 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
     /**Render page icon with page's {@link #icon}
      * icon can be an item location or sprite location with 18*18 size
      */
-    @Override
+
     public ResourceLocation getIcon(){
         return icon;
     }
@@ -113,11 +114,13 @@ public abstract class DisplayPage implements PageRenderer, PageClickHandler {
         return pageType;
     }
 
-    public PageRenderer getPageRenderer(){
-        return this;
-    }
+    public abstract PageRenderer getPageRenderer();
 
-    public PageClickHandler getPageClickHandler(){
-        return this;
-    }
+    public abstract PageClickHandler getPageClickHandler();
+
+    public abstract boolean hasSearchBar();
+
+    public abstract boolean hasSortTypeSwitchBar();
+
+    public abstract void pageClicked(double v, double v1, int i, ClickType clickType);
 }

@@ -6,6 +6,7 @@ import com.kwwsyk.endinv.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.menu.page.pageManager.PageQuickMoveHandler;
 import com.kwwsyk.endinv.network.payloads.PageData;
 import com.kwwsyk.endinv.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.network.payloads.toClient.EndInvConfig;
 import com.kwwsyk.endinv.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.util.SortType;
 import net.minecraft.client.Minecraft;
@@ -124,13 +125,9 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         }
 
         @Override
-        public void sendEndInvMetadataToRemote() {//do nop as in client
+        public void sendEndInvData() {//do nop as in the client
         }
 
-        @Override
-        public EndInvMetadata getEndInvMetadata() {
-            return endInvMetadata;
-        }
     };
     private final PageQuickMoveHandler quickMoveHandler;
     private boolean isHoveringOnSortBox;
@@ -158,7 +155,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
             this.searching=data.search();
             pageMetadata.switchPageWithType(data.pageType().value());
         }
-        this.endInvMetadata = new EndInvMetadata(0,Integer.MAX_VALUE,false);
+        this.endInvMetadata = new EndInvMetadata(0,Integer.MAX_VALUE,false,EndInvConfig.DEFAULT);
         this.quickMoveHandler = new PageQuickMoveHandler(this.pageMetadata);
     }
 

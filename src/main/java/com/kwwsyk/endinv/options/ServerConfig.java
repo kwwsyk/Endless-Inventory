@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.options;
 
+import com.kwwsyk.endinv.util.Accessibility;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -11,6 +12,8 @@ public class ServerConfig {
     public final ModConfigSpec.BooleanValue ENABLE_INFINITE;
     public final ModConfigSpec.BooleanValue ENABLE_AUTO_PICK;
     public final ModConfigSpec.EnumValue<ContentTransferMode> TRANSFER_MODE;
+    public final ModConfigSpec.EnumValue<Accessibility> DEFAULT_ACCESSIBILITY;
+    public final ModConfigSpec.EnumValue<MissingEndInvPolicy> CREATION_MODE;
 
     private ServerConfig(ModConfigSpec.Builder builder){
         MAX_STACK_SIZE = builder
@@ -24,6 +27,10 @@ public class ServerConfig {
                 .define("autoPickUtility",false);
         TRANSFER_MODE = builder
                 .defineEnum("TransferMode",ContentTransferMode.ALL);
+        DEFAULT_ACCESSIBILITY = builder
+                .defineEnum("defaultAccessibility",Accessibility.PUBLIC);
+        CREATION_MODE = builder
+                .defineEnum("creationMode",MissingEndInvPolicy.CREATE_PER_PLAYER);
     }
 
     static {
