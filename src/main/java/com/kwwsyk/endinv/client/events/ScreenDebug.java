@@ -23,6 +23,18 @@ import static com.kwwsyk.endinv.ModInitializer.SYNCED_CONFIG;
 public class ScreenDebug {
 
     public static int phase = 0;
+    private static boolean hideMenu = false;
+
+    @SubscribeEvent
+    public static void hideScreen(ScreenEvent.Render.Pre event){
+        if(hideMenu){
+            GuiGraphics graphics = event.getGuiGraphics();
+            Screen screen = event.getScreen();
+            Minecraft mc = screen.getMinecraft();
+            graphics.drawString(mc.font,Component.literal("[F4]Menu screen rendering stopped!"),0,0,0xFFFFAA00);
+            event.setCanceled(true);
+        }
+    }
 
     @SubscribeEvent
     public static void renderScreen(ScreenEvent.Render.Post event){
@@ -73,6 +85,8 @@ public class ScreenDebug {
                 graphics.hLine(0, width, (int) mouseY, 0xff888822);
                 graphics.vLine((int) mouseX, 0, height, 0xff888822);
 
+                graphics.drawString(mc.font,Component.literal("[F3]Screen Debug enabled"),0,0,0xFFFFAA00);
+
                 graphics.drawString(mc.font, Component.literal("Width: " + width), width - 128, 10, 0xFFFFFF00);
                 graphics.drawString(mc.font, Component.literal("Height: " + height), width - 128, 20, 0xFFFFFF00);
                 graphics.drawString(mc.font, Component.literal("ImageWidth/XSize: " + imageWidth), width - 128, 30, 0xFFFFFF00);
@@ -109,6 +123,9 @@ public class ScreenDebug {
         if(button == InputConstants.KEY_F3){
             phase++;
             if(phase>2) phase=0;
+        }
+        if(button==InputConstants.KEY_F4){
+            hideMenu=!hideMenu;
         }
         if(event.getScreen() instanceof EndlessInventoryScreen EIS && EIS.getMenu().getDisplayingPage() instanceof ItemPage itemPage){
             if(button == InputConstants.KEY_R){

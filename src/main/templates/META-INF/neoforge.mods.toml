@@ -35,7 +35,7 @@ displayName="${mod_name}" #mandatory
 #displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
 
 # A file name (in the root of the mod JAR) containing a logo for display
-#logoFile="examplemod.png" #optional
+logoFile="icon.png" #optional
 
 # A text field displayed in the mod UI
 #credits="" #optional
@@ -86,6 +86,7 @@ config="endinv.mixins.json"
     side="BOTH"
 [[dependencies."${mod_id}"]]
     modId="jei"
+    type="optional"
     mandatory=false
     versionRange="[19.5.0.59,)" # 可选，匹配你支持的 JEI 版本
     ordering="AFTER"

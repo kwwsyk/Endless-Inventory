@@ -73,8 +73,9 @@ public abstract class FromResource extends ScreenBgRendererImpl {
                     rowsToRender -= 6;
                     startY += height;
                 }
+                guiGraphics.blit(CONTAINER_TEXTURE_LOCATION,startX,pageTop+17+18*rows,0,124,imageWidth,12,256,256);
             }
-            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION,startX,pageTop+17+18*rows,0,124,imageWidth,12,256,256);
+
         }
 
         private void renderSpecialBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY,
@@ -113,10 +114,22 @@ public abstract class FromResource extends ScreenBgRendererImpl {
                 guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 168, 17,
                         8, height, 256, 256);
                 startX = initialX;
-
-
                 startY += height;
             }
+
+            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 0, 124,
+                    7, 12, 256, 256);
+            startX+=7;
+            for (int columnsToRender = columns;columnsToRender>0;columnsToRender-=9) {
+                int width = 18 * Math.min(9,columnsToRender);
+                guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 7, 124,
+                        width, 12, 256, 256);
+
+                startX+=width;
+            }
+            guiGraphics.blit(CONTAINER_TEXTURE_LOCATION, startX, startY, 168, 124,
+                    8, 12, 256, 256);
+            startX = initialX;
         }
     }
 

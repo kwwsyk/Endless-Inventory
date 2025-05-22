@@ -208,10 +208,14 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
         );
     }
 
-    public static String getDisplayAmount(ItemStack stack){
+    public String getDisplayAmount(ItemStack stack){
         int count = stack.getCount();
         double value;
         String suffix;
+
+        if(count == this.metadata.getMaxStackSize() && metadata.enableInfinity()){
+            return "∞";
+        }
 
         if (count >= 1_000_000_000) {
             value = count / 1_000_000_000.0;

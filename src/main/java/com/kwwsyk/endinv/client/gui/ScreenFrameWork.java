@@ -117,7 +117,7 @@ public class ScreenFrameWork {
         int searchBoxY = this.topPos + 17+18*rows + 12;
         this.searchBoxParam =
                 new ScreenRectangleWidgetParam(this.leftPos+1, searchBoxY, Math.min(200,imageWidth), Math.min(20,screen.height-searchBoxY));
-        this.configButtonParam = new ScreenRectangleWidgetParam(0, searchBoxY,20,20);
+        this.configButtonParam = new ScreenRectangleWidgetParam(0, 0,20,20);
         this.pageBarScrollUpButtonParam = new ScreenRectangleWidgetParam(0,topPos,20,14);
         this.pageBarScrollDownButtonParam = new ScreenRectangleWidgetParam(0,topPos+22+28*pageBarCount,20,14);
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 6,topPos + 5,77,12);
