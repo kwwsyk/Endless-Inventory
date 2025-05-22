@@ -88,7 +88,7 @@ public class ScreenFrameWork {
         this.pageBarCount = Math.min(ClientConfig.CONFIG.MAX_PAGE_BARS.getAsInt(),meta.getPages().size());
         this.pageBarScrollUpButtonParam = new ScreenRectangleWidgetParam(leftPos-32,topPos-16,30,14);
         this.pageBarScrollDownButtonParam = new ScreenRectangleWidgetParam(leftPos-32,topPos+2+28*pageBarCount,30,14);
-        this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,this.topPos,18,18);
+        this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,Math.min(this.topPos+this.imageHeight,screen.height-20),18,18);
         this.searchBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 89, this.topPos + 5, 80, 12);
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos+8,topPos+5,60,12);
         this.screenBgRenderer = new FromResource.MenuMode(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+1,32,28));
@@ -106,10 +106,12 @@ public class ScreenFrameWork {
         this.mc = screen.getMinecraft();
         this.meta = attachedScreen.getPageMetadata();
         this.menu = meta.getMenu();
+
         this.leftPos = 20;
-        this.topPos=20;
         this.rows = meta.getRowCount();
+        this.topPos= Math.max((screen.height - rows*18 - 17 -10)/2, 20);
         this.columns = meta.getColumnCount();
+
         this.sortTypeSwitcher = attachedScreen;
         this.pageBarCount = Math.min(ClientConfig.CONFIG.MAX_PAGE_BARS.getAsInt(),meta.getPages().size());
         this.imageWidth = 13+18*columns;
@@ -117,7 +119,7 @@ public class ScreenFrameWork {
         int searchBoxY = this.topPos + 17+18*rows + 12;
         this.searchBoxParam =
                 new ScreenRectangleWidgetParam(this.leftPos+1, searchBoxY, Math.min(200,imageWidth), Math.min(20,screen.height-searchBoxY));
-        this.configButtonParam = new ScreenRectangleWidgetParam(0, 0,20,20);
+        this.configButtonParam = new ScreenRectangleWidgetParam(0, Math.min(searchBoxY,screen.height-20),20,20);
         this.pageBarScrollUpButtonParam = new ScreenRectangleWidgetParam(0,topPos,20,14);
         this.pageBarScrollDownButtonParam = new ScreenRectangleWidgetParam(0,topPos+22+28*pageBarCount,20,14);
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 6,topPos + 5,77,12);
@@ -289,7 +291,7 @@ public class ScreenFrameWork {
 
 
     public boolean mouseClicked(double mouseX, double mouseY, int keyCode){
-        if(!searchBoxParam.hasCLickedOn((int) mouseX, (int) mouseY)){
+        if(!searchBoxParam.hasClickedOn((int) mouseX, (int) mouseY) || keyCode==1){
             searchBox.setFocused(false);
         }
         //handle menu item quick move

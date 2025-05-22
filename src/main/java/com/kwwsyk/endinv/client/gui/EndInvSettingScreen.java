@@ -186,8 +186,9 @@ public class EndInvSettingScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if(this.getFocused()!=null){
+        if(this.getFocused()!=null || button==1){
             this.getFocused().setFocused(false);
+            return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
