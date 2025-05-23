@@ -24,6 +24,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Optional;
 
+/**Handle auto-pickup features, triggered when
+ * 1. Entity drop item and exp: automatically transfer items into EndInv, and exp picked up, meaning jumping item and exp entity spawn.
+ * 2. Block drop item and exp: Similar to item behavior. But beds or chests may still drop item entities as different drop logic.
+ * 3. Picked-up items (by player touch item entities) will be automatically transferred into EndInv. But items satisfied with some conditions will stay in playerInv.
+ */
 @EventBusSubscriber(modid = ModInitializer.MOD_ID,bus = EventBusSubscriber.Bus.GAME)
 public class LootEvent {
 
@@ -61,6 +66,10 @@ public class LootEvent {
             if(endInv==null) return;
             boolean flag = true;
 
+            int exp = event.getDroppedExperience();
+            int newValue = repairPlayerItems(player,exp);
+            player.giveExperiencePoints(newValue);
+
             for (ItemEntity drop : event.getDrops()) {
                 ItemStack stack = drop.getItem();
                 ItemStack remain = endInv.addItem(stack);
@@ -73,8 +82,11 @@ public class LootEvent {
                     flag = false;
                 }
             }
-            if (flag)
+            if (flag) {
                 event.setCanceled(true); // 取消原始掉落
+            } else {
+                event.setDroppedExperience(0);
+            }
         }
     }
 
@@ -96,6 +108,7 @@ public class LootEvent {
             return;
         }
         ItemEntity entity = event.getItemEntity();
+        if(entity.hasPickUpDelay() || entity.getTarget()!=null && entity.getTarget()!=player.getUUID()) return;
         ItemStack stack = entity.getItem();
         if(shouldMoveTo(player,stack)){
             ServerLevelEndInv.getEndInvForPlayer(player).ifPresent(endInv->{
@@ -111,6 +124,10 @@ public class LootEvent {
         }
     }
 
+    /**Items satisfied with several conditions will stay in the player inventory.
+     * 1. Player has mergeable items in the inventory.
+     * 2. Player has unstackable some class items in inventory or worn, e.g. {@link SwordItem},{@link ArmorItem}...
+     */
     private static boolean shouldMoveTo(Player player, ItemStack stack){
         if(stack.isEmpty()) return false;
         Item item = stack.getItem();
@@ -139,7 +156,7 @@ public class LootEvent {
             case ShearsItem such -> {
                 return hasSuch(player,such);
             }
-            case FlintAndSteelItem such -> {
+            case BoatItem such -> {
                 return hasSuch(player,such);
             }
             case ElytraItem such -> {
@@ -158,9 +175,13 @@ public class LootEvent {
                 return hasOrSwearing(player,armorItem);
             }
             default -> {
-                return true;
+                return !canMerge(player,stack);
             }
         }
+    }
+
+    private static boolean canMerge(Player player, ItemStack stack){
+        return player.inventoryMenu.slots.stream().anyMatch(slot -> ItemStack.isSameItemSameComponents(slot.getItem(),stack));
     }
 
     private static boolean hasSuch(Player player, Item item){

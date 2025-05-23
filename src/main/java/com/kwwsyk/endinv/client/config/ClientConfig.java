@@ -57,12 +57,12 @@ public class ClientConfig {
     public int calculateDefaultRowCount(boolean ofMenu){
         Minecraft mc = Minecraft.getInstance();
         int height = mc.getWindow().getGuiScaledHeight();
-        return Math.floorDiv(height-60,18)-(ofMenu?4:0);
+        return Math.max(Math.floorDiv(height-60,18)-(ofMenu?4:0),0);
     }
     public int calculateSuitInColumnCount(AbstractContainerScreen<?> screen){
         int leftPos = screen.getGuiLeft();
         int width = leftPos - 20 - 6 -6;
-        return Math.floorDiv(width,18);
+        return Math.max(0,Math.floorDiv(width,18));
     }
 
     static {

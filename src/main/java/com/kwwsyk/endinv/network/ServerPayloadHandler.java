@@ -117,7 +117,7 @@ public abstract class ServerPayloadHandler {
 
     public static void handleEndInvOpening(OpenEndInvPayload openEndInvPayload, IPayloadContext iPayloadContext) {
         ServerPlayer player = (ServerPlayer) iPayloadContext.player();
-        if(!player.getData(SYNCED_CONFIG).attaching()) return;
+        if(!player.getData(SYNCED_CONFIG).checkForAttaching()) return;
         if(player.containerMenu == player.inventoryMenu && openEndInvPayload.openNew()){
             player.openMenu(new SimpleMenuProvider(EndlessInventoryMenu::createServer, Component.empty()));
         }else if(!openEndInvPayload.openNew()){

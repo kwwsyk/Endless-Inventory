@@ -54,7 +54,8 @@ public class ScreenAttachment {
             Player player = screen.getMinecraft().player;
             if(player==null) return;
             SyncedConfig.readAndSyncClientConfigToServer(false);
-            if(!player.getData(SYNCED_CONFIG).attaching()) return;
+            SyncedConfig syncedConfig = player.getData(SYNCED_CONFIG);
+            if(!syncedConfig.checkForAttaching()) return;
 
             ATTACHMENT_MANAGER.computeIfAbsent(screen, screen1 -> {
                 PacketDistributor.sendToServer(new OpenEndInvPayload(false));

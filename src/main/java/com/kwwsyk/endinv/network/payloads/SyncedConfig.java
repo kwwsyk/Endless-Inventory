@@ -121,4 +121,17 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
     public SyncedConfig pageTypeChanged(PageType pageType) {
         return new SyncedConfig(pageData.ofPageTypeChanged(pageType),attaching,autoPicking);
     }
+
+    /**
+     * Though ClientConfig approves 0 valued row/col count for auto adjustment,
+     *  SyncedConfig represents real row/col count involved in both client and server logics.
+     * @return valid SyncedConfig state with positive row/col count.
+     */
+    public boolean checkState(){
+        return pageData.rows()>0 && pageData.columns()>0;
+    }
+
+    public boolean checkForAttaching(){
+        return checkState() && attaching;
+    }
 }
