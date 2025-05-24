@@ -41,11 +41,18 @@ public class ServerPlaceRecipeMixin<I extends RecipeInput, R extends Recipe<I>>{
         RecipeItemProvider.fillStackedContents(endInv.getItemsAsList(), this.stackedContents);
     }
 
+    @Inject(method = "recipeClicked", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/recipebook/ServerPlaceRecipe;handleRecipeClicked(Lnet/minecraft/world/item/crafting/RecipeHolder;Z)V"))
+    private void finishHandleClick(ServerPlayer player, RecipeHolder<R> recipe, boolean placeAll, CallbackInfo ci){
+        if(endInv!=null){
+            endInv.broadcastChanges();
+        }
+    }
+
     @Inject(method = "moveItemToGrid",at = @At("RETURN"),locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
     private void getAttachedItems(Slot slot, ItemStack stack, int maxAmount, CallbackInfoReturnable<Integer> cir, int i){
         if(i!=-1 || endInv==null) return;
         ItemStack itemStack = endInv.takeItem(stack,maxAmount);
-        endInv.broadcastChanges();
+        //endInv.broadcastChanges(); Don't let it be invoked too many times.
         if(itemStack.isEmpty()){
             cir.setReturnValue(-1);
             cir.cancel();
