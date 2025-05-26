@@ -1,11 +1,12 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.80'
     id 'idea'
 }
 
-group = 'com.kwwsyk'
-version = '0.0.1'
+group = mod_group_id
+version = mod_version
 
 repositories {
     mavenCentral()
@@ -15,7 +16,19 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
-/*
+base {
+    archivesName.set(mod_id)
+}
+
+neoForge {
+    neoFormVersion = "$minecraft_version-$neoformTimestamp"
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+}
+
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -23,4 +36,4 @@ dependencies {
 
 test {
     useJUnitPlatform()
-}*/
+}

@@ -4,6 +4,14 @@ pluginManagement {
         gradlePluginPortal()
         maven { url = 'https://maven.neoforged.net/releases' }
     }
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
 }
 
 plugins {
@@ -12,4 +20,4 @@ plugins {
 
 rootProject.name = "EndlessInventory"
 
-include "common","neoforge"
+include "common","neoforge","fabric"
