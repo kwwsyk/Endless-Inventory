@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.common.network.payloads;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.client.config.ClientConfig;
 import com.kwwsyk.endinv.common.menu.page.PageType;
 import com.kwwsyk.endinv.common.util.SortType;
@@ -33,7 +34,7 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
             ).apply(instance, SyncedConfig::new)
     );
     public static final Type<SyncedConfig> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"endinv_settings"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID,"endinv_settings"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
             PageData.STREAM_CODEC,SyncedConfig::pageData,
             ByteBufCodecs.BOOL,SyncedConfig::attaching,

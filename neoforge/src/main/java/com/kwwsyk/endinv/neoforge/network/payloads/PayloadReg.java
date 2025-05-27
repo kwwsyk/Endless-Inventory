@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.neoforge.network.payloads;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.network.ClientPayloadHandler;
 import com.kwwsyk.endinv.common.network.ServerPayloadHandler;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
@@ -11,14 +12,13 @@ import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.ItemDisplayIte
 import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.PageClickPayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.PageStatePayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.QuickMoveToPagePayload;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.DirectionalPayloadHandler;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-@EventBusSubscriber(modid = ModInitializer.MOD_ID,bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = ModInfo.MOD_ID,bus = EventBusSubscriber.Bus.MOD)
 public class PayloadReg {
     @SubscribeEvent
     public static void registerPayload(final RegisterPayloadHandlersEvent event){

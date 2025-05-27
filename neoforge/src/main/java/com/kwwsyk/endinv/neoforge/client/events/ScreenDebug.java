@@ -1,10 +1,10 @@
 package com.kwwsyk.endinv.neoforge.client.events;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.common.menu.page.ItemPage;
 import com.kwwsyk.endinv.common.network.payloads.PageData;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import com.kwwsyk.endinv.neoforge.client.config.ClientConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
@@ -19,7 +19,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import static com.kwwsyk.endinv.neoforge.ModInitializer.SYNCED_CONFIG;
 
-@EventBusSubscriber(modid = ModInitializer.MOD_ID,value = Dist.CLIENT)
+@EventBusSubscriber(modid = ModInfo.MOD_ID,value = Dist.CLIENT)
 public class ScreenDebug {
 
     public static int phase = 0;

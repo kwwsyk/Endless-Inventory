@@ -1,12 +1,12 @@
 package com.kwwsyk.endinv.common.client.gui;
 
-import com.kwwsyk.endinv.common.client.TextureMode;
 import com.kwwsyk.endinv.common.client.config.ClientConfig;
 import com.kwwsyk.endinv.common.client.gui.bg.FromResource;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenBgRenderer;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenRectangleWidgetParam;
 import com.kwwsyk.endinv.common.client.gui.bg.Transparent;
 import com.kwwsyk.endinv.common.client.gui.widget.SortTypeSwitchBox;
+import com.kwwsyk.endinv.common.client.option.TextureMode;
 import com.kwwsyk.endinv.common.menu.page.DisplayPage;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.network.payloads.toServer.page.StarItemPayload;

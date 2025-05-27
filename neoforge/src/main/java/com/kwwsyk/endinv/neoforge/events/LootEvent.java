@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.neoforge.events;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
 import com.kwwsyk.endinv.common.network.payloads.toClient.ItemPickedUpPayload;
 import com.kwwsyk.endinv.neoforge.ModInitializer;
@@ -29,7 +30,7 @@ import java.util.Optional;
  * 2. Block drop item and exp: Similar to item behavior. But beds or chests may still drop item entities as different drop logic.
  * 3. Picked-up items (by player touch item entities) will be automatically transferred into EndInv. But items satisfied with some conditions will stay in playerInv.
  */
-@EventBusSubscriber(modid = ModInitializer.MOD_ID,bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = ModInfo.MOD_ID,bus = EventBusSubscriber.Bus.GAME)
 public class LootEvent {
 
     @SubscribeEvent

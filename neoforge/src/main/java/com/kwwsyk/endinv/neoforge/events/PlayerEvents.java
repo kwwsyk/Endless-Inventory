@@ -1,10 +1,10 @@
 package com.kwwsyk.endinv.neoforge.events;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvContent;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.common.options.ContentTransferMode;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import com.kwwsyk.endinv.neoforge.options.ServerConfig;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -15,7 +15,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import static com.kwwsyk.endinv.neoforge.ModInitializer.SYNCED_CONFIG;
 
-@EventBusSubscriber(modid = ModInitializer.MOD_ID)
+@EventBusSubscriber(modid = ModInfo.MOD_ID)
 public class PlayerEvents {
 
     public static boolean tickRefresh =true;

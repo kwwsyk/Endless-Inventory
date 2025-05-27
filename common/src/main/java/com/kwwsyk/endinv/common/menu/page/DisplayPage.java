@@ -43,7 +43,7 @@ public abstract class DisplayPage{
         this.metadata = metaDataManager;
         this.srcInv = metaDataManager.getSourceInventory().isRemote() ? CachedSrcInv.INSTANCE : metaDataManager.getSourceInventory();
         this.pageType = pageType;
-        this.itemClassify = pageType.classify;
+        this.itemClassify = pageType.itemClassify;
         this.name = Component.translatable("page.endinv."+pageType.registerName);
     }
 

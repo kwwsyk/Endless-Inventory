@@ -1,18 +1,13 @@
 package com.kwwsyk.endinv.common;
 
 
-import com.kwwsyk.endinv.neoforge.options.ItemClassify;
-import com.kwwsyk.endinv.neoforge.options.ServerConfig;
-import com.kwwsyk.endinv.util.*;
-import com.kwwsyk.neoforge.util.*;
+import com.kwwsyk.endinv.common.util.*;
 import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +17,7 @@ import org.slf4j.Logger;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,9 +69,9 @@ public class EndlessInventory implements SourceInventory {
         this.items = new ArrayList<>();
         this.itemMap = new Object2ObjectLinkedOpenHashMap<>();
         this.uuid = uuid;
-        this.maxStackSize = ServerConfig.CONFIG.MAX_STACK_SIZE.getAsInt();
-        this.infinityMode = ServerConfig.CONFIG.ENABLE_INFINITE.getAsBoolean();
-        this.accessibility = ServerConfig.CONFIG.DEFAULT_ACCESSIBILITY.get();
+        this.maxStackSize = ModInfo.getServerConfig().getMaxAllowedStackSize();
+        this.infinityMode = ModInfo.getServerConfig().allowInfinityMode();
+        this.accessibility = ModInfo.getServerConfig().defaultAccessibility();
         this.affinities = new EndInvAffinities(this);
     }
 
@@ -85,15 +81,9 @@ public class EndlessInventory implements SourceInventory {
         if (lastSortedTimes[idx] != lastModTime || sortedViews[idx] == null) {
             List<ItemStack> view = itemMap.entrySet().stream()
                     .map(e -> e.getKey().toStack(e.getValue().count()))
+                    .sorted(ModInfo.sortHelper.getComparator(type, this))
                     .collect(Collectors.toList());
 
-            switch (type) {
-                case SortType.COUNT -> view.sort(Comparator.comparingInt(ItemStack::getCount));
-                case SortType.SPACE_AND_NAME -> view.sort(byId);
-                case SortType.ID -> view.sort(REGISTRY_ORDER_COMPARATOR);
-                case SortType.LAST_MODIFIED -> view.sort(Comparator.comparingLong(s -> itemMap.get(ItemKey.asKey(s)).lastModTime()));
-                default -> {}
-            }
             sortedViews[idx] = view;
             lastSortedTimes[idx] = lastModTime;
         }
@@ -102,20 +92,10 @@ public class EndlessInventory implements SourceInventory {
         return ret;
     }
 
-    Comparator<ItemStack> byId = Comparator.comparing(
-            s -> Optional.ofNullable(s.getItemHolder().getKey())
-                    .map(ResourceKey::location)
-                    .map(Object::toString)
-                    .orElse("~") // 如果未注册，排在最前
-    );
-    Comparator<ItemStack> REGISTRY_ORDER_COMPARATOR = Comparator.comparingInt(
-            stack -> BuiltInRegistries.ITEM.getId(stack.getItem())
-    );
-
-    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType,boolean reverse, ItemClassify classify, String search){
+    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, boolean reverse, Predicate<ItemStack> classify, String search){
         Stream<ItemStack> base = getSortedView(sortType,reverse).stream();
         List<ItemStack> filtered = base
-                .filter(classify::matches)
+                .filter(classify)
                 .filter(stack -> SearchUtil.matchesSearch(stack,search))
                 .toList();
         if(startIndex>= filtered.size()) return new ArrayList<>();

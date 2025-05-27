@@ -1,8 +1,8 @@
 package com.kwwsyk.endinv.neoforge.client.events;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.common.network.payloads.toServer.OpenEndInvPayload;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.neoforged.api.distmarker.Dist;
@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import static com.kwwsyk.endinv.neoforge.client.events.KeyMappingReg.OPEN_ENDINV_KEY;
 
-@EventBusSubscriber(value = Dist.CLIENT,bus = EventBusSubscriber.Bus.GAME,modid = ModInitializer.MOD_ID)
+@EventBusSubscriber(value = Dist.CLIENT,bus = EventBusSubscriber.Bus.GAME,modid = ModInfo.MOD_ID)
 public class KeyMappingTrigger {
 
     @SubscribeEvent

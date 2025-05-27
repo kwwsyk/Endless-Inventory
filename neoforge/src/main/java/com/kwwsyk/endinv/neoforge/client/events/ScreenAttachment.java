@@ -1,10 +1,10 @@
 package com.kwwsyk.endinv.neoforge.client.events;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.client.gui.AttachedScreen;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.common.network.payloads.toServer.OpenEndInvPayload;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
@@ -18,7 +18,7 @@ import java.util.Map;
 
 import static com.kwwsyk.endinv.neoforge.ModInitializer.SYNCED_CONFIG;
 
-@EventBusSubscriber(value = Dist.CLIENT,modid = ModInitializer.MOD_ID,bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(value = Dist.CLIENT,modid = ModInfo.MOD_ID,bus = EventBusSubscriber.Bus.GAME)
 public class ScreenAttachment {
     public static final  Map<AbstractContainerScreen<?>, AttachedScreen<?>> ATTACHMENT_MANAGER = new HashMap<>();
 

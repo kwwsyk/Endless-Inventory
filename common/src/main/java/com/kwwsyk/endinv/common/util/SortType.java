@@ -1,9 +1,14 @@
 package com.kwwsyk.endinv.common.util;
 
+import com.kwwsyk.endinv.common.EndlessInventory;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Comparator;
 
 public enum SortType {
     DEFAULT("sorttype.endinv.default"),
@@ -42,4 +47,23 @@ public enum SortType {
             },
             SortType::name
     );
+
+    public interface ISortHelper{
+
+        default Comparator<ItemStack> getComparator(SortType sortType, EndlessInventory endInv){
+            return switch (sortType){
+                case DEFAULT -> null;
+                case COUNT -> Comparator.comparingInt(ItemStack::getCount);
+                case SPACE_AND_NAME -> sortById();
+                case ID -> REGISTRY_ORDER_COMPARATOR;
+                case LAST_MODIFIED -> Comparator.comparingLong(s -> endInv.getItemMap().get(ItemKey.asKey(s)).lastModTime());
+            };
+        }
+
+        Comparator<ItemStack> sortById();
+
+        Comparator<ItemStack> REGISTRY_ORDER_COMPARATOR = Comparator.comparingInt(
+                stack -> BuiltInRegistries.ITEM.getId(stack.getItem())
+        );
+    }
 }

@@ -1,6 +1,6 @@
 package com.kwwsyk.endinv.neoforge.client.events;
 
-import com.kwwsyk.endinv.neoforge.ModInitializer;
+import com.kwwsyk.endinv.common.ModInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.entity.ItemRenderer;
@@ -14,7 +14,7 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-@EventBusSubscriber(value = Dist.CLIENT,modid = ModInitializer.MOD_ID)
+@EventBusSubscriber(value = Dist.CLIENT,modid = ModInfo.MOD_ID)
 public class PickingUpTip {
 
     private static final int MAX_QUEUE_SIZE = 5;

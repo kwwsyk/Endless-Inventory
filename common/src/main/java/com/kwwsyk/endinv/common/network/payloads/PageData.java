@@ -16,12 +16,12 @@ import java.util.Objects;
 /**Both stored and synced data of player and page, obtained in specific Payloads.
  * See {@link PageContext},{@link SyncedConfig}
  */
-public record PageData(Holder<PageType> pageType, int rows, int columns, SortType sortType, boolean reverseSort, String search) {
+public record PageData(String pageRegKey, int rows, int columns, SortType sortType, boolean reverseSort, String search) {
     
     public static final PageData DEFAULT = new PageData(ModInitializer.ALL_ITEMS,0,9,SortType.DEFAULT,false,"");
     public static final Codec<PageData> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
-                    ModInitializer.PAGE_REGISTRY.holderByNameCodec().optionalFieldOf("page_type", ModInitializer.ALL_ITEMS).forGetter(PageData::pageType),
+                    Codec.STRING.optionalFieldOf("pageId","all_items").forGetter(PageData::pageRegKey),
                     Codec.INT.optionalFieldOf("rows", 15).forGetter(PageData::rows),
                     Codec.INT.optionalFieldOf("rows", 15).forGetter(PageData::columns),
                     SortType.CODEC.optionalFieldOf("sortType",SortType.DEFAULT).forGetter(PageData::sortType),

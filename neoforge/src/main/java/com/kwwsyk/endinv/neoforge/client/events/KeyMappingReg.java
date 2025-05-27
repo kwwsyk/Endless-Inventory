@@ -1,6 +1,6 @@
 package com.kwwsyk.endinv.neoforge.client.events;
 
-import com.kwwsyk.endinv.neoforge.ModInitializer;
+import com.kwwsyk.endinv.common.ModInfo;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.neoforged.api.distmarker.Dist;
@@ -13,7 +13,7 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.util.Lazy;
 import org.lwjgl.glfw.GLFW;
 
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD,value = Dist.CLIENT,modid = ModInitializer.MOD_ID)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD,value = Dist.CLIENT,modid = ModInfo.MOD_ID)
 public class KeyMappingReg {
 
 

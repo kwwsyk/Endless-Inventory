@@ -1,4 +1,4 @@
-package com.kwwsyk.endinv.common.client;
+package com.kwwsyk.endinv.common.client.option;
 
 public enum TextureMode {
 

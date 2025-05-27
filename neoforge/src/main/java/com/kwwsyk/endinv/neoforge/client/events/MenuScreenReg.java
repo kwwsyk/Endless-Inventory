@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.neoforge.client.events;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -9,7 +9,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
 import static com.kwwsyk.endinv.neoforge.ModInitializer.ENDLESS_INVENTORY_MENU_TYPE;
 
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD,modid = ModInitializer.MOD_ID,value = Dist.CLIENT)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD,modid = ModInfo.MOD_ID,value = Dist.CLIENT)
 public class MenuScreenReg {
     @SubscribeEvent
     public static void reg(RegisterMenuScreensEvent event){

@@ -1,13 +1,13 @@
 package com.kwwsyk.endinv.neoforge.events;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.data.EndlessInventoryData;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
 
-@EventBusSubscriber(modid = ModInitializer.MOD_ID)
+@EventBusSubscriber(modid = ModInfo.MOD_ID)
 public class LevelEvents {
 
     @SubscribeEvent

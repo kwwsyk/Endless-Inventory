@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.neoforge.client.config;
 
-import com.kwwsyk.endinv.common.client.TextureMode;
+import com.kwwsyk.endinv.common.client.option.IClientConfig;
+import com.kwwsyk.endinv.common.client.option.TextureMode;
 import com.kwwsyk.endinv.common.menu.page.PageType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -72,4 +73,40 @@ public class ClientConfig {
         CONFIG_SPEC = pair.getRight();
     }
 
+    public final IClientConfig INSTANCE = new IClientConfig() {
+        @Override
+        public boolean attaching() {
+            return ATTACHING.getAsBoolean();
+        }
+
+        @Override
+        public int rows() {
+            return ROWS.getAsInt();
+        }
+
+        @Override
+        public int columns() {
+            return COLUMNS.getAsInt();
+        }
+
+        @Override
+        public boolean autoSuitColumn() {
+            return AUTO_SUIT_COLUMN.getAsBoolean();
+        }
+
+        @Override
+        public TextureMode textureMode() {
+            return TEXTURE.get();
+        }
+
+        @Override
+        public boolean screenDebugging() {
+            return ENABLE_DEBUG.getAsBoolean();
+        }
+
+        @Override
+        public List<String> hidingPageIdList() {
+            return List.of();//todo
+        }
+    };
 }

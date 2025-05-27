@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.neoforge.options;
 
 import com.kwwsyk.endinv.common.options.ContentTransferMode;
+import com.kwwsyk.endinv.common.options.IServerConfig;
 import com.kwwsyk.endinv.common.options.MissingEndInvPolicy;
 import com.kwwsyk.endinv.common.util.Accessibility;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -40,4 +41,36 @@ public class ServerConfig {
         CONFIG = pair.getLeft();
         CONFIG_SPEC = pair.getRight();
     }
+
+    public final IServerConfig INSTANCE = new IServerConfig() {
+        @Override
+        public int getMaxAllowedStackSize() {
+            return MAX_STACK_SIZE.getAsInt();
+        }
+
+        @Override
+        public boolean allowInfinityMode() {
+            return ENABLE_INFINITE.getAsBoolean();
+        }
+
+        @Override
+        public boolean enableAutoPick() {
+            return ENABLE_AUTO_PICK.getAsBoolean();
+        }
+
+        @Override
+        public ContentTransferMode transferMode() {
+            return TRANSFER_MODE.get();
+        }
+
+        @Override
+        public Accessibility defaultAccessibility() {
+            return DEFAULT_ACCESSIBILITY.get();
+        }
+
+        @Override
+        public MissingEndInvPolicy policyHandlingMissing() {
+            return CREATION_MODE.get();
+        }
+    };
 }
