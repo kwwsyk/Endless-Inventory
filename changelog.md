@@ -3,6 +3,7 @@ Change Logs
 
 
 * 5/24/25 optimized vanilla recipe transfer process to reduce lag.
+* 5/27/25 Right-click in search bar can also clear searching content.
 
 1.21-1.0.2-neoforge (release)
 --------------------------

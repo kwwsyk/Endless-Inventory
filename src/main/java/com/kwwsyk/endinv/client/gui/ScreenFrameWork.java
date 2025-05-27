@@ -293,6 +293,10 @@ public class ScreenFrameWork {
     public boolean mouseClicked(double mouseX, double mouseY, int keyCode){
         if(!searchBoxParam.hasClickedOn((int) mouseX, (int) mouseY) || keyCode==1){
             searchBox.setFocused(false);
+            if(keyCode == 1) {
+                searchBox.setValue("");
+                refreshSearchResults();
+            }
         }
         //handle menu item quick move
         if(KeyMappingReg.QUICK_MOVE_KEY.get().isActiveAndMatches(InputConstants.Type.MOUSE.getOrCreate(keyCode))){
