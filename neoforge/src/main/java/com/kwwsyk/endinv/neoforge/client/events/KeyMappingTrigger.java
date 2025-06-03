@@ -11,7 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import static com.kwwsyk.endinv.neoforge.client.events.KeyMappingReg.OPEN_ENDINV_KEY;
+import static com.kwwsyk.endinv.neoforge.ClientModInitializer.OPEN_MENU_KEY;
 
 @EventBusSubscriber(value = Dist.CLIENT,bus = EventBusSubscriber.Bus.GAME,modid = ModInfo.MOD_ID)
 public class KeyMappingTrigger {
@@ -22,7 +22,7 @@ public class KeyMappingTrigger {
         LocalPlayer player = mc.player;
         if (player == null) return;
 
-        while (OPEN_ENDINV_KEY.get().consumeClick()) {
+        while (OPEN_MENU_KEY.get().consumeClick()) {
             SyncedConfig.readAndSyncClientConfigToServer(true);
             PacketDistributor.sendToServer(new OpenEndInvPayload(true));
         }

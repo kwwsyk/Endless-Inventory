@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.common.client.gui;
 
+import com.kwwsyk.endinv.common.options.IConfigValue;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,7 +12,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.neoforged.neoforge.common.ModConfigSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,8 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.kwwsyk.endinv.common.client.CachedSrcInv.INSTANCE;
-import static com.kwwsyk.endinv.common.client.config.ClientConfig.CONFIG;
-
+import static com.kwwsyk.endinv.common.client.ClientModInfo.getClientConfig;
 public class EndInvSettingScreen extends Screen {
 
     private static final ResourceLocation BLANK_LOCATION = ResourceLocation.withDefaultNamespace("textures/gui/demo_background.png");
@@ -76,13 +75,13 @@ public class EndInvSettingScreen extends Screen {
             addInfoEntry(Component.translatable("endinv.info.owner_uuid"),INSTANCE::getOwnerUUID);
             addInfoEntry(Component.translatable("endinv.info.white_list_size"),()->"Size :"+INSTANCE.white_list.size());
         } else {
-            addConfigEntry("endinv.setting.rows", CONFIG.ROWS);
-            addConfigEntry("endinv.setting.columns", CONFIG.COLUMNS);
-            addConfigEntry("endinv.setting.auto_suit", CONFIG.AUTO_SUIT_COLUMN);
-            addConfigEntry("endinv.setting.attaching", CONFIG.ATTACHING);
-            addConfigEntry("endinv.setting.texture", CONFIG.TEXTURE);
-            addConfigEntry("endinv.setting.max_page_bar", CONFIG.MAX_PAGE_BARS);
-            addConfigEntry(Component.literal("Screen debug"), CONFIG.ENABLE_DEBUG);
+            addConfigEntry("endinv.setting.rows", getClientConfig().rows());
+            addConfigEntry("endinv.setting.columns", getClientConfig().columns());
+            addConfigEntry("endinv.setting.auto_suit", getClientConfig().autoSuitColumn());
+            addConfigEntry("endinv.setting.attaching", getClientConfig().attaching());
+            addConfigEntry("endinv.setting.texture", getClientConfig().textureMode());
+            addConfigEntry("endinv.setting.max_page_bar", getClientConfig().maxPageBarCount());
+            addConfigEntry(Component.literal("Screen debug"), getClientConfig().screenDebugging());
         }
         scrollTo();
     }
@@ -104,12 +103,12 @@ public class EndInvSettingScreen extends Screen {
         switchPage();
     }
 
-    private void addConfigEntry(String key, ModConfigSpec.ConfigValue<?> configValue){
+    private <T> void addConfigEntry(String key, IConfigValue<T> configValue){
         addConfigEntry(Component.translatable(key),configValue);
     }
 
-    private void addConfigEntry(Component tip, ModConfigSpec.ConfigValue<?> configValue){
-        entries.add(new ConfigEntry<>(entries.size(),tip,configValue));
+    private <T> void addConfigEntry(Component tip, IConfigValue<T> configValue){
+        entries.add(new ConfigEntry<>(entries.size(),tip,configValue.get(),configValue));
     }
 
     private void addInfoEntry(Component tip, Supplier<Object> info){
@@ -149,6 +148,7 @@ public class EndInvSettingScreen extends Screen {
     public void onClose() {
         assert this.minecraft != null;
         this.minecraft.setScreen(this.back);
+        getClientConfig().save();
     }
 
     @Override
@@ -378,42 +378,43 @@ public class EndInvSettingScreen extends Screen {
 
         public final int index;
         private final Component tip;
-        private final ModConfigSpec.ConfigValue<T> configValue;
+        private final IConfigValue<T> configValue;
         private final T initialValue;
         private AbstractWidget configWidget;
         int widgetX,widgetY;
 
 
-        public ConfigEntry(int index, Component tip, ModConfigSpec.ConfigValue<T> configValue){
+        public ConfigEntry(int index, Component tip, T initialValue, IConfigValue<T> configValue){
             this.index = index;
             this.tip = tip;
             this.configValue = configValue;
-            this.initialValue = configValue.get();
+            this.initialValue = initialValue;
             widgetX = leftPos+WIDGET_X_OFFSET;
             widgetY = topPos+CONFIG_ENTRY_Y_OFFSET+index*ENTRY_HEIGHT+1;
         }
 
         @SuppressWarnings("unchecked")
         public void build(){
-            switch (configValue){
-                case ModConfigSpec.BooleanValue booleanValue -> {
+            switch (initialValue){
+                case Boolean ignored -> {
+                    IConfigValue<Boolean> booleanValue = (IConfigValue<Boolean>)configValue;
                     var button = CycleButton.onOffBuilder((Boolean) initialValue)
                             .displayOnlyValue()
                             .create(widgetX,widgetY,WIDGET_X_SIZE,WIDGET_Y_SIZE,Component.empty(), (btn,value)-> booleanValue.set(value));
                     this.configWidget = button;
                     EndInvSettingScreen.this.addRenderableWidget(button);
                 }
-                case ModConfigSpec.EnumValue<?> enumValue -> {
-                    assert initialValue instanceof Enum<?>;
+                case Enum<?> ignored -> {
+                    IConfigValue<Enum<?>> enumValue = (IConfigValue<Enum<?>>)configValue;
                     var button = new CycleButton.Builder<Enum<?>>(e-> Component.translatable("endinv.setting.entry."+e.name()))
                             .withValues((Enum<?>[]) initialValue.getClass().getEnumConstants())
                             .withInitialValue((Enum<?>) initialValue)
                             .displayOnlyValue()
-                            .create(widgetX,widgetY,WIDGET_X_SIZE,WIDGET_Y_SIZE,Component.empty(),(btn,value)->((ModConfigSpec.EnumValue)enumValue).set(value));
+                            .create(widgetX,widgetY,WIDGET_X_SIZE,WIDGET_Y_SIZE,Component.empty(),(btn,value)->enumValue.set(value));
                     this.configWidget = button;
                     EndInvSettingScreen.this.addRenderableWidget(button);
                 }
-                case ModConfigSpec.IntValue ignored -> {
+                case Integer ignored -> {
                     EditBox editBox = new EditBox(EndInvSettingScreen.this.font,widgetX,widgetY,WIDGET_X_SIZE,WIDGET_Y_SIZE,tip);
                     this.configWidget = editBox;
                     EndInvSettingScreen.this.addRenderableWidget(editBox);
@@ -436,7 +437,6 @@ public class EndInvSettingScreen extends Screen {
             if(configWidget instanceof CycleButton<?> button){
                 ((CycleButton<T>)button).setValue(configValue.get());
             }else if(configWidget instanceof EditBox editBox){
-                assert configValue instanceof ModConfigSpec.IntValue;
                 editBox.setValue(String.valueOf(configValue.get()));
             }
         }
@@ -469,7 +469,7 @@ public class EndInvSettingScreen extends Screen {
             return tip;
         }
 
-        public ModConfigSpec.ConfigValue<?> getConfigValue() {
+        public IConfigValue<?> getConfigValue() {
             return configValue;
         }
     }

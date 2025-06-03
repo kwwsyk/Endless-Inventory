@@ -1,17 +1,16 @@
 package com.kwwsyk.endinv.common.menu;
 
+import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.ModInfo;
+import com.kwwsyk.endinv.common.ServerLevelEndInv;
+import com.kwwsyk.endinv.common.SourceInventory;
+import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import com.kwwsyk.endinv.common.menu.page.DisplayPage;
 import com.kwwsyk.endinv.common.menu.page.ItemPage;
-import com.kwwsyk.endinv.common.menu.page.PageType;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.neoforge.EndlessInventory;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
-import com.kwwsyk.endinv.neoforge.ServerLevelEndInv;
-import com.kwwsyk.endinv.neoforge.SourceInventory;
-import com.kwwsyk.endinv.neoforge.client.CachedSrcInv;
-import com.kwwsyk.endinv.neoforge.network.payloads.PageData;
-import com.kwwsyk.endinv.neoforge.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.neoforge.util.SortType;
+import com.kwwsyk.endinv.common.network.payloads.PageData;
+import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.common.util.SortType;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
@@ -24,16 +23,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.CommonHooks;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.kwwsyk.endinv.neoforge.ModInitializer.ENDLESS_INVENTORY_MENU_TYPE;
-import static com.kwwsyk.endinv.neoforge.ModInitializer.SYNCED_CONFIG;
-import static com.kwwsyk.endinv.neoforge.ServerLevelEndInv.getEndInvForPlayer;
+import static com.kwwsyk.endinv.common.ModRegistries.*;
+import static com.kwwsyk.endinv.common.ServerLevelEndInv.getEndInvForPlayer;
 
 public class EndlessInventoryMenu extends AbstractContainerMenu implements PageMetaDataManager {
 
@@ -61,7 +58,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
     public static EndlessInventoryMenu createClient(int id, Inventory playerInv){
         var ret = new EndlessInventoryMenu(id,playerInv,null);
         if (Minecraft.getInstance().player != null) {
-            SyncedConfig config = Minecraft.getInstance().player.getData(SYNCED_CONFIG);
+            SyncedConfig config = NbtAttachments.getSyncedConfig().computeIfAbsent(Minecraft.getInstance().player);
             ret.init(config.pageData());
             ret.addStandardInventorySlots(playerInv, 8, 18 * ret.getRowCount() + 18 + 13);
         }
@@ -73,7 +70,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
     public static AbstractContainerMenu createServer(int i, Inventory inventory, Player player) {
         EndlessInventory endlessInventory = getEndInvForPlayer(player).orElse(null);
         if(endlessInventory==null) return null;
-        SyncedConfig config = player.getData(SYNCED_CONFIG);
+        SyncedConfig config = NbtAttachments.getSyncedConfig().computeIfAbsent(player);
         var ret = new EndlessInventoryMenu(i,inventory,endlessInventory);
         ret.init(config.pageData());
         ret.addStandardInventorySlots(inventory, 8, 18 * ret.getRowCount() + 18 + 13);
@@ -84,7 +81,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         EndlessInventory endInv = ServerLevelEndInv.TEMP_ENDINV_REG.get((ServerPlayer) player);
         if(endInv==null) throw new IllegalStateException("Try to create tmp menu without tmp EndInv.");
         var ret = new EndlessInventoryMenu(i,inventory,endInv);
-        SyncedConfig config = player.getData(SYNCED_CONFIG);
+        SyncedConfig config = NbtAttachments.getSyncedConfig().computeIfAbsent(player);
         ret.init(config.pageData());
         ret.addStandardInventorySlots(inventory, 8, 18 * ret.getRowCount() + 18 + 13);
         return ret;
@@ -92,7 +89,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
 
     //Common constructor
     public EndlessInventoryMenu(int id , Inventory playerInv, EndlessInventory endlessInventory){
-        super(ENDLESS_INVENTORY_MENU_TYPE.get(),id);
+        super(Menus.getEndInvMenuType(),id);
         this.player = playerInv.player;
         this.sourceInventory = endlessInventory!=null ? endlessInventory : CachedSrcInv.INSTANCE;
         this.pages = buildPages();
@@ -106,15 +103,15 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         addDataSlot(infinityMode);
     }
 
-    private void init(int rows, SortType sortType, String searching, PageType type){
+    private void init(int rows, SortType sortType, String searching, String key){
         rowsData.set(rows);
         this.sortType = sortType;
         this.searching = searching;
-        this.switchPageWithType(type);
+        this.switchPageWithId(key);
     }
 
     private void init(PageData pageData){
-        init(pageData.rows(),pageData.sortType(),pageData.search(),pageData.pageType().value());//4: reserved rows for inventory.
+        init(pageData.rows(),pageData.sortType(),pageData.search(),pageData.pageRegKey());//4: reserved rows for inventory.
     }
 
     private void addStandardInventorySlots(Inventory playerInventory, int x, int y){
@@ -129,11 +126,11 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         }
     }
 
-    //supposed to be the only method to change displaying page and index value; in order to sync.
+    //supposed to be the only method to change displaying page and index value; to sync.
     public void switchPageWithIndex(int index){
         this.displayingPageIndex = index;
         this.displayingPage = this.pages.get(index);
-        SyncedConfig.updateSyncedConfig(player.getData(SYNCED_CONFIG).pageTypeChanged(displayingPage.getPageType()));
+        SyncedConfig.updateSyncedConfig(NbtAttachments.getSyncedConfig().computeIfAbsent(player).pageKeyChanged(displayingPage.id));
         this.displayingPage.init(0,9*rowsData.get());
     }
 
@@ -241,7 +238,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
 
     boolean tryItemClickBehaviourOverride(Player player, ClickAction action, Slot slot, ItemStack clickedItem, ItemStack carriedItem) {
         // Neo: Fire the ItemStackedOnOtherEvent, and return true if it was cancelled (meaning the event was handled). Returning true will trigger the container to stop processing further logic.
-        if (CommonHooks.onItemStackedOn(clickedItem, carriedItem, slot, action, player, createCarriedSlotAccess())) {
+        if (ModInfo.platformContext.onItemStackedOn(clickedItem, carriedItem, slot, action, player, createCarriedSlotAccess())) {
             return true;
         }
 
@@ -273,7 +270,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         Slot slot = this.slots.get(index);
         if (slot.hasItem()) {
             ItemStack itemstack1 = slot.getItem();
-            if(itemstack1.getItem()== ModInitializer.testEndInv.get()) return ItemStack.EMPTY;
+            if(itemstack1.getItem()== Items.getTestEndInv()) return ItemStack.EMPTY;
             itemstack =itemstack1.copy();
             ItemStack remain = this.displayingPage.tryQuickMoveStackTo(itemstack);
             itemstack1.setCount(remain.getCount());

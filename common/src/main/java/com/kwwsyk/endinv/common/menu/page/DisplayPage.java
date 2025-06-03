@@ -1,48 +1,48 @@
 package com.kwwsyk.endinv.common.menu.page;
 
 
+import com.kwwsyk.endinv.common.ModInfo;
+import com.kwwsyk.endinv.common.SourceInventory;
+import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import com.kwwsyk.endinv.common.client.gui.page.PageClickHandler;
 import com.kwwsyk.endinv.common.client.gui.page.PageRenderer;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.PageStatePayload;
-import com.kwwsyk.endinv.neoforge.SourceInventory;
-import com.kwwsyk.endinv.neoforge.client.CachedSrcInv;
-import com.kwwsyk.endinv.neoforge.options.ItemClassify;
-import net.minecraft.core.Holder;
+import com.kwwsyk.endinv.common.network.payloads.toServer.PageStatePayload;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
+import java.util.function.Predicate;
 
 public abstract class DisplayPage{
 
 
     private final PageType pageType;
 
+    public final String id;
+
     public PageMetaDataManager metadata;
 
     public final SourceInventory srcInv;
 
     @Nullable
-    private Holder<ItemClassify> itemClassify;
+    private final Predicate<ItemStack> itemClassify;
 
     public ResourceLocation icon = null;
 
-    public Component name = Component.empty();
+    public Component name;
 
     protected boolean holdOn = false;//if holding on the page view shall not change temporarily.
-
-
 
     public DisplayPage(PageType pageType,PageMetaDataManager metaDataManager){
         this.metadata = metaDataManager;
         this.srcInv = metaDataManager.getSourceInventory().isRemote() ? CachedSrcInv.INSTANCE : metaDataManager.getSourceInventory();
         this.pageType = pageType;
+        this.id = pageType.registerName;
         this.itemClassify = pageType.itemClassify;
         this.name = Component.translatable("page.endinv."+pageType.registerName);
     }
@@ -55,9 +55,9 @@ public abstract class DisplayPage{
         return icon;
     }
 
-    public ItemClassify getClassify(){
-        var holder =  itemClassify!=null? itemClassify : ItemClassify.ALL;
-        return holder.value();
+    @Nullable
+    public Predicate<ItemStack> getClassify(){
+        return itemClassify;
     }
 
     public abstract void scrollTo(float pos);
@@ -97,7 +97,7 @@ public abstract class DisplayPage{
     public void setHoldOn(){
         if(!holdOn){
             if(srcInv.isRemote())
-                PacketDistributor.sendToServer(new PageStatePayload(true));
+                ModInfo.getPacketDistributor().sendToServer(new PageStatePayload(true));
             holdOn = true;
         }
     }
@@ -105,7 +105,7 @@ public abstract class DisplayPage{
     public void release(){
         if(holdOn){
             if(srcInv.isRemote())
-                PacketDistributor.sendToServer(new PageStatePayload(false));
+                ModInfo.getPacketDistributor().sendToServer(new PageStatePayload(false));
             holdOn = false;
         }
     }

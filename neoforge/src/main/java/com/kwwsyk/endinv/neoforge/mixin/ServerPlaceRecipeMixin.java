@@ -1,8 +1,8 @@
-package com.kwwsyk.endinv.common.mixin;
+package com.kwwsyk.endinv.neoforge.mixin;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
-import com.kwwsyk.endinv.neoforge.util.recipeTransferHelper.RecipeItemProvider;
+import com.kwwsyk.endinv.common.util.recipeTransferHelper.RecipeItemProvider;
 import net.minecraft.recipebook.ServerPlaceRecipe;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.StackedContents;

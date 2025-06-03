@@ -1,20 +1,17 @@
 package com.kwwsyk.endinv.common.network.payloads.toClient;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
+import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * holds various attributes that influent ItemDisplay,
  *  compared to {@link EndInvConfig}
  */
-public record EndInvMetadata(int itemSize, int maxStackSize, boolean infinityMode, EndInvConfig config) implements CustomPacketPayload {
-    public static final Type<EndInvMetadata> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"endinv_meta"));
+public record EndInvMetadata(int itemSize, int maxStackSize, boolean infinityMode, EndInvConfig config) implements ToClientPayload {
+
     public static final StreamCodec<FriendlyByteBuf,EndInvMetadata> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.INT,EndInvMetadata::itemSize,
             ByteBufCodecs.INT,EndInvMetadata::maxStackSize,
@@ -32,7 +29,15 @@ public record EndInvMetadata(int itemSize, int maxStackSize, boolean infinityMod
         );
     }
 
-    public @NotNull Type<EndInvMetadata> type(){
-        return TYPE;
+    public void handle(ToClientPacketContext context) {
+        CachedSrcInv.INSTANCE.syncMetadata(this);
+
+        //todo
+    }
+
+
+    @Override
+    public String id() {
+        return "endinv_meta";
     }
 }

@@ -1,7 +1,7 @@
-package com.kwwsyk.endinv.common.mixin;
+package com.kwwsyk.endinv.neoforge.mixin;
 
 import com.kwwsyk.endinv.common.client.CachedSrcInv;
-import com.kwwsyk.endinv.neoforge.util.recipeTransferHelper.RecipeItemProvider;
+import com.kwwsyk.endinv.common.util.recipeTransferHelper.RecipeItemProvider;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.world.entity.player.StackedContents;

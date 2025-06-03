@@ -1,21 +1,20 @@
 package com.kwwsyk.endinv.common.menu.page;
 
+import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.ModInfo;
+import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
+import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
 import com.kwwsyk.endinv.common.client.gui.page.PageClickHandler;
 import com.kwwsyk.endinv.common.client.gui.page.PageRenderer;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvContent;
 import com.kwwsyk.endinv.common.network.payloads.toClient.SetItemDisplayContentPayload;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.PageContext;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.StarItemPayload;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.ItemDisplayItemModPayload;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.PageStatePayload;
-import com.kwwsyk.endinv.neoforge.EndlessInventory;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
-import com.kwwsyk.endinv.neoforge.client.CachedSrcInv;
-import com.kwwsyk.endinv.neoforge.client.events.ScreenAttachment;
-import com.kwwsyk.endinv.neoforge.options.ContentTransferMode;
-import com.kwwsyk.endinv.neoforge.options.ServerConfig;
+import com.kwwsyk.endinv.common.network.payloads.toServer.ItemDisplayItemModPayload;
+import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
+import com.kwwsyk.endinv.common.network.payloads.toServer.PageStatePayload;
+import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
+import com.kwwsyk.endinv.common.options.ContentTransferMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -30,11 +29,13 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+
+import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
+import static com.kwwsyk.endinv.common.ModInfo.getServerConfig;
+import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
 
 /**
  * DisplayPage that has a list of ItemStack, and items are linked to EndInv.
@@ -48,6 +49,7 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     protected int length;
 
     //leftPos and topPos are used as Renderer param
+    protected ScreenFrameWork frameWork;
     protected int leftPos;
     protected int topPos;
 
@@ -109,22 +111,22 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
 
     public void syncContentToServer() {
         if(srcInv.isRemote()){
-            PacketDistributor.sendToServer(new PageContext(startIndex,length, metadata.getPlayer().getData(ModInitializer.SYNCED_CONFIG).pageData()));
+            getPacketDistributor().sendToServer(new PageContext(startIndex,length, getSyncedConfig().computeIfAbsent(metadata.getPlayer()).pageData()));
         }
     }
 
     public void syncContentToClient(ServerPlayer player){
         EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
-        if(ServerConfig.CONFIG.TRANSFER_MODE.get()== ContentTransferMode.PART) {
+        if(getServerConfig().transferMode().get()== ContentTransferMode.PART) {
             List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex, length, metadata.sortType(), metadata.isSortReversed(), getClassify(), metadata.searching());
 
             NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
             for (int i = 0; i < view.size(); ++i) {
                 stacks.set(i, view.get(i));
             }
-            PacketDistributor.sendToPlayer(player, new SetItemDisplayContentPayload(stacks));
-        } else if (ServerConfig.CONFIG.TRANSFER_MODE.get() == ContentTransferMode.ALL) {
-            PacketDistributor.sendToPlayer(player,new EndInvContent(endInv.getItemMap()));
+            getPacketDistributor().sendToPlayer(player, new SetItemDisplayContentPayload(stacks));
+        } else if (getServerConfig().transferMode().get() == ContentTransferMode.ALL) {
+            getPacketDistributor().sendToPlayer(player,new EndInvContent(endInv.getItemMap()));
         }
     }
 
@@ -156,7 +158,7 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     public void release(){
         if(holdOn){
             if(srcInv.isRemote())
-                PacketDistributor.sendToServer(new PageStatePayload(false));
+                getPacketDistributor().sendToServer(new PageStatePayload(false));
             holdOn = false;
             if(inQueueStacks==null) return;
             initializeContents(inQueueStacks);
@@ -169,13 +171,14 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
         if(slot>=0&&slot<items.size()) {
             ItemStack clicked = items.get(slot);
             if(clicked.isEmpty()) return;
-            PacketDistributor.sendToServer(new StarItemPayload(clicked,true));
+            getPacketDistributor().sendToServer(new StarItemPayload(clicked,true));
         }
     }
 
-    public void renderPage(GuiGraphics guiGraphics, int x, int y){
+    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFrameWork frameWork){
         this.leftPos=x;
         this.topPos=y;
+        this.frameWork = frameWork;
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0.0F, 0.0F, 100.0F);
         int rowIndex = 0;
@@ -201,11 +204,11 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     }
 
     protected boolean isHiddenBySortBox(int rowIndex, int columnIndex){
-        return rowIndex<=2 && columnIndex<=3 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen && (
+        return rowIndex<=2 && columnIndex<=3 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
+                && (
                 screen instanceof EndlessInventoryScreen EIS && EIS.getFrameWork().sortTypeSwitchBox.isOpen() && columnIndex <=2
-                        || ScreenAttachment.ATTACHMENT_MANAGER.get(screen)!=null
-                        && ScreenAttachment.ATTACHMENT_MANAGER.get(screen).getFrameWork().sortTypeSwitchBox.isOpen()
-        );
+                        || frameWork.sortTypeSwitchBox.isOpen()
+                );
     }
 
     public String getDisplayAmount(ItemStack stack){
@@ -246,7 +249,7 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
             graphics.renderTooltip(Minecraft.getInstance().font,
                     AbstractContainerScreen.getTooltipFromItem(Minecraft.getInstance(),hovering),
                     hovering.getTooltipImage(),
-                    hovering, mouseX, mouseY);
+                    mouseX, mouseY);
             graphics.pose().popPose();
         }
     }
@@ -344,8 +347,8 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
         ItemStack carried = metadata.getMenu().getCarried();
         if(!carried.isEmpty()){
             ItemStack remain = addItem(carried.copy());
-            if(FMLEnvironment.dist.isClient() && metadata.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu){
-                PacketDistributor.sendToServer(new ItemDisplayItemModPayload(carried.copy(),true));
+            if(ModInfo.isClientLoaded() && metadata.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu){
+                getPacketDistributor().sendToServer(new ItemDisplayItemModPayload(carried.copy(),true));
             }
             metadata.getMenu().setCarried(remain);
             setChanged();

@@ -1,0 +1,6 @@
+@MethodsReturnNonnullByDefault@ParametersAreNonnullByDefault
+package com.kwwsyk.endinv.neoforge.client.events;
+
+import net.minecraft.MethodsReturnNonnullByDefault;
+
+import javax.annotation.ParametersAreNonnullByDefault;

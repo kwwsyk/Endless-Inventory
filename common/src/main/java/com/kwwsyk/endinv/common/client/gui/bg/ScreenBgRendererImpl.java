@@ -1,7 +1,9 @@
 package com.kwwsyk.endinv.common.client.gui.bg;
 
+import com.kwwsyk.endinv.common.client.ClientModInfo;
 import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
@@ -29,8 +31,8 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
         this.manager = frameWork.meta;
         this.rows = manager.getRowCount();
         this.columns = manager.getColumnCount();
-        this.menuLeft = screen.getGuiLeft();
-        this.menuTop = screen.getGuiTop();
+        this.menuLeft = ClientModInfo.containerScreenHelper.getGuiLeft(screen);
+        this.menuTop = ClientModInfo.containerScreenHelper.getGuiTop(screen);
         this.pageLeft = frameWork.leftPos;
         this.pageTop = frameWork.topPos;
     }
@@ -44,7 +46,7 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
             if (mouseX > pageX && mouseX < pageX + 32 && mouseY > pageY && mouseY < pageY + 28) {
                 guiGraphics.pose().pushPose();
                 guiGraphics.pose().translate(0, 0, 550.0f);
-                guiGraphics.renderTooltip(screen.getMinecraft().font, manager.getPages().get(i).name, mouseX, mouseY);
+                guiGraphics.renderTooltip(Minecraft.getInstance().font, manager.getPages().get(i).name, mouseX, mouseY);
                 guiGraphics.pose().popPose();
             }
             pageY += 28;

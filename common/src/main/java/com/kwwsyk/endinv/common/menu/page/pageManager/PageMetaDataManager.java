@@ -1,13 +1,13 @@
 package com.kwwsyk.endinv.common.menu.page.pageManager;
 
+import com.kwwsyk.endinv.common.SourceInventory;
 import com.kwwsyk.endinv.common.menu.page.DisplayPage;
 import com.kwwsyk.endinv.common.menu.page.ItemPage;
 import com.kwwsyk.endinv.common.menu.page.PageType;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.PageContext;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
-import com.kwwsyk.endinv.neoforge.SourceInventory;
-import com.kwwsyk.endinv.neoforge.network.payloads.PageData;
-import com.kwwsyk.endinv.neoforge.util.SortType;
+import com.kwwsyk.endinv.common.menu.page.PageTypeRegistry;
+import com.kwwsyk.endinv.common.network.payloads.PageData;
+import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
+import com.kwwsyk.endinv.common.util.SortType;
 import net.minecraft.core.Holder;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -15,8 +15,9 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public interface PageMetaDataManager {
 
@@ -79,9 +80,9 @@ public interface PageMetaDataManager {
         return -1;
     }
 
-    default void switchPageWithType(PageType type){
+    default void switchPageWithId(String id){
         for(int i=0; i<getPages().size(); ++i){
-            if(Objects.equals(getPages().get(i).getPageType(),type)){
+            if(Objects.equals(getPages().get(i).id,id)){
                 switchPageWithIndex(i);
             }
         }
@@ -91,17 +92,7 @@ public interface PageMetaDataManager {
      * the return value of {@link #getPages()} shall be from this.
      */
     default List<DisplayPage> buildPages(){
-        var lst = defaultPages.stream().map(Holder::value).toList();
-        Collection<DisplayPage> part = ModInitializer.PAGE_REGISTRY.entrySet()
-                .stream()
-                .map(Map.Entry::getValue)
-                .filter(type->!lst.contains(type))
-                .map(type->type.buildPage(this))
-                .collect(Collectors.toSet());
-        var ret = new ArrayList<>(
-                defaultPages.stream().map(type -> type.value().buildPage(this)).toList());
-        ret.addAll(part);
-        return ret;
+        return PageTypeRegistry.getDisplayPages().stream().map(type -> type.buildPage(this)).toList();
     }
 
     default void slotQuickMoved(Slot clicked) {
@@ -121,48 +112,15 @@ public interface PageMetaDataManager {
     }
 
     default PageData getPageData(){
-        return new PageData(Holder.direct(getDisplayingPageType()),getRowCount(),getColumnCount(),sortType(),isSortReversed(),searching());
+        return new PageData(getDisplayingPageId(), getRowCount(),getColumnCount(),sortType(),isSortReversed(),searching());
+    }
+
+    default String getDisplayingPageId(){
+        return getDisplayingPage().id;
     }
 
     default PageType getDisplayingPageType(){
         return getDisplayingPage().getPageType();
     }
 
-    SourceInventory REMOTE = new SourceInventory() {
-        public ItemStack getItem(int i) {
-            return ItemStack.EMPTY;
-        }
-
-        public int getItemSize() {
-            return 0;
-        }
-
-        @Override
-        public boolean isRemote() {
-            return true;
-        }
-
-        @Override
-        public ItemStack takeItem(ItemStack itemStack) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public ItemStack takeItem(ItemStack itemStack, int count) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public ItemStack addItem(ItemStack itemStack) {
-            setChanged();
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public void setChanged() {
-
-        }
-    };
 }

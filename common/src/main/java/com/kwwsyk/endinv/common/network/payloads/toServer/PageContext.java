@@ -1,14 +1,12 @@
-package com.kwwsyk.endinv.common.network.payloads.toServer.page;
+package com.kwwsyk.endinv.common.network.payloads.toServer;
 
+import com.kwwsyk.endinv.common.ServerLevelEndInv;
 import com.kwwsyk.endinv.common.network.payloads.PageData;
 import com.kwwsyk.endinv.common.util.SortType;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Objects;
 
@@ -17,10 +15,7 @@ import java.util.Objects;
  * @param length
  * @param pageData
  */
-public record PageContext(int startIndex, int length, PageData pageData) implements CustomPacketPayload {
-    
-    public static final Type<PageContext> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"page_metadata"));
+public record PageContext(int startIndex, int length, PageData pageData) implements ToServerPayload {
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PageContext> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.INT, PageContext::startIndex,
@@ -38,10 +33,6 @@ public record PageContext(int startIndex, int length, PageData pageData) impleme
         return pageData.search();
     }
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -52,5 +43,16 @@ public record PageContext(int startIndex, int length, PageData pageData) impleme
     @Override
     public int hashCode() {
         return Objects.hash(startIndex, length, pageData);
+    }
+
+    @Override
+    public String id() {
+        return "page_context";
+    }
+
+    public void handle(ToServerPacketContext iPayloadContext){
+        ServerPlayer serverPlayer = (ServerPlayer) iPayloadContext.player();
+        var optional = ServerLevelEndInv.checkAndGetManagerForPlayer(serverPlayer);
+        optional.ifPresent(manager -> ToServerPayload.syncPageContext(manager, this, true));
     }
 }

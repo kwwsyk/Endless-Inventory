@@ -1,8 +1,8 @@
 package com.kwwsyk.endinv.common.data;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
-import com.kwwsyk.endinv.neoforge.util.ItemKey;
-import com.kwwsyk.endinv.neoforge.util.ItemState;
+import com.kwwsyk.endinv.common.util.ItemKey;
+import com.kwwsyk.endinv.common.util.ItemState;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;

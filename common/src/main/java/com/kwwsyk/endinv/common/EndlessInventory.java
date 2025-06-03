@@ -69,9 +69,9 @@ public class EndlessInventory implements SourceInventory {
         this.items = new ArrayList<>();
         this.itemMap = new Object2ObjectLinkedOpenHashMap<>();
         this.uuid = uuid;
-        this.maxStackSize = ModInfo.getServerConfig().getMaxAllowedStackSize();
-        this.infinityMode = ModInfo.getServerConfig().allowInfinityMode();
-        this.accessibility = ModInfo.getServerConfig().defaultAccessibility();
+        this.maxStackSize = ModInfo.getServerConfig().getMaxAllowedStackSize().get();
+        this.infinityMode = ModInfo.getServerConfig().allowInfinityMode().get();
+        this.accessibility = ModInfo.getServerConfig().defaultAccessibility().get();
         this.affinities = new EndInvAffinities(this);
     }
 
@@ -92,10 +92,10 @@ public class EndlessInventory implements SourceInventory {
         return ret;
     }
 
-    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, boolean reverse, Predicate<ItemStack> classify, String search){
+    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, boolean reverse,@Nullable Predicate<ItemStack> classify, String search){
         Stream<ItemStack> base = getSortedView(sortType,reverse).stream();
         List<ItemStack> filtered = base
-                .filter(classify)
+                .filter(classify!=null?classify:is->true)
                 .filter(stack -> SearchUtil.matchesSearch(stack,search))
                 .toList();
         if(startIndex>= filtered.size()) return new ArrayList<>();
@@ -172,6 +172,7 @@ public class EndlessInventory implements SourceInventory {
         return Objects.equals(player.getUUID(),owner);
     }
 
+    @Nullable
     public UUID getOwnerUUID(){
         return owner;
     }

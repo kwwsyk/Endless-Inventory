@@ -11,4 +11,6 @@ public interface NbtAttachment<T> {
 
     void setTo(Player player, T t);
 
+    T computeIfAbsent(Player player);
+
 }

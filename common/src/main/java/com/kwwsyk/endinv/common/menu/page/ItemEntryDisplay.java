@@ -1,11 +1,11 @@
 package com.kwwsyk.endinv.common.menu.page;
 
-import com.kwwsyk.endinv.common.client.config.ClientConfig;
+import com.kwwsyk.endinv.common.client.ClientModInfo;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
+import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenBgRenderer;
+import com.kwwsyk.endinv.common.client.option.TextureMode;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.neoforge.client.TextureMode;
-import com.kwwsyk.endinv.neoforge.client.events.ScreenAttachment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -71,15 +71,15 @@ public class ItemEntryDisplay extends ItemDisplay{
     protected boolean isHiddenBySortBox(int rowIndex, int columnIndex) {
         return rowIndex<=2 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen && (
                 screen instanceof EndlessInventoryScreen EIS && EIS.getFrameWork().sortTypeSwitchBox.isOpen()
-                        || ScreenAttachment.ATTACHMENT_MANAGER.get(screen)!=null
-                        && ScreenAttachment.ATTACHMENT_MANAGER.get(screen).getFrameWork().sortTypeSwitchBox.isOpen()
+                        || frameWork.sortTypeSwitchBox.isOpen()
         );
     }
 
     @Override
-    public void renderPage(GuiGraphics guiGraphics, int x, int y) {
+    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFrameWork frameWork) {
         this.leftPos=x;
         this.topPos=y;
+        this.frameWork = frameWork;
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0.0F, 0.0F, 100.0F);
         int rowIndex = 0;
@@ -130,7 +130,7 @@ public class ItemEntryDisplay extends ItemDisplay{
             graphics.renderTooltip(Minecraft.getInstance().font,
                     AbstractContainerScreen.getTooltipFromItem(Minecraft.getInstance(),hovering),
                     hovering.getTooltipImage(),
-                    hovering, mouseX, mouseY);
+                    mouseX, mouseY);
             graphics.pose().popPose();
         }
     }
@@ -153,7 +153,7 @@ public class ItemEntryDisplay extends ItemDisplay{
         super.renderBg(screenBgRenderer, guiGraphics, partialTicks, mouseX, mouseY);
         int pageX = screenBgRenderer.getScreenFrameWork().pageX;
         int startY = screenBgRenderer.getScreenFrameWork().pageY;
-        int bgColor = ClientConfig.CONFIG.TEXTURE.get() == TextureMode.FROM_RESOURCE ? 0xFF8b8b8b : 0x37606037;
+        int bgColor = ClientModInfo.getClientConfig().textureMode().get() == TextureMode.FROM_RESOURCE ? 0xFF8b8b8b : 0x37606037;
         for(int i=0; i< metadata.getRowCount(); ++i){
             guiGraphics.fill(pageX,startY,pageX+18*metadata.getColumnCount()-2,startY+1,0xFF373737);
             guiGraphics.fill(pageX,startY+1,pageX+18*metadata.getColumnCount()-2,startY+17,bgColor);

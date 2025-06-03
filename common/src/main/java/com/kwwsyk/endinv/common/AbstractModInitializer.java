@@ -4,6 +4,7 @@ import com.kwwsyk.endinv.common.item.ScreenDebugger;
 import com.kwwsyk.endinv.common.item.TestEndInv;
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.common.menu.page.PageType;
+import com.kwwsyk.endinv.common.network.IPacketDistributor;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.common.options.IServerConfig;
 import com.kwwsyk.endinv.common.util.SortType;
@@ -36,9 +37,10 @@ public abstract class AbstractModInitializer {
         registerItems(itemReg());
         registerMenuType(menuReg());
         registerNbtAttachment();
-        registerRegistries();
         ModInfo.setServerConfig(loadServerConfig());
         ModInfo.sortHelper = loadSortHelper();
+        ModInfo.setPacketDistributor(loadPacketDistributor());
+        ModInfo.platformContext = loadOtherPlatformSpecific();
     }
 
     private void registerItems(RegistryCallback<Item> method){
@@ -55,10 +57,9 @@ public abstract class AbstractModInitializer {
         ModRegistries.NbtAttachments.syncedConfig = createSyncedConfig("endinv_settings");
     }
 
-    private void registerRegistries(){
-        var reg2 = createPageRegistry(PAGE_REG_KEY,withModLocation(PageType.DEFAULT_KEY));
-        ModRegistries.setPageTypeReg(reg2);
-    }
+    protected abstract IPlatform loadOtherPlatformSpecific();
+
+    protected abstract IPacketDistributor loadPacketDistributor();
 
     protected abstract SortType.ISortHelper loadSortHelper();
 
@@ -73,7 +74,5 @@ public abstract class AbstractModInitializer {
     protected abstract NbtAttachment<UUID> createEndInvUUID(String name);
 
     protected abstract NbtAttachment<SyncedConfig> createSyncedConfig(String name);
-
-    protected abstract Registry<PageType> createPageRegistry(ResourceKey<Registry<PageType>> pageRegKey,ResourceLocation defaultKey);
 
 }

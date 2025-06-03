@@ -1,11 +1,11 @@
 package com.kwwsyk.endinv.common.commands;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
 import com.kwwsyk.endinv.common.data.EndlessInventoryData;
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
-import com.kwwsyk.endinv.neoforge.util.Accessibility;
+import com.kwwsyk.endinv.common.util.Accessibility;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -106,7 +106,7 @@ public class EndInvCommand {
                                                 Commands.literal("public")
                                                 .executes(
                                                         context ->
-                                                                byIndexSetAccessibility(context.getSource(),IntegerArgumentType.getInteger(context,"index"),Accessibility.PUBLIC)
+                                                                byIndexSetAccessibility(context.getSource(),IntegerArgumentType.getInteger(context,"index"), Accessibility.PUBLIC)
                                                 )
                                         ).then(
                                                 Commands.literal("restricted")
@@ -335,7 +335,7 @@ public class EndInvCommand {
                 return -1;
             }
             {
-                player.setData(ModInitializer.ENDINV_UUID,endlessInventory.getUuid());
+                ModRegistries.NbtAttachments.getEndInvUUID().setTo(player,endlessInventory.getUuid());
                 source.sendSuccess(()->Component.literal("Set player's default endInv with uuid: "+endlessInventory.getUuid()),true);
             }
             return index;

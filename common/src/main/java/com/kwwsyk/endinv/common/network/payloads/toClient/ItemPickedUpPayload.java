@@ -1,16 +1,11 @@
 package com.kwwsyk.endinv.common.network.payloads.toClient;
 
-import com.kwwsyk.endinv.neoforge.ModInitializer;
+import com.kwwsyk.endinv.common.client.event.AutoPickTipper;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.NotNull;
 
-public record ItemPickedUpPayload(ItemStack stack) implements CustomPacketPayload {
-
-    public static final Type<ItemPickedUpPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"auto_picked"));
+public record ItemPickedUpPayload(ItemStack stack) implements ToClientPayload {
 
     public static final StreamCodec<RegistryFriendlyByteBuf,ItemPickedUpPayload> STREAM_CODEC = StreamCodec.composite(
             ItemStack.STREAM_CODEC,ItemPickedUpPayload::stack,
@@ -18,7 +13,11 @@ public record ItemPickedUpPayload(ItemStack stack) implements CustomPacketPayloa
     );
 
     @Override
-    public @NotNull Type<ItemPickedUpPayload> type() {
-        return TYPE;
+    public String id() {
+        return "auto_picked";
+    }
+
+    public void handle(ToClientPacketContext iPayloadContext) {
+        AutoPickTipper.addItem(stack());
     }
 }

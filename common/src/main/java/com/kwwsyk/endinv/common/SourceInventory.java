@@ -1,6 +1,10 @@
 package com.kwwsyk.endinv.common;
 
+import com.kwwsyk.endinv.common.util.ItemKey;
+import com.kwwsyk.endinv.common.util.ItemState;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.Map;
 
 public interface SourceInventory {
 
@@ -19,4 +23,5 @@ public interface SourceInventory {
     ItemStack getItem(int i);
 
 
+    Map<ItemKey, ItemState> getItemMap();
 }

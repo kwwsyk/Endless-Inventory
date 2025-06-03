@@ -1,6 +1,6 @@
-package com.kwwsyk.endinv.common.integrates.jei;
+package com.kwwsyk.endinv.neoforge.integrates.jei;
 
-import com.kwwsyk.endinv.neoforge.ModInitializer;
+import com.kwwsyk.endinv.common.ModInfo;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
@@ -17,12 +17,12 @@ public class JEICompatibility implements IModPlugin{
 
     @Override
     public ResourceLocation getPluginUid() {
-        return ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"compatibility");
+        return ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID,"compatibility");
     }
 
     @Override
     public void registerModInfo(IModInfoRegistration modAliasRegistration){
-        modAliasRegistration.addModAliases(ModInitializer.MOD_ID,"endinv","end_inv");
+        modAliasRegistration.addModAliases(ModInfo.MOD_ID,"endinv","end_inv");
     }
 
     @Override

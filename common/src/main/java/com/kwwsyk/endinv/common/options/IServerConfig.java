@@ -4,15 +4,15 @@ import com.kwwsyk.endinv.common.util.Accessibility;
 
 public interface IServerConfig {
 
-    int getMaxAllowedStackSize();
+    IConfigValue<Integer> getMaxAllowedStackSize();
 
-    boolean allowInfinityMode();
+    IConfigValue<Boolean> allowInfinityMode();
 
-    boolean enableAutoPick();
+    IConfigValue<Boolean> enableAutoPick();
 
-    ContentTransferMode transferMode();
+    IConfigValue<ContentTransferMode> transferMode();
 
-    Accessibility defaultAccessibility();
+    IConfigValue<Accessibility> defaultAccessibility();
 
-    MissingEndInvPolicy policyHandlingMissing();
+    IConfigValue<MissingEndInvPolicy> policyHandlingMissing();
 }

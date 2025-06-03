@@ -1,10 +1,10 @@
 package com.kwwsyk.endinv.common.network.payloads;
 
-import com.kwwsyk.endinv.common.ModInfo;
-import com.kwwsyk.endinv.common.client.config.ClientConfig;
-import com.kwwsyk.endinv.common.menu.page.PageType;
+import com.kwwsyk.endinv.common.ModRegistries;
+import com.kwwsyk.endinv.common.client.option.IClientConfig;
+import com.kwwsyk.endinv.common.network.payloads.toClient.ToClientPacketContext;
+import com.kwwsyk.endinv.common.network.payloads.toServer.ToServerPacketContext;
 import com.kwwsyk.endinv.common.util.SortType;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
@@ -13,17 +13,17 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.jetbrains.annotations.NotNull;
+
+import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
+import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments;
+import static com.kwwsyk.endinv.common.client.ClientModInfo.getClientConfig;
 
 /**Synced endless inventory config data across server player (attached) data and
  *  client ClientConfig of player.
  *  Used before open menu.
  *
  */
-public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicking) implements CustomPacketPayload {
+public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicking) implements ModPacketPayload {
 
     public static final SyncedConfig DEFAULT = new SyncedConfig(PageData.DEFAULT,true,true);
     public static final Codec<SyncedConfig> CODEC = RecordCodecBuilder.create(
@@ -33,14 +33,14 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
                     Codec.BOOL.optionalFieldOf("auto_pickup",true).forGetter(SyncedConfig::autoPicking)
             ).apply(instance, SyncedConfig::new)
     );
-    public static final Type<SyncedConfig> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID,"endinv_settings"));
+
     public static final StreamCodec<RegistryFriendlyByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
             PageData.STREAM_CODEC,SyncedConfig::pageData,
             ByteBufCodecs.BOOL,SyncedConfig::attaching,
             ByteBufCodecs.BOOL,SyncedConfig::autoPicking,
             SyncedConfig::new
     );
+
 
     /**
      * Used when player is not viewing EndInv.
@@ -58,48 +58,58 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
      * @param config new config
      */
     public static void updateSyncedConfig(SyncedConfig config){
+        IClientConfig clientConfig = getClientConfig();
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
-            int rows = ClientConfig.CONFIG.ROWS.getAsInt();
+            int rows = clientConfig.rows().get();
             int syncedRows = config.pageData.rows();
             if(rows==0){
                 rows = syncedRows;
             }
-            int columns = ClientConfig.CONFIG.COLUMNS.getAsInt();
+            int columns = clientConfig.columns().get();
             if(columns==0){
                 columns = 9;
             }
-            if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
-                    && ClientConfig.CONFIG.AUTO_SUIT_COLUMN.getAsBoolean()){
-                columns = Math.min(columns,ClientConfig.CONFIG.calculateSuitInColumnCount(screen));
+            if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen && clientConfig.autoSuitColumn().get()){
+                columns = Math.min(columns,clientConfig.calculateSuitInColumnCount(screen));
             }
             SyncedConfig config1 = new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns), config.attaching, config.autoPicking());
-            player.setData(ModInitializer.SYNCED_CONFIG,config1);
-            PacketDistributor.sendToServer(config1);
+            NbtAttachments.getSyncedConfig().setTo(player,config1);
+            getPacketDistributor().sendToServer(config1);
         }
     }
     public static SyncedConfig readClientConfig(boolean ofMenu){
+        IClientConfig clientConfig = getClientConfig();
         if(Minecraft.getInstance().player instanceof LocalPlayer player){
-            int rows = ClientConfig.CONFIG.ROWS.getAsInt();
+            int rows = clientConfig.rows().get();
             if(rows==0){
-                rows = ClientConfig.CONFIG.calculateDefaultRowCount(ofMenu);
+                rows = clientConfig.calculateDefaultRowCount(ofMenu);
             }
-            int columns = ClientConfig.CONFIG.COLUMNS.getAsInt();
+            int columns = clientConfig.columns().get();
             if(columns==0){
                 columns = 9;
             }
-            if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
-                    && ClientConfig.CONFIG.AUTO_SUIT_COLUMN.getAsBoolean()){
-                columns = Math.min(ClientConfig.CONFIG.calculateSuitInColumnCount(screen),columns);
+            if(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen && clientConfig.autoSuitColumn().get()){
+                columns = Math.min(columns,clientConfig.calculateSuitInColumnCount(screen));
             }
-            SyncedConfig config = player.getData(ModInitializer.SYNCED_CONFIG);
-            return new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns),ClientConfig.CONFIG.ATTACHING.getAsBoolean(),true);
+            SyncedConfig config = NbtAttachments.getSyncedConfig().getWith(player);
+            if(config==null) config = DEFAULT;
+            return new SyncedConfig(config.pageData.ofRowChanged(rows).ofColumnChanged(columns), clientConfig.attaching().get(), true);
         }else throw new IllegalStateException("Unable to read client config, as running on server or player is not existing.");
     }
+
+
     @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+    public String id() {
+        return "endinv_settings";
     }
 
+    public void handleClient(ToClientPacketContext context){
+        ModRegistries.NbtAttachments.getSyncedConfig().setTo(context.player(), this);
+    }
+
+    public void handleServer(ToServerPacketContext context){
+        ModRegistries.NbtAttachments.getSyncedConfig().setTo(context.player(), this);
+    }
 
     public SyncedConfig searchingChanged(String searching) {
         return new SyncedConfig(pageData.searchingChanged(searching),attaching,autoPicking);
@@ -117,8 +127,8 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
         return new SyncedConfig(pageData.ofRowChanged(rows),attaching,autoPicking);
     }
 
-    public SyncedConfig pageTypeChanged(PageType pageType) {
-        return new SyncedConfig(pageData.ofPageTypeChanged(pageType),attaching,autoPicking);
+    public SyncedConfig pageKeyChanged(String regKey) {
+        return new SyncedConfig(pageData.ofPageKeyChanged(regKey),attaching,autoPicking);
     }
 
     /**

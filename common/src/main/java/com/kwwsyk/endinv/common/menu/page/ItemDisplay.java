@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.common.menu.page;
 
+import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.neoforge.EndlessInventory;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -12,7 +12,7 @@ public class ItemDisplay extends ItemPage{
         super(pageType,metaDataManager);
     }
 
-    //often use on server
+
     public void refreshItems(){
         if(srcInv.isRemote()){
             requestContents();

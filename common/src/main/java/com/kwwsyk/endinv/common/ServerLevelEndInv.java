@@ -48,7 +48,7 @@ public final class ServerLevelEndInv {
             endlessInventory = getPlayerDefaultEndInv(player);
         }
         if(endlessInventory==null){
-            switch (ModInfo.getServerConfig().policyHandlingMissing()){
+            switch (ModInfo.getServerConfig().policyHandlingMissing().get()){
                 case MissingEndInvPolicy.CREATE_PER_PLAYER -> endlessInventory = createForPlayer(player);
                 case MissingEndInvPolicy.USE_GLOBAL_SHARED -> {
                     endlessInventory = getFirstPublicEndInv();
@@ -83,7 +83,7 @@ public final class ServerLevelEndInv {
     private static EndlessInventory createForPlayer(Player player){
         EndlessInventory endlessInventory = new EndlessInventory();
         levelEndInvData.addEndInvToLevel(endlessInventory);
-        endlessInventory.setAccessibility(ModInfo.getServerConfig().defaultAccessibility());
+        endlessInventory.setAccessibility(ModInfo.getServerConfig().defaultAccessibility().get());
         endlessInventory.setOwner(player.getUUID());
         ModRegistries.NbtAttachments.getEndInvUUID().setTo(player,endlessInventory.getUuid());
         return endlessInventory;

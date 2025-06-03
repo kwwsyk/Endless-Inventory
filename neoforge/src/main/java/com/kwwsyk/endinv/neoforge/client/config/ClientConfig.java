@@ -2,16 +2,18 @@ package com.kwwsyk.endinv.neoforge.client.config;
 
 import com.kwwsyk.endinv.common.client.option.IClientConfig;
 import com.kwwsyk.endinv.common.client.option.TextureMode;
-import com.kwwsyk.endinv.common.menu.page.PageType;
+import com.kwwsyk.endinv.common.menu.page.PageTypeRegistry;
+import com.kwwsyk.endinv.common.options.IConfigValue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager.defaultPages;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ClientConfig {
 
@@ -21,7 +23,7 @@ public class ClientConfig {
     public final ModConfigSpec.IntValue COLUMNS;
     public final ModConfigSpec.BooleanValue AUTO_SUIT_COLUMN;
     public final ModConfigSpec.EnumValue<TextureMode> TEXTURE;
-    public final List<ModConfigSpec.BooleanValue> PAGES = new ArrayList<>();
+    public final Map<String,ModConfigSpec.BooleanValue> PAGE2HIDING = new LinkedHashMap<>();
     public final ModConfigSpec.BooleanValue ATTACHING;
     public final ModConfigSpec.BooleanValue ENABLE_DEBUG;
     public final ModConfigSpec.IntValue MAX_PAGE_BARS;
@@ -48,11 +50,11 @@ public class ClientConfig {
         MAX_PAGE_BARS = builder
                 .defineInRange("max_page_bars",10,1,255);
 
-        for (net.minecraft.core.Holder<PageType> pageHolder : defaultPages) {
+        for (String id : PageTypeRegistry.getIdList()) {
             ModConfigSpec.BooleanValue pageEntry = builder
-                    .comment("Hide page: " + pageHolder.getRegisteredName())
-                    .define("hide_pages." + pageHolder.getRegisteredName(), false);
-            PAGES.add(pageEntry);
+                    .comment("Hide page: " + id)
+                    .define("hide_pages." + id, false);
+            PAGE2HIDING.put(id,pageEntry);
         }
     }
 
@@ -74,39 +76,66 @@ public class ClientConfig {
     }
 
     public final IClientConfig INSTANCE = new IClientConfig() {
-        @Override
-        public boolean attaching() {
-            return ATTACHING.getAsBoolean();
+
+        private static IConfigValue<Boolean> convert(ModConfigSpec.BooleanValue value){
+            return IConfigValue.of(value::getAsBoolean,value::set);
+        }
+
+        private static IConfigValue<Integer> convert(ModConfigSpec.IntValue value){
+            return IConfigValue.of(value::getAsInt,value::set);
         }
 
         @Override
-        public int rows() {
-            return ROWS.getAsInt();
+        public IConfigValue<Boolean> attaching() {
+            return convert(ATTACHING);
         }
 
         @Override
-        public int columns() {
-            return COLUMNS.getAsInt();
+        public IConfigValue<Integer> rows() {
+            return convert(ROWS);
         }
 
         @Override
-        public boolean autoSuitColumn() {
-            return AUTO_SUIT_COLUMN.getAsBoolean();
+        public IConfigValue<Integer> columns() {
+            return convert(COLUMNS);
         }
 
         @Override
-        public TextureMode textureMode() {
-            return TEXTURE.get();
+        public IConfigValue<Boolean> autoSuitColumn() {
+            return convert(AUTO_SUIT_COLUMN);
         }
 
         @Override
-        public boolean screenDebugging() {
-            return ENABLE_DEBUG.getAsBoolean();
+        public IConfigValue<TextureMode> textureMode() {
+            return IConfigValue.of(TEXTURE,TEXTURE::set);
         }
 
         @Override
-        public List<String> hidingPageIdList() {
-            return List.of();//todo
+        public IConfigValue<Boolean> screenDebugging() {
+            return convert(ENABLE_DEBUG);
+        }
+
+        @Override
+        public IConfigValue<Integer> maxPageBarCount(){
+            return convert(MAX_PAGE_BARS);
+        }
+
+        @Override
+        public Set<String> hidingPageIds() {
+            return PAGE2HIDING.entrySet().stream()
+                    .filter(entry->entry.getValue().getAsBoolean())
+                    .map(Map.Entry::getKey).collect(Collectors.toSet());
+        }
+
+        @Override
+        public void setPageHiding(String id, boolean hiding) {
+            Optional.ofNullable(PAGE2HIDING.get(id)).ifPresent(v->v.set(hiding));
+            CONFIG_SPEC.save();
+        }
+
+        @Override
+        public void save() {
+            CONFIG_SPEC.save();
         }
     };
 }

@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.neoforge.options;
 
 import com.kwwsyk.endinv.common.options.ContentTransferMode;
+import com.kwwsyk.endinv.common.options.IConfigValue;
 import com.kwwsyk.endinv.common.options.IServerConfig;
 import com.kwwsyk.endinv.common.options.MissingEndInvPolicy;
 import com.kwwsyk.endinv.common.util.Accessibility;
@@ -43,34 +44,43 @@ public class ServerConfig {
     }
 
     public final IServerConfig INSTANCE = new IServerConfig() {
-        @Override
-        public int getMaxAllowedStackSize() {
-            return MAX_STACK_SIZE.getAsInt();
+
+        private static IConfigValue<Integer> convert(ModConfigSpec.IntValue value){
+            return IConfigValue.of(value::getAsInt,value::set);
+        }
+
+        private static IConfigValue<Boolean> convert(ModConfigSpec.BooleanValue value){
+            return IConfigValue.of(value::getAsBoolean,value::set);
         }
 
         @Override
-        public boolean allowInfinityMode() {
-            return ENABLE_INFINITE.getAsBoolean();
+        public IConfigValue<Integer> getMaxAllowedStackSize() {
+            return convert(MAX_STACK_SIZE);
         }
 
         @Override
-        public boolean enableAutoPick() {
-            return ENABLE_AUTO_PICK.getAsBoolean();
+        public IConfigValue<Boolean> allowInfinityMode() {
+            return convert(ENABLE_INFINITE);
         }
 
         @Override
-        public ContentTransferMode transferMode() {
-            return TRANSFER_MODE.get();
+        public IConfigValue<Boolean> enableAutoPick() {
+            return convert(ENABLE_AUTO_PICK);
         }
 
         @Override
-        public Accessibility defaultAccessibility() {
-            return DEFAULT_ACCESSIBILITY.get();
+        public IConfigValue<ContentTransferMode> transferMode() {
+            return IConfigValue.of(TRANSFER_MODE,TRANSFER_MODE::set);
         }
 
         @Override
-        public MissingEndInvPolicy policyHandlingMissing() {
-            return CREATION_MODE.get();
+        public IConfigValue<Accessibility> defaultAccessibility() {
+            return IConfigValue.of(DEFAULT_ACCESSIBILITY,DEFAULT_ACCESSIBILITY::set);
+        }
+
+        @Override
+        public IConfigValue<MissingEndInvPolicy> policyHandlingMissing() {
+            return IConfigValue.of(CREATION_MODE,CREATION_MODE::set);
         }
     };
 }

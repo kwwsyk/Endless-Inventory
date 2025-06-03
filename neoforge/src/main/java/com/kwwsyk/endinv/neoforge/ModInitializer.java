@@ -1,24 +1,29 @@
 package com.kwwsyk.endinv.neoforge;
 
 import com.kwwsyk.endinv.common.AbstractModInitializer;
+import com.kwwsyk.endinv.common.IPlatform;
 import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.NbtAttachment;
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
-import com.kwwsyk.endinv.common.menu.page.PageType;
+import com.kwwsyk.endinv.common.network.IPacketDistributor;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.common.options.IServerConfig;
 import com.kwwsyk.endinv.common.util.SortType;
 import com.kwwsyk.endinv.neoforge.client.config.ClientConfig;
 import com.kwwsyk.endinv.neoforge.options.ServerConfig;
-import net.minecraft.core.Registry;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -27,9 +32,10 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.common.CommonHooks;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
-import net.neoforged.neoforge.registries.RegistryBuilder;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;
@@ -55,10 +61,40 @@ public class ModInitializer extends AbstractModInitializer {
         //should be after page reg
         ATTACHMENT_TYPES.register(modEventBus);
 
+
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
         container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);
 
-        if(FMLEnvironment.dist.isClient())  container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+        if(FMLEnvironment.dist.isClient()) {
+            var client = new ClientModInitializer();
+            ClientModInitializer.init(modEventBus);
+            container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+        }
+    }
+
+    @Override
+    protected IPlatform loadOtherPlatformSpecific() {
+        return new IPlatform() {
+            @Override
+            public boolean onItemStackedOn(ItemStack clickedItem, ItemStack carriedItem, Slot slot, ClickAction action, Player player, SlotAccess access) {
+                return CommonHooks.onItemStackedOn(carriedItem,carriedItem,slot,action,player,access);
+            }
+        };
+    }
+
+    @Override
+    protected IPacketDistributor loadPacketDistributor() {
+        return new IPacketDistributor() {
+            @Override
+            public void sendToServer(CustomPacketPayload payload) {
+                PacketDistributor.sendToServer(payload);
+            }
+
+            @Override
+            public void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
+                PacketDistributor.sendToPlayer(player,payload);
+            }
+        };
     }
 
     @Override
@@ -122,6 +158,11 @@ public class ModInitializer extends AbstractModInitializer {
             public void setTo(Player player, UUID uuid) {
                 player.setData(ENDINV_UUID, uuid);
             }
+
+            @Override
+            public UUID computeIfAbsent(Player player) {
+                return player.getData(ENDINV_UUID);
+            }
         };
     }
 
@@ -146,10 +187,11 @@ public class ModInitializer extends AbstractModInitializer {
             public void setTo(Player player, SyncedConfig syncedConfig) {
                 player.setData(SYNCED_CONFIG, syncedConfig);
             }
-        };
-    }
 
-    protected Registry<PageType> createPageRegistry(ResourceKey<Registry<PageType>> pageRegKey, ResourceLocation defaultKey) {
-        return new RegistryBuilder<>(pageRegKey).defaultKey(defaultKey).sync(true).create();
+            @Override
+            public SyncedConfig computeIfAbsent(Player player) {
+                return player.getData(SYNCED_CONFIG);
+            }
+        };
     }
 }

@@ -2,9 +2,9 @@ package com.kwwsyk.endinv.neoforge.events;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ModInfo;
+import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
 import com.kwwsyk.endinv.common.network.payloads.toClient.ItemPickedUpPayload;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import com.kwwsyk.endinv.neoforge.options.ServerConfig;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -221,6 +221,6 @@ public class LootEvent {
     }
 
     private static boolean isPlayerEnabledAutoPick(Player player){
-        return player.getData(ModInitializer.SYNCED_CONFIG).autoPicking();
+        return ModRegistries.NbtAttachments.getSyncedConfig().computeIfAbsent(player).autoPicking();
     }
 }

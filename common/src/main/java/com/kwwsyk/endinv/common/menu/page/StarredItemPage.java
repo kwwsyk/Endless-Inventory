@@ -1,20 +1,22 @@
 package com.kwwsyk.endinv.common.menu.page;
 
+import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.network.payloads.toClient.SetStarredPagePayload;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.StarItemPayload;
-import com.kwwsyk.endinv.neoforge.EndlessInventory;
-import com.kwwsyk.endinv.neoforge.util.ItemStackLike;
+import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
+import com.kwwsyk.endinv.common.util.ItemStackLike;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+
+import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
 
 public class StarredItemPage extends ItemPage{
 
@@ -27,7 +29,7 @@ public class StarredItemPage extends ItemPage{
 
     public void starItem(ItemStack stack, boolean isAdding){
         if(stack.isEmpty()) return;
-        PacketDistributor.sendToServer(new StarItemPayload(stack,isAdding));
+        getPacketDistributor().sendToServer(new StarItemPayload(stack,isAdding));
         requestContents();
     }
 
@@ -48,7 +50,7 @@ public class StarredItemPage extends ItemPage{
     @Override
     public void syncContentToClient(ServerPlayer player) {
         var items = ((EndlessInventory)srcInv).getStarredItems(startIndex,length);
-        PacketDistributor.sendToPlayer(player,new SetStarredPagePayload(items));
+        getPacketDistributor().sendToPlayer(player,new SetStarredPagePayload(items));
     }
 
     public void refreshItems(){
@@ -101,9 +103,10 @@ public class StarredItemPage extends ItemPage{
     }
 
     @Override
-    public void renderPage(GuiGraphics guiGraphics, int x, int y){
+    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFrameWork frameWork){
         this.leftPos=x;
         this.topPos=y;
+        this.frameWork = frameWork;
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0.0F, 0.0F, 100.0F);
         int rowIndex = 0;

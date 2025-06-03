@@ -1,6 +1,6 @@
 package com.kwwsyk.endinv.common.util;
 
-import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.SourceInventory;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -50,13 +50,13 @@ public enum SortType {
 
     public interface ISortHelper{
 
-        default Comparator<ItemStack> getComparator(SortType sortType, EndlessInventory endInv){
+        default Comparator<ItemStack> getComparator(SortType sortType, SourceInventory srcInv){
             return switch (sortType){
-                case DEFAULT -> null;
+                case DEFAULT -> (a,b)->0;
                 case COUNT -> Comparator.comparingInt(ItemStack::getCount);
                 case SPACE_AND_NAME -> sortById();
                 case ID -> REGISTRY_ORDER_COMPARATOR;
-                case LAST_MODIFIED -> Comparator.comparingLong(s -> endInv.getItemMap().get(ItemKey.asKey(s)).lastModTime());
+                case LAST_MODIFIED -> Comparator.comparingLong(s -> srcInv.getItemMap().get(ItemKey.asKey(s)).lastModTime());
             };
         }
 

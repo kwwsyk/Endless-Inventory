@@ -1,25 +1,36 @@
 package com.kwwsyk.endinv.common.client.option;
 
+import com.kwwsyk.endinv.common.options.IConfigValue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
-import java.util.List;
+import java.util.Set;
 
 public interface IClientConfig {
 
-    boolean attaching();
+    IConfigValue<Boolean> attaching();
 
-    int rows();
+    IConfigValue<Integer> rows();
 
-    int columns();
+    IConfigValue<Integer> columns();
 
-    boolean autoSuitColumn();
+    IConfigValue<Boolean> autoSuitColumn();
 
-    TextureMode textureMode();
+    IConfigValue<TextureMode> textureMode();
 
-    boolean screenDebugging();
+    IConfigValue<Boolean> screenDebugging();
 
-    List<String> hidingPageIdList();
+    IConfigValue<Integer> maxPageBarCount();
+
+    Set<String> hidingPageIds();
+
+    void setPageHiding(String id, boolean hiding);
+
+    default void save(){}
+
+    default boolean isPageHidden(String id){
+        return hidingPageIds().contains(id);
+    }
 
     default int calculateDefaultRowCount(boolean ofMenu){
         Minecraft mc = Minecraft.getInstance();

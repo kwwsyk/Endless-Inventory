@@ -2,7 +2,8 @@ package com.kwwsyk.endinv.common.client.gui.widget;
 
 import com.kwwsyk.endinv.common.client.gui.SortTypeSwitcher;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenRectangleWidgetParam;
-import com.kwwsyk.endinv.neoforge.util.SortType;
+import com.kwwsyk.endinv.common.util.SortType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -43,7 +44,7 @@ public class SortTypeSwitchBox extends AbstractWidget {
 
     public void setOpen(boolean open) {
         isOpen = open;
-        this.height = open ? singleBoxHeight*(1+SortType.values().length) : singleBoxHeight;
+        this.height = open ? singleBoxHeight*(1+ SortType.values().length) : singleBoxHeight;
     }
 
     public void onClick(double mouseX,double mouseY, int button){
@@ -80,7 +81,7 @@ public class SortTypeSwitchBox extends AbstractWidget {
             guiGraphics.fillGradient(RenderType.guiOverlay(),x,y,x+width,y+singleBoxHeight,0x80ffffff,0x80ffffff,0);
         SortType sortType = screen.getPageMetadata().sortType();
         String s = sortType.toString();
-        guiGraphics.drawString(screen.getScreen().getMinecraft().font, s,x+2,y+2,0xffffffff);
+        guiGraphics.drawString(Minecraft.getInstance().font, s,x+2,y+2,0xffffffff);
         if(isOpen){
             int y1 = y+singleBoxHeight;
             for(SortType type : SortType.values()){
@@ -88,10 +89,10 @@ public class SortTypeSwitchBox extends AbstractWidget {
                 guiGraphics.fill(RenderType.gui(),x+1,y1+1,x+width-1,y1+singleBoxHeight-1,0,0xff000000);
                 if(isHoveringOnSingleBox(mouseY,y1)) {
                     guiGraphics.fillGradient(RenderType.guiOverlay(), x, y1, x + width, y1 + singleBoxHeight, 0x80ffffff, 0x80ffffff, 0);
-                    guiGraphics.renderTooltip(screen.getScreen().getMinecraft().font,Component.translatable(type.translationKey),mouseX,mouseY);
+                    guiGraphics.renderTooltip(Minecraft.getInstance().font,Component.translatable(type.translationKey),mouseX,mouseY);
                 }
                 s = type.toString();
-                guiGraphics.drawString(screen.getScreen().getMinecraft().font, s,x+2,y1+2,0xffffffff);
+                guiGraphics.drawString(Minecraft.getInstance().font, s,x+2,y1+2,0xffffffff);
                 y1+=singleBoxHeight;
             }
         }

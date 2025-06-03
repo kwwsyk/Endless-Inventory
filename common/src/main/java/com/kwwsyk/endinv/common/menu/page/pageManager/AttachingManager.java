@@ -1,22 +1,21 @@
 package com.kwwsyk.endinv.common.menu.page.pageManager;
 
+import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.ModInfo;
+import com.kwwsyk.endinv.common.SourceInventory;
 import com.kwwsyk.endinv.common.menu.page.DisplayPage;
-import com.kwwsyk.endinv.common.menu.page.PageType;
+import com.kwwsyk.endinv.common.network.payloads.PageData;
+import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvMetadata;
-import com.kwwsyk.endinv.neoforge.EndlessInventory;
-import com.kwwsyk.endinv.neoforge.SourceInventory;
-import com.kwwsyk.endinv.neoforge.network.payloads.PageData;
-import com.kwwsyk.endinv.neoforge.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.neoforge.util.SortType;
+import com.kwwsyk.endinv.common.util.SortType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 
-import static com.kwwsyk.endinv.neoforge.ModInitializer.SYNCED_CONFIG;
+import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
 
 public class AttachingManager implements PageMetaDataManager{
 
@@ -39,19 +38,19 @@ public class AttachingManager implements PageMetaDataManager{
         this.endinv = endinv;
         this.player = player;
         this.pages = buildPages();
-        SyncedConfig config = player.getData(SYNCED_CONFIG);
+        SyncedConfig config = getSyncedConfig().computeIfAbsent(player);
         init(config.pageData());
         this.quickMoveHandler = new PageQuickMoveHandler(this);
     }
-    private void init(int rows, int columns, SortType sortType, String searching, PageType type){
+    private void init(int rows, int columns, SortType sortType, String searching, String type){
         this.rows = rows;
         this.columns = columns;
         this.sortType = sortType;
         this.searching = searching;
-        this.switchPageWithType(type);
+        this.switchPageWithId(type);
     }
     private void init(PageData data){
-        init(data.rows(),data.columns(),data.sortType(),data.search(),data.pageType().value());
+        init(data.rows(),data.columns(),data.sortType(),data.search(),data.pageRegKey());
     }
 
 
@@ -154,7 +153,7 @@ public class AttachingManager implements PageMetaDataManager{
 
     @Override
     public void sendEndInvData() {
-        PacketDistributor.sendToPlayer(player,EndInvMetadata.getWith(endinv));
+        ModInfo.getPacketDistributor().sendToPlayer(player,EndInvMetadata.getWith(endinv));
     }
 
 

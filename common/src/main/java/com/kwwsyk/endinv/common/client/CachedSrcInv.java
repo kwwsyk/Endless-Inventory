@@ -1,22 +1,23 @@
 package com.kwwsyk.endinv.common.client;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.SourceInventory;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvMetadata;
-import com.kwwsyk.endinv.neoforge.options.ItemClassify;
-import com.kwwsyk.endinv.util.*;
-import com.kwwsyk.neoforge.util.*;
+import com.kwwsyk.endinv.common.util.*;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,35 +46,18 @@ public class CachedSrcInv implements SourceInventory {
 
         List<ItemStack> view = itemMap.entrySet().stream()
                 .map(e -> e.getKey().toStack(e.getValue().count()))
+                .sorted(ModInfo.sortHelper.getComparator(type, this))
                 .collect(Collectors.toList());
-
-        switch (type) {
-            case SortType.COUNT -> view.sort(Comparator.comparingInt(ItemStack::getCount));
-            case SortType.SPACE_AND_NAME -> view.sort(byId);
-            case SortType.ID -> view.sort(REGISTRY_ORDER_COMPARATOR);
-            case SortType.LAST_MODIFIED -> view.sort(Comparator.comparingLong(s -> itemMap.get(ItemKey.asKey(s)).lastModTime()));
-            default -> {}
-        }
 
         var ret = view;
         if(reverse) ret = ret.reversed();
         return ret;
     }
 
-    Comparator<ItemStack> byId = Comparator.comparing(
-            s -> Optional.ofNullable(s.getItemHolder().getKey())
-                    .map(ResourceKey::location)
-                    .map(Object::toString)
-                    .orElse("~") // 如果未注册，排在最前
-    );
-    Comparator<ItemStack> REGISTRY_ORDER_COMPARATOR = Comparator.comparingInt(
-            stack -> BuiltInRegistries.ITEM.getId(stack.getItem())
-    );
-
-    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, boolean reverse, ItemClassify classify, String search){
+    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, boolean reverse,@Nullable Predicate<ItemStack> classify, String search){
         Stream<ItemStack> base = getSortedView(sortType,reverse).stream();
         List<ItemStack> filtered = base
-                .filter(classify::matches)
+                .filter(classify!=null?classify:is->true)
                 .filter(stack -> SearchUtil.matchesSearch(stack,search))
                 .toList();
         if(startIndex>= filtered.size()) return new ArrayList<>();
@@ -176,6 +160,11 @@ public class CachedSrcInv implements SourceInventory {
     @Override
     public ItemStack getItem(int i) {
         return i>=0 && i<this.items.size() ? this.items.get(i) : ItemStack.EMPTY;
+    }
+
+    @Override
+    public Map<ItemKey, ItemState> getItemMap() {
+        return itemMap;
     }
 
     public long updateLastModTime(){

@@ -1,5 +1,6 @@
 package com.kwwsyk.endinv.common.client.gui.page;
 
+import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenBgRenderer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -11,7 +12,7 @@ import java.util.Optional;
 
 public interface PageRenderer extends ScreenBgRenderer.PageRenderer {
 
-    void renderPage(GuiGraphics graphics,int pageXPos,int pageYPos);
+    void renderPage(GuiGraphics graphics, int pageXPos, int pageYPos, ScreenFrameWork frameWork);
 
     void renderHovering(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);
 

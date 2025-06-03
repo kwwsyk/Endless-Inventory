@@ -1,0 +1,6 @@
+@ParametersAreNonnullByDefault@MethodsReturnNonnullByDefault
+package com.kwwsyk.endinv.common.network;
+
+import net.minecraft.MethodsReturnNonnullByDefault;
+
+import javax.annotation.ParametersAreNonnullByDefault;

@@ -2,17 +2,18 @@ package com.kwwsyk.endinv.common.data;
 
 import com.kwwsyk.endinv.common.EndInvAffinities;
 import com.kwwsyk.endinv.common.EndlessInventory;
-import com.kwwsyk.endinv.neoforge.util.Accessibility;
+import com.kwwsyk.endinv.common.util.Accessibility;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.Util;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentHolder;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.PatchedDataComponentMap;
 import net.minecraft.nbt.*;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.util.DataComponentUtil;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -144,7 +145,30 @@ public interface EndInvCodecStrategy {
         if (itemStack.isEmpty()) {
             throw new IllegalStateException("Cannot encode empty ItemStack");
         } else {
-            return DataComponentUtil.wrapEncodingExceptions(itemStack, EndInvCodecStrategy.ITEM_CODEC, levelRegistryAccess, outputTag);
+            return wrapEncodingExceptions(itemStack, EndInvCodecStrategy.ITEM_CODEC, levelRegistryAccess, outputTag);
         }
+    }
+
+    static <T extends DataComponentHolder> Tag wrapEncodingExceptions(T componentHolder, Codec<T> codec, HolderLookup.Provider provider, Tag tag) {
+        try {
+            return codec.encode(componentHolder, provider.createSerializationContext(NbtOps.INSTANCE), tag).getOrThrow();
+        } catch (Exception exception) {
+            logDataComponentSaveError(componentHolder, exception, tag);
+            throw exception;
+        }
+    }
+
+    static void logDataComponentSaveError(DataComponentHolder componentHolder, Exception original, @Nullable Tag tag) {
+        StringBuilder cause = new StringBuilder("Error saving [" + componentHolder + "]. Original cause: " + original);
+
+        cause.append("\nWith components:\n{");
+        componentHolder.getComponents().forEach((component) -> {
+            cause.append("\n\t").append(component);
+        });
+        cause.append("\n}");
+        if (tag != null) {
+            cause.append("\nWith tag: ").append(tag);
+        }
+        Util.logAndPauseIfInIde(cause.toString());
     }
 }

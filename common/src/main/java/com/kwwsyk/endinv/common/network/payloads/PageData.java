@@ -1,12 +1,10 @@
 package com.kwwsyk.endinv.common.network.payloads;
 
 import com.kwwsyk.endinv.common.menu.page.PageType;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.PageContext;
+import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
 import com.kwwsyk.endinv.common.util.SortType;
-import com.kwwsyk.endinv.neoforge.ModInitializer;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.Holder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -18,7 +16,7 @@ import java.util.Objects;
  */
 public record PageData(String pageRegKey, int rows, int columns, SortType sortType, boolean reverseSort, String search) {
     
-    public static final PageData DEFAULT = new PageData(ModInitializer.ALL_ITEMS,0,9,SortType.DEFAULT,false,"");
+    public static final PageData DEFAULT = new PageData(PageType.DEFAULT_KEY,0,9,SortType.DEFAULT,false,"");
     public static final Codec<PageData> CODEC = RecordCodecBuilder.create(
             instance -> instance.group(
                     Codec.STRING.optionalFieldOf("pageId","all_items").forGetter(PageData::pageRegKey),
@@ -31,7 +29,7 @@ public record PageData(String pageRegKey, int rows, int columns, SortType sortTy
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PageData> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.holderRegistry(ModInitializer.PAGE_REG_KEY),PageData::pageType,
+            ByteBufCodecs.STRING_UTF8,PageData::pageRegKey,
             ByteBufCodecs.INT, PageData::rows,
             ByteBufCodecs.INT, PageData::columns,
             SortType.STREAM_CODEC,PageData::sortType,
@@ -40,33 +38,33 @@ public record PageData(String pageRegKey, int rows, int columns, SortType sortTy
             PageData::new
     );
     public PageData copy(){
-        return new PageData(this.pageType,this.rows,this.columns,this.sortType,this.reverseSort,this.search);
+        return new PageData(this.pageRegKey,this.rows,this.columns,this.sortType,this.reverseSort,this.search);
     }
     public PageData ofRowChanged(int rows){
-        return new PageData(this.pageType,rows,this.columns,this.sortType,this.reverseSort,this.search);
+        return new PageData(this.pageRegKey,rows,this.columns,this.sortType,this.reverseSort,this.search);
     }
     public PageData ofColumnChanged(int columns){
-        return new PageData(this.pageType,this.rows,columns,this.sortType,this.reverseSort,this.search);
+        return new PageData(this.pageRegKey,this.rows,columns,this.sortType,this.reverseSort,this.search);
     }
     public PageData sortTypeChanged(SortType sortType){
-        return new PageData(this.pageType,this.rows,this.columns,sortType,this.reverseSort,this.search);
+        return new PageData(this.pageRegKey,this.rows,this.columns,sortType,this.reverseSort,this.search);
     }
     public PageData searchingChanged(String searching){
-        return new PageData(this.pageType,this.rows,this.columns,this.sortType,this.reverseSort,searching);
+        return new PageData(this.pageRegKey,this.rows,this.columns,this.sortType,this.reverseSort,searching);
     }
     public PageData ofReverseSort(){
-        return new PageData(this.pageType,this.rows,this.columns,this.sortType,!this.reverseSort,this.search);
+        return new PageData(this.pageRegKey,this.rows,this.columns,this.sortType,!this.reverseSort,this.search);
     }
-    public PageData ofPageTypeChanged(PageType pageType) {
-        return new PageData(Holder.direct(pageType),this.rows,this.columns,this.sortType,!this.reverseSort,this.search);
+    public PageData ofPageKeyChanged(String pageRegKey) {
+        return new PageData(pageRegKey,this.rows,this.columns,this.sortType,!this.reverseSort,this.search);
     }
 
     @Override
     public boolean equals(Object obj) {
         return obj instanceof PageData(
-                Holder<PageType> type, int rows1, int columns1, SortType sortType1, boolean sort, String search1
+                String type, int rows1, int columns1, SortType sortType1, boolean sort, String search1
         )
-                && type.value().equals(pageType.value())
+                && type.equals(pageRegKey)
                 && rows1 == rows && columns1 ==columns
                 && sort == reverseSort && sortType ==sortType1
                 && Objects.equals(search1,search);

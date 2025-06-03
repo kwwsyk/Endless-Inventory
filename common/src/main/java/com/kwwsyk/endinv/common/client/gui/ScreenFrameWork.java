@@ -1,6 +1,8 @@
 package com.kwwsyk.endinv.common.client.gui;
 
-import com.kwwsyk.endinv.common.client.config.ClientConfig;
+import com.kwwsyk.endinv.common.ModInfo;
+import com.kwwsyk.endinv.common.client.ClientModInfo;
+import com.kwwsyk.endinv.common.client.KeyMappings;
 import com.kwwsyk.endinv.common.client.gui.bg.FromResource;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenBgRenderer;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenRectangleWidgetParam;
@@ -9,11 +11,10 @@ import com.kwwsyk.endinv.common.client.gui.widget.SortTypeSwitchBox;
 import com.kwwsyk.endinv.common.client.option.TextureMode;
 import com.kwwsyk.endinv.common.menu.page.DisplayPage;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.StarItemPayload;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.PageClickPayload;
-import com.kwwsyk.endinv.common.network.payloads.toServer.page.op.QuickMoveToPagePayload;
-import com.kwwsyk.endinv.neoforge.client.events.KeyMappingReg;
-import com.kwwsyk.endinv.neoforge.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.common.network.payloads.toServer.PageClickPayload;
+import com.kwwsyk.endinv.common.network.payloads.toServer.QuickMoveToPagePayload;
+import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -27,7 +28,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -37,7 +37,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import static com.kwwsyk.endinv.neoforge.ModInitializer.SYNCED_CONFIG;
+import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
+import static com.kwwsyk.endinv.common.client.ClientModInfo.containerScreenHelper;
+import static com.kwwsyk.endinv.common.client.ClientModInfo.inputHandler;
 import static net.minecraft.client.gui.screens.Screen.hasShiftDown;
 
 public class ScreenFrameWork {
@@ -75,7 +77,7 @@ public class ScreenFrameWork {
     
     public ScreenFrameWork(EndlessInventoryScreen screen){
         this.screen = screen;
-        this.mc = screen.getMinecraft();
+        this.mc = Minecraft.getInstance();
         this.meta = screen.getPageMetadata();
         this.menu = screen.getMenu();
         this.leftPos = screen.getGuiLeft();
@@ -85,7 +87,7 @@ public class ScreenFrameWork {
         this.rows = meta.getRowCount();
         this.columns = meta.getColumnCount();
         this.sortTypeSwitcher = screen;
-        this.pageBarCount = Math.min(ClientConfig.CONFIG.MAX_PAGE_BARS.getAsInt(),meta.getPages().size());
+        this.pageBarCount = Math.min(ClientModInfo.getClientConfig().maxPageBarCount().get(),meta.getPages().size());
         this.pageBarScrollUpButtonParam = new ScreenRectangleWidgetParam(leftPos-32,topPos-16,30,14);
         this.pageBarScrollDownButtonParam = new ScreenRectangleWidgetParam(leftPos-32,topPos+2+28*pageBarCount,30,14);
         this.configButtonParam = new ScreenRectangleWidgetParam(this.leftPos+this.imageWidth,Math.min(this.topPos+this.imageHeight,screen.height-20),18,18);
@@ -103,7 +105,7 @@ public class ScreenFrameWork {
 
     public ScreenFrameWork(AttachedScreen<?> attachedScreen){
         this.screen = attachedScreen.screen;
-        this.mc = screen.getMinecraft();
+        this.mc = Minecraft.getInstance();
         this.meta = attachedScreen.getPageMetadata();
         this.menu = meta.getMenu();
 
@@ -113,7 +115,7 @@ public class ScreenFrameWork {
         this.columns = meta.getColumnCount();
 
         this.sortTypeSwitcher = attachedScreen;
-        this.pageBarCount = Math.min(ClientConfig.CONFIG.MAX_PAGE_BARS.getAsInt(),meta.getPages().size());
+        this.pageBarCount = Math.min(ClientModInfo.getClientConfig().maxPageBarCount().get(),meta.getPages().size());
         this.imageWidth = 13+18*columns;
         this.imageHeight = screen.height;
         int searchBoxY = this.topPos + 17+18*rows + 12;
@@ -123,7 +125,7 @@ public class ScreenFrameWork {
         this.pageBarScrollUpButtonParam = new ScreenRectangleWidgetParam(0,topPos,20,14);
         this.pageBarScrollDownButtonParam = new ScreenRectangleWidgetParam(0,topPos+22+28*pageBarCount,20,14);
         this.sortBoxParam = new ScreenRectangleWidgetParam(this.leftPos + 6,topPos + 5,77,12);
-        this.screenBgRenderer = ClientConfig.CONFIG.TEXTURE.get() == TextureMode.FROM_RESOURCE ?
+        this.screenBgRenderer = ClientModInfo.getClientConfig().textureMode().get() == TextureMode.FROM_RESOURCE ?
                 new FromResource.LeftLayout(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28)) :
                 new Transparent(this,new ScreenRectangleWidgetParam(leftPos-32,topPos+20,32,28));
 
@@ -138,7 +140,7 @@ public class ScreenFrameWork {
     private void addWidgets(){
         this.configButton = Button.builder(Component.literal("⚙"),
                         btn -> {
-                            screen.getMinecraft().setScreen(new EndInvSettingScreen(screen));
+                            mc.setScreen(new EndInvSettingScreen(screen));
                         })
                 .pos(this.configButtonParam.XPos(),this.configButtonParam.YPos())
                 .size(this.configButtonParam.XSize(),this.configButtonParam.YSize())
@@ -146,7 +148,7 @@ public class ScreenFrameWork {
         this.reverseSortButton = Button.builder(Component.literal("⇅"),
                         btn->{
                             meta.switchSortReversed();
-                            SyncedConfig.updateSyncedConfig(meta.getPlayer().getData(SYNCED_CONFIG).ofReverseSort());
+                            SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(meta.getPlayer()).ofReverseSort());
                             meta.getDisplayingPage().syncContentToServer();
                         }
                 )
@@ -204,16 +206,16 @@ public class ScreenFrameWork {
         isHoveringOnPage = hasClickedOnPage(mouseX,mouseY);
 
 
-        meta.getDisplayingPage().getPageRenderer().renderPage(guiGraphics,pageX,pageY);
+        meta.getDisplayingPage().getPageRenderer().renderPage(guiGraphics,pageX,pageY,this);
         if(!sortTypeSwitcher.isHoveringOnSortBox()) meta.getDisplayingPage().getPageRenderer().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
 
-        if(searchBox.isHovered() && !searchBox.isFocused()) guiGraphics.renderTooltip(screen.getMinecraft().font, List.of(
+        if(searchBox.isHovered() && !searchBox.isFocused()) guiGraphics.renderTooltip(mc.font, List.of(
                 Component.translatable("search.endinv.prefix.sharp"),
                 Component.translatable("search.endinv.prefix.at"),
                 Component.translatable("search.endinv.prefix.xor"),
                 Component.translatable("search.endinv.prefix.star")
         ), Optional.empty(),mouseX,mouseY);
-        if(reverseSortButton.isHovered()) guiGraphics.renderTooltip(screen.getMinecraft().font,Component.translatable("button.endinv.reverse"),mouseX,mouseY);
+        if(reverseSortButton.isHovered()) guiGraphics.renderTooltip(mc.font,Component.translatable("button.endinv.reverse"),mouseX,mouseY);
 
     }
 
@@ -226,7 +228,7 @@ public class ScreenFrameWork {
     protected void pageClicked(double mouseX, double mouseY, int keyCode, ClickType clickType){
         //menu.syncContent();
         meta.getDisplayingPage().getPageClickHandler().pageClicked(mouseX,mouseY,keyCode,clickType);
-        PacketDistributor.sendToServer(
+        ModInfo.getPacketDistributor().sendToServer(
                 new PageClickPayload(menu.containerId, meta.getInPageContext(), mouseX, mouseY, keyCode, clickType));
     }
 
@@ -251,8 +253,8 @@ public class ScreenFrameWork {
     }
 
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
-        int i = this.screen.getGuiLeft();
-        int j = this.screen.getGuiTop();
+        int i = containerScreenHelper.getGuiLeft(screen);
+        int j = containerScreenHelper.getGuiTop(screen);
         mouseX -= i;
         mouseY -= j;
         return mouseX >= (double)(x - 1)
@@ -278,7 +280,7 @@ public class ScreenFrameWork {
         ItemStack remain = meta.getDisplayingPage().tryQuickMoveStackTo(itemStack);
         clicked.setByPlayer(remain);
         clicked.onTake(meta.getPlayer(), itemStack);
-        PacketDistributor.sendToServer(new QuickMoveToPagePayload(clicked.index));
+        ModInfo.getPacketDistributor().sendToServer(new QuickMoveToPagePayload(clicked.index));
     }
 
     //handle input seg:
@@ -295,7 +297,8 @@ public class ScreenFrameWork {
             searchBox.setFocused(false);
         }
         //handle menu item quick move
-        if(KeyMappingReg.QUICK_MOVE_KEY.get().isActiveAndMatches(InputConstants.Type.MOUSE.getOrCreate(keyCode))){
+        boolean flg = inputHandler.isActiveAndMatches(KeyMappings.QUICK_MOVE,InputConstants.Type.MOUSE.getOrCreate(keyCode));
+        if(flg){
             Slot clicked = findSlot(mouseX,mouseY);
             if(clicked!=null && clicked.hasItem()){
                 slotQuickMoved(clicked);
@@ -313,7 +316,7 @@ public class ScreenFrameWork {
         double XOffset = mouseX-pageX;
         double YOffset = mouseY-pageY;
         InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
-        boolean isKeyPicking = this.mc.options.keyPickItem.isActiveAndMatches(mouseKey);//is mouse middle button and enabled for pickup or clone
+        boolean isKeyPicking = inputHandler.isActiveAndMatches(mc.options.keyPickItem,mouseKey);//is mouse middle button and enabled for pickup or clone
         long clickTime = Util.getMillis();
         this.doubleClick = keyCode==lastClickedButton && meta.getDisplayingPage().getPageClickHandler().doubleClicked(XOffset,YOffset,lastCLickedX,lastClickedY,clickTime-lastClickedTime);
         this.skipNextRelease = false;
@@ -333,7 +336,7 @@ public class ScreenFrameWork {
             }
         }else {
             if(menu.getCarried().isEmpty()){
-                if (this.mc.options.keyPickItem.isActiveAndMatches(mouseKey)) {
+                if (inputHandler.isActiveAndMatches(mc.options.keyPickItem,mouseKey)) {
                     pageClicked(XOffset, YOffset, keyCode, ClickType.CLONE);
                 } else {
                     ClickType clicktype = ClickType.PICKUP;
@@ -362,7 +365,7 @@ public class ScreenFrameWork {
         ItemStack itemstack = this.menu.getCarried();
         if(!itemstack.isEmpty() || mc.options.touchscreen().get())
             return false;
-        if(KeyMappingReg.QUICK_MOVE_KEY.get().isActiveAndMatches(InputConstants.Type.MOUSE.getOrCreate(button))){
+        if(inputHandler.isActiveAndMatches(KeyMappings.QUICK_MOVE,InputConstants.Type.MOUSE.getOrCreate(button))){
             Slot clicked = findSlot(mouseX,mouseY);
             if(clicked!=null && clicked.hasItem()){
                 slotQuickMoved(clicked);
@@ -400,7 +403,7 @@ public class ScreenFrameWork {
                     return true;
                 }
                 if(!menu.getCarried().isEmpty()){
-                    if (mc.options.keyPickItem.isActiveAndMatches(mouseKey)) {
+                    if (inputHandler.isActiveAndMatches(mc.options.keyPickItem,mouseKey)) {
                         this.pageClicked(XOffset,YOffset,keyCode,ClickType.CLONE);
                     }
                 }
@@ -426,11 +429,11 @@ public class ScreenFrameWork {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers){
         this.ignoreTextInput = false;
 
-        if(KeyMappingReg.STAR_ITEM_KEY.get().isActiveAndMatches(InputConstants.getKey(keyCode,scanCode))){
+        if(inputHandler.isActiveAndMatches(KeyMappings.STAR_ITEM,InputConstants.getKey(keyCode,scanCode))){
             Slot clicked = findSlot(roughMouseX,roughMouseY);
             if(clicked!=null && clicked.hasItem()){
                 ItemStack itemStack = clicked.getItem();
-                PacketDistributor.sendToServer(new StarItemPayload(itemStack,true));
+                ModInfo.getPacketDistributor().sendToServer(new StarItemPayload(itemStack,true));
                 meta.getDisplayingPage().syncContentToServer();
                 return true;
             }
@@ -441,14 +444,14 @@ public class ScreenFrameWork {
         if(isHoveringOnPage){
             checkHotBarKeyPressed:
             if (isNumericKey && this.menu.getCarried().isEmpty()) {
-                if (mc.options.keySwapOffhand.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
+                if (inputHandler.isActiveAndMatches(mc.options.keySwapOffhand,InputConstants.getKey(keyCode, scanCode))) {
                     pageClicked(roughMouseX-pageX, roughMouseY-pageY, 40, ClickType.SWAP);
                     flag = true;
                     break checkHotBarKeyPressed;
                 }
 
                 for(int i = 0; i < 9; ++i) {
-                    if (mc.options.keyHotbarSlots[i].isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
+                    if (inputHandler.isActiveAndMatches(mc.options.keyHotbarSlots[i],InputConstants.getKey(keyCode, scanCode))) {
                         pageClicked(roughMouseX-pageX, roughMouseY-pageY, i, ClickType.SWAP);
                         flag = true;
                         break checkHotBarKeyPressed;
@@ -456,7 +459,7 @@ public class ScreenFrameWork {
                 }
             }
 
-            if(KeyMappingReg.STAR_ITEM_KEY.get().isActiveAndMatches(InputConstants.getKey(keyCode,scanCode))){
+            if(inputHandler.isActiveAndMatches(KeyMappings.STAR_ITEM,InputConstants.getKey(keyCode,scanCode))){
                 meta.getDisplayingPage().handleStarItem(roughMouseX-pageX,roughMouseY-pageY);
                 flag = true;
             }
@@ -496,10 +499,14 @@ public class ScreenFrameWork {
         }
     }
 
+    public void onClose(){
+        INSTANCE = null;
+    }
+
     public void refreshSearchResults(){
         String searching = searchBox.getValue();
         meta.setSearching(searching);
-        SyncedConfig.updateSyncedConfig(meta.getPlayer().getData(SYNCED_CONFIG).searchingChanged(searching));
+        SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(meta.getPlayer()).searchingChanged(searching));
         meta.getDisplayingPage().release();
         meta.getDisplayingPage().syncContentToServer();
     }

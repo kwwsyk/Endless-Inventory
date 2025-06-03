@@ -2,8 +2,8 @@ package com.kwwsyk.endinv.common.client.gui;
 
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.neoforge.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.neoforge.util.SortType;
+import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
+import com.kwwsyk.endinv.common.util.SortType;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -14,7 +14,7 @@ import net.minecraft.world.inventory.Slot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static com.kwwsyk.endinv.neoforge.ModInitializer.SYNCED_CONFIG;
+import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
 
 public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInventoryMenu> implements SortTypeSwitcher {
 
@@ -85,6 +85,11 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         this.menu.broadcastChanges();
     }
 
+    public void onClose(){
+        super.onClose();
+        frameWork.onClose();
+    }
+
     @Override
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         this.frameWork.renderBg(guiGraphics,mouseX,mouseY,partialTick);
@@ -92,7 +97,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     @Override
     public void switchSortTypeTo(SortType type) {
         menu.sortType = type;
-        SyncedConfig.updateSyncedConfig(menu.player.getData(SYNCED_CONFIG).sortTypeChanged(type));
+        SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(menu.getPlayer()).sortTypeChanged(type));
         menu.getDisplayingPage().release();
         menu.getDisplayingPage().syncContentToServer();
     }
@@ -120,4 +125,19 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         return frameWork;
     }
 
+    public int getGuiLeft() {
+        return leftPos;
+    }
+
+    public int getGuiTop() {
+        return topPos;
+    }
+
+    public int getXSize() {
+        return imageWidth;
+    }
+
+    public int getYSize() {
+        return imageHeight;
+    }
 }

@@ -1,4 +1,4 @@
-package com.kwwsyk.endinv.common.integrates.jei;
+package com.kwwsyk.endinv.neoforge.integrates.jei;
 
 import com.kwwsyk.endinv.common.client.gui.AttachedScreen;
 import com.kwwsyk.endinv.neoforge.client.events.ScreenAttachment;

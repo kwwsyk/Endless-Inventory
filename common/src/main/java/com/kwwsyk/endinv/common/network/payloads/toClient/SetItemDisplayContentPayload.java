@@ -1,19 +1,13 @@
 package com.kwwsyk.endinv.common.network.payloads.toClient;
 
-import com.kwwsyk.endinv.neoforge.ModInitializer;
+import com.kwwsyk.endinv.common.menu.page.ItemPage;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record SetItemDisplayContentPayload(List<ItemStack> stacks) implements CustomPacketPayload {
-
-    public static final Type<SetItemDisplayContentPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(ModInitializer.MOD_ID,"item_display_content"));
+public record SetItemDisplayContentPayload(List<ItemStack> stacks) implements ToClientPayload {
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SetItemDisplayContentPayload> STREAM_CODEC = StreamCodec.composite(
             ItemStack.OPTIONAL_LIST_STREAM_CODEC,SetItemDisplayContentPayload::stacks,
@@ -21,8 +15,15 @@ public record SetItemDisplayContentPayload(List<ItemStack> stacks) implements Cu
     );
 
     @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+    public String id() {
+        return "itemdisplay_content";
     }
-    
+
+    public void handle(ToClientPacketContext context) {
+        ToClientPayload.getClientPageMeta().ifPresent(mng->{
+            if(mng.getDisplayingPage() instanceof ItemPage itemPage){
+                itemPage.initializeContents(stacks);
+            }
+        });
+    }
 }
