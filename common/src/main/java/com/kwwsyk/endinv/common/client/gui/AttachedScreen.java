@@ -7,8 +7,6 @@ import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageQuickMoveHandler;
 import com.kwwsyk.endinv.common.network.payloads.PageData;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvConfig;
-import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvMetadata;
 import com.kwwsyk.endinv.common.util.SortType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,10 +20,20 @@ import java.util.List;
 
 import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
 
+/**The UI that controls interaction with Endless Inventory in client side.
+ * Attached by an {@link AbstractContainerScreen<T>}
+ * @param <T>
+ *
+ * @author Kay Zhang
+ * @since 2025-6-4
+ * @version 1.0.5
+ */
 public class AttachedScreen<T extends AbstractContainerMenu> implements SortTypeSwitcher{
 
     public final AbstractContainerScreen<T> screen;
-    private ScreenFrameWork frameWork;
+
+    private ScreenFramework frameWork;
+
     private final PageMetaDataManager pageMetadata = new PageMetaDataManager() {
         @Override
         public AbstractContainerMenu getMenu() {
@@ -51,7 +59,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         public void switchPageWithIndex(int index) {
             displayingPage = pages.get(index);
             SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(player).pageKeyChanged(displayingPage.id));
-            displayingPage.init(0,rows*columns);
+            displayingPage.refreshContents(0,rows*columns);
         }
 
         @Override
@@ -71,17 +79,17 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
 
         @Override
         public int getItemSize() {
-            return endInvMetadata.itemSize();
+            return CachedSrcInv.INSTANCE.getItemSize();
         }
 
         @Override
         public int getMaxStackSize() {
-            return endInvMetadata.maxStackSize();
+            return CachedSrcInv.INSTANCE.getMaxItemStackSize();
         }
 
         @Override
         public boolean enableInfinity() {
-            return endInvMetadata.infinityMode();
+            return CachedSrcInv.INSTANCE.isInfinityMode();
         }
 
         @Override
@@ -129,20 +137,28 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         }
 
     };
+
     private final PageQuickMoveHandler quickMoveHandler;
+
     private boolean isHoveringOnSortBox;
+
     private DisplayPage displayingPage;
+
     public final List<DisplayPage> pages;
-    private int rows;
-    private int columns;
+
+    private final int rows;
+
+    private final int columns;
 
     public SortType sortType;
+
     public String searching;
-    private Player player;
-    private EndInvMetadata endInvMetadata;
+
+    private final Player player;
+
     private boolean reverseSort;
 
-
+    //invoked when an ACS is created or initialized
     public AttachedScreen(AbstractContainerScreen<T> screen){
         this.screen = screen;
         this.pages = pageMetadata.buildPages();
@@ -152,19 +168,15 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         this.rows = data.rows();
         this.columns = data.columns();
         this.sortType = data.sortType();
-        this.searching=data.search();
+        this.searching= data.search();
         this.pageMetadata.switchPageWithId(data.pageRegKey());
 
-        this.endInvMetadata = new EndInvMetadata(0,Integer.MAX_VALUE,false,EndInvConfig.DEFAULT);
         this.quickMoveHandler = new PageQuickMoveHandler(this.pageMetadata);
     }
 
-    public void setEndInvMetadata(EndInvMetadata metadata){
-        this.endInvMetadata = metadata;
-    }
-
+    //invoked when an ACS is initialized
     public void init(IScreenEvent event){
-        this.frameWork = new ScreenFrameWork(this);
+        this.frameWork = new ScreenFramework(this);
 
         frameWork.addWidgetToScreen(event::addListener);
     }
@@ -237,7 +249,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         this.sortType = type;
         SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(player).sortTypeChanged(type));
         pageMetadata.getDisplayingPage().release();
-        pageMetadata.getDisplayingPage().syncContentToServer();
+        pageMetadata.getDisplayingPage().sendChangesToServer();
     }
 
     @Override
@@ -260,7 +272,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         return screen;
     }
 
-    public ScreenFrameWork getFrameWork(){
+    public ScreenFramework getFrameWork(){
         return frameWork;
     }
 

@@ -1,6 +1,6 @@
 package com.kwwsyk.endinv.common.client.gui.bg;
 
-import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,7 +11,7 @@ public class Transparent extends ScreenBgRendererImpl {
     private static final int PAGE_FRAME_COLOR = 0x80A0A0A0;
     private static final int PAGE_BG_COLOR = 0x30373737;
 
-    public Transparent(ScreenFrameWork frameWork, ScreenRectangleWidgetParam pageSwitchTabParam) {
+    public Transparent(ScreenFramework frameWork, ScreenRectangleWidgetParam pageSwitchTabParam) {
         super(frameWork);
         this.pageSwitchTabParam = pageSwitchTabParam;
     }

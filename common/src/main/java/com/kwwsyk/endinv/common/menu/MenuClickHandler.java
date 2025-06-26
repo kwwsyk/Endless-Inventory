@@ -111,9 +111,7 @@ public abstract class MenuClickHandler {
                     player.drop(EIM.getCarried().split(1), true);
                 }
             }
-        } else if (slotId<0) {
-            return;
-        } else {
+        } else if (slotId>=0) {
             Slot clickedSlot = EIM.slots.get(slotId);
             Container container = clickedSlot.container;
             ItemStack clickedSlotItem = clickedSlot.getItem();

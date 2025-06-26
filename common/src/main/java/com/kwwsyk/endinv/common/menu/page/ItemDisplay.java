@@ -18,15 +18,15 @@ public class ItemDisplay extends ItemPage{
             requestContents();
             return;
         }
-        EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
+        EndlessInventory endInv = (EndlessInventory) meta.getSourceInventory();
         List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,
-                metadata.sortType(),metadata.isSortReversed(),
-                getClassify(), metadata.searching());
+                meta.sortType(), meta.isSortReversed(),
+                getClassify(), meta.searching());
         initializeContents(view);
     }
 
     public void requestContents(){
-        syncContentToServer();
+        sendChangesToServer();
     }
 
 
@@ -101,7 +101,7 @@ public class ItemDisplay extends ItemPage{
                 if (ItemStack.isSameItemSameComponents(itemStack1, itemStack)) {
                     if(!isFull(itemStack1)) {
                         int additional = itemStack1.getCount();
-                        int max = metadata.getMaxStackSize();
+                        int max = meta.getMaxStackSize();
                         itemStack1.setCount(Math.min(count+additional,max));
                         ret = itemStack.copyWithCount(Math.max(0,count+additional-max));
                     }
@@ -109,9 +109,9 @@ public class ItemDisplay extends ItemPage{
                     break l;
                 }
                 if (itemStack1.isEmpty()){
-                    itemStack.limitSize(metadata.getMaxStackSize());
+                    itemStack.limitSize(meta.getMaxStackSize());
                     this.items.set(i,itemStack);
-                    ret = itemStack.copyWithCount(Math.max(0,count- metadata.getMaxStackSize()));
+                    ret = itemStack.copyWithCount(Math.max(0,count- meta.getMaxStackSize()));
                     break l;
                 }
             }

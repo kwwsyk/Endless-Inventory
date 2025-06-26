@@ -131,7 +131,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         this.displayingPageIndex = index;
         this.displayingPage = this.pages.get(index);
         SyncedConfig.updateSyncedConfig(NbtAttachments.getSyncedConfig().computeIfAbsent(player).pageKeyChanged(displayingPage.id));
-        this.displayingPage.init(0,9*rowsData.get());
+        this.displayingPage.refreshContents(0,9*rowsData.get());
     }
 
     public void scrollTo(float pos){

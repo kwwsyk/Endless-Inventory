@@ -1,6 +1,6 @@
 package com.kwwsyk.endinv.common.client.gui.bg;
 
-import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
 
@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface ScreenBgRenderer {
 
-    ScreenFrameWork getScreenFrameWork();
+    ScreenFramework getScreenFrameWork();
 
     void renderBg(@NotNull GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY);
 
@@ -16,13 +16,6 @@ public interface ScreenBgRenderer {
 
     default Optional<BgRenderer> getDefaultPageBgRenderer(){
         return Optional.empty();
-    }
-
-    interface PageRenderer{
-
-        default void renderBg(ScreenBgRenderer screenBgRenderer, GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY){
-            screenBgRenderer.getDefaultPageBgRenderer().ifPresent(bgRenderer -> bgRenderer.renderBg(guiGraphics, partialTicks, mouseX, mouseY));
-        }
     }
 
     @FunctionalInterface

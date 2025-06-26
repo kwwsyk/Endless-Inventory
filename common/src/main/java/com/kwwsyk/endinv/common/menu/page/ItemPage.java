@@ -4,15 +4,13 @@ import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
-import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
-import com.kwwsyk.endinv.common.client.gui.page.PageClickHandler;
-import com.kwwsyk.endinv.common.client.gui.page.PageRenderer;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvContent;
 import com.kwwsyk.endinv.common.network.payloads.toClient.SetItemDisplayContentPayload;
+import com.kwwsyk.endinv.common.network.payloads.toServer.ItemClickPayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.ItemDisplayItemModPayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
-import com.kwwsyk.endinv.common.network.payloads.toServer.PageStatePayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
 import com.kwwsyk.endinv.common.options.ContentTransferMode;
 import net.minecraft.ChatFormatting;
@@ -40,7 +38,7 @@ import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedCon
 /**
  * DisplayPage that has a list of ItemStack, and items are linked to EndInv.
  */
-public abstract class ItemPage extends DisplayPage implements PageRenderer, PageClickHandler {
+public abstract class ItemPage extends DisplayPage {
 
     protected NonNullList<ItemStack> items;
 
@@ -49,7 +47,7 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     protected int length;
 
     //leftPos and topPos are used as Renderer param
-    protected ScreenFrameWork frameWork;
+    protected ScreenFramework frameWork;
     protected int leftPos;
     protected int topPos;
 
@@ -59,22 +57,22 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
 
     public ItemPage(PageType pageType, PageMetaDataManager metaDataManager) {
         super(pageType,metaDataManager);
-        this.length = metadata.getRowCount()*metadata.getColumnCount();
+        this.length = meta.getRowCount()* meta.getColumnCount();
     }
 
     @Override
     public void scrollTo(float pos) {
-        int startIndex = getRowIndexForScroll(pos)*metadata.getColumnCount();
-        this.init(startIndex,this.length);
+        int startIndex = getRowIndexForScroll(pos)* meta.getColumnCount();
+        this.refreshContents(startIndex,this.length);
     }
     /**Change displayed items of EndInv
      * @param startIndex the index of the item first displayed in EndInv
      * @param length the count of the item should be displayed, should equal to rows*columns
      */
     @Override
-    public void init(int startIndex, int length) {
+    public void refreshContents(int startIndex, int length) {
         this.startIndex = startIndex;
-        this.length = Math.min(length,metadata.getRowCount()*metadata.getColumnCount());
+        this.length = Math.min(length, meta.getRowCount()* meta.getColumnCount());
         if(items==null || length!=this.items.size()){
             this.items = NonNullList.withSize(length,ItemStack.EMPTY);
         }
@@ -105,20 +103,18 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     }
 
     public void initializeContents(CachedSrcInv srcInv){
-        var view = srcInv.getSortedAndFilteredItemView(startIndex,length,metadata.sortType(),metadata.isSortReversed(), getClassify(),metadata.searching());
+        var view = srcInv.getSortedAndFilteredItemView(startIndex,length, meta.sortType(), meta.isSortReversed(), getClassify(), meta.searching());
         initializeContents(view);
     }
 
-    public void syncContentToServer() {
-        if(srcInv.isRemote()){
-            getPacketDistributor().sendToServer(new PageContext(startIndex,length, getSyncedConfig().computeIfAbsent(metadata.getPlayer()).pageData()));
-        }
+    public void sendChangesToServer() {
+        getPacketDistributor().sendToServer(new PageContext(startIndex,length, getSyncedConfig().computeIfAbsent(meta.getPlayer()).pageData()));
     }
 
     public void syncContentToClient(ServerPlayer player){
-        EndlessInventory endInv = (EndlessInventory) metadata.getSourceInventory();
+        EndlessInventory endInv = (EndlessInventory) meta.getSourceInventory();
         if(getServerConfig().transferMode().get()== ContentTransferMode.PART) {
-            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex, length, metadata.sortType(), metadata.isSortReversed(), getClassify(), metadata.searching());
+            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex, length, meta.sortType(), meta.isSortReversed(), getClassify(), meta.searching());
 
             NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
             for (int i = 0; i < view.size(); ++i) {
@@ -146,19 +142,17 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     @Override
     public boolean canScroll() {
         return startIndex>0
-                ||( srcInv instanceof CachedSrcInv cache ? startIndex+length <= cache.getSortedAndFilteredItemView(0,Integer.MAX_VALUE,  metadata.sortType(), metadata.isSortReversed(), getClassify(), metadata.searching()).size()
-                : startIndex+length< metadata.getItemSize());
+                ||( srcInv instanceof CachedSrcInv cache ? startIndex+length <= cache.getSortedAndFilteredItemView(0,Integer.MAX_VALUE,  meta.sortType(), meta.isSortReversed(), getClassify(), meta.searching()).size()
+                : startIndex+length< meta.getItemSize());
     }
 
     public int getSlotForMouseOffset(double XOffset,double YOffset){
-        if(XOffset<0||YOffset<0||XOffset>18*metadata.getColumnCount()||YOffset>18*metadata.getRowCount()) return -1;
-        return (int)XOffset/18 + metadata.getColumnCount()*((int)YOffset/18);
+        if(XOffset<0||YOffset<0||XOffset>18* meta.getColumnCount()||YOffset>18* meta.getRowCount()) return -1;
+        return (int)XOffset/18 + meta.getColumnCount()*((int)YOffset/18);
     }
 
     public void release(){
         if(holdOn){
-            if(srcInv.isRemote())
-                getPacketDistributor().sendToServer(new PageStatePayload(false));
             holdOn = false;
             if(inQueueStacks==null) return;
             initializeContents(inQueueStacks);
@@ -175,7 +169,7 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
         }
     }
 
-    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFrameWork frameWork){
+    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFramework frameWork){
         this.leftPos=x;
         this.topPos=y;
         this.frameWork = frameWork;
@@ -189,7 +183,7 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
             if(!isHiddenBySortBox(rowIndex,columnIndex))
                 guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack,x+columnIndex*18,y+rowIndex*18+1, getDisplayAmount(stack));
             columnIndex++;
-            if(columnIndex>= metadata.getColumnCount()){
+            if(columnIndex>= meta.getColumnCount()){
                 columnIndex=0;
                 rowIndex++;
             }
@@ -211,12 +205,12 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
                 );
     }
 
-    public String getDisplayAmount(ItemStack stack){
+    protected String getDisplayAmount(ItemStack stack){
         int count = stack.getCount();
         double value;
         String suffix;
 
-        if(count == this.metadata.getMaxStackSize() && metadata.enableInfinity()){
+        if(count == this.meta.getMaxStackSize() && meta.enableInfinity()){
             return "∞";
         }
 
@@ -254,14 +248,14 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
         }
     }
     protected void renderSlotHighlight(GuiGraphics graphics, int mouseX, int mouseY, float partialTick){
-        for(int u=0;u<metadata.getColumnCount();++u){
-            for(int v=0;v<metadata.getRowCount();++v){
+        for(int u = 0; u< meta.getColumnCount(); ++u){
+            for(int v = 0; v< meta.getRowCount(); ++v){
                 int x1 = leftPos+18*u-1;
                 int x2 = leftPos+18*u+16;
                 int y1 = topPos+18*v+1;
                 int y2 = topPos+18*v+18;
                 if(mouseX>x1 && mouseX<x2 && mouseY>y1 && mouseY<y2){
-                    if(!metadata.getMenu().getCarried().isEmpty()) return;
+                    if(!meta.getMenu().getCarried().isEmpty()) return;
                     graphics.fillGradient(RenderType.guiOverlay(),x1,y1,x2,y2,0x80ffffff,0x80ffffff,0);
                 }
             }
@@ -269,7 +263,7 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     }
 
     @Override
-    public boolean doubleClicked(double XOffset, double YOffset, double lastX, double lastY, long clickInterval) {
+    public boolean doubleClickedOnOne(double XOffset, double YOffset, double lastX, double lastY, long clickInterval) {
         return clickedInOneSlot(XOffset, YOffset,lastX,lastY) && clickInterval<=250;
     }
 
@@ -278,30 +272,32 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     }
 
     @Override
-    public void pageClicked(double XOffset, double YOffset, int keyCode, ClickType clickType) {
+    public void pageClicked(double XOffset, double YOffset, int button, ClickType clickType) {
         int slot = getSlotForMouseOffset(XOffset,YOffset);
         if(slot>=0&&slot<items.size()) {
             ItemStack clicked = items.get(slot);
             switch (clickType) {
-                case PICKUP -> handlePickup(clicked, keyCode);
+                case PICKUP -> handlePickup(clicked, button);
                 case QUICK_MOVE -> handleQuickMove(clicked);
-                case SWAP -> handleSwap(clicked, keyCode);
+                case SWAP -> handleSwap(clicked, button);
                 case THROW -> handleThrow(clicked);
                 case PICKUP_ALL -> handlePickupAll(clicked);
                 case CLONE -> handleClone(clicked);
                 default -> {
                 }
             }
-
+            ModInfo.getPacketDistributor().sendToServer(new ItemClickPayload(clicked,button,clickType));
         }
     }
 
     public ItemStack takeItem(ItemStack itemStack){
         return takeItem(itemStack,itemStack.getMaxStackSize());
     }
+
     public ItemStack takeItem(ItemStack itemStack,int count){
         return this.srcInv.takeItem(itemStack,count);
     }
+
     public ItemStack takeItem(int index, int count){
         //Will take Client display item firstly
         ItemStack itemStack = this.items.get(index);
@@ -321,16 +317,16 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     }
 
     public boolean isFull(ItemStack itemStack){
-        return itemStack.getCount() >= metadata.getMaxStackSize();
+        return itemStack.getCount() >= meta.getMaxStackSize();
     }
 
     public boolean isInfinite(ItemStack itemStack){
-        return  isFull(itemStack) && metadata.enableInfinity();
+        return  isFull(itemStack) && meta.enableInfinity();
     }
 
     protected void handleQuickMove(ItemStack clicked){
         ItemStack taken = takeItem(clicked);
-        ItemStack remain = metadata.quickMoveFromPage(taken);
+        ItemStack remain = meta.quickMoveFromPage(taken);
         addItem(remain);
         setChanged();
     }
@@ -344,24 +340,24 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
     }
 
     protected void handlePickup(ItemStack clicked, int keyCode){
-        ItemStack carried = metadata.getMenu().getCarried();
+        ItemStack carried = meta.getMenu().getCarried();
         if(!carried.isEmpty()){
             ItemStack remain = addItem(carried.copy());
-            if(ModInfo.isClientLoaded() && metadata.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu){
+            if(ModInfo.isClientLoaded() && meta.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu){
                 getPacketDistributor().sendToServer(new ItemDisplayItemModPayload(carried.copy(),true));
             }
-            metadata.getMenu().setCarried(remain);
+            meta.getMenu().setCarried(remain);
             setChanged();
         }else{
             int count = Math.min(clicked.getCount(),clicked.getMaxStackSize());
             int takenCount = keyCode==0 ? count : (count + 1) / 2;
-            metadata.getMenu().setCarried(takeItem(clicked,takenCount));
-            if(!metadata.getMenu().getCarried().isEmpty()) setChanged();
+            meta.getMenu().setCarried(takeItem(clicked,takenCount));
+            if(!meta.getMenu().getCarried().isEmpty()) setChanged();
         }
     }
 
     protected void handleSwap(ItemStack clicked, int inventorySlotId){
-        Player player = metadata.getPlayer();
+        Player player = meta.getPlayer();
         Inventory inventory = player.getInventory();
         ItemStack inventoryItem = inventory.getItem(inventorySlotId);
         boolean a = !inventoryItem.isEmpty();
@@ -386,17 +382,17 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
         setChanged();
     }
     protected void handleThrow(ItemStack clicked){
-        Player player = metadata.getPlayer();
+        Player player = meta.getPlayer();
         ItemStack thrown = takeItem(clicked);
         player.drop(thrown,true);
         setChanged();
     }
     protected void handlePickupAll(ItemStack clicked){
-        Player player = metadata.getPlayer();
-        ItemStack carried = metadata.getMenu().getCarried();
-        int startIndex = metadata.getMenu().slots.size() - 1; //changed: reversed button==0 condition
+        Player player = meta.getPlayer();
+        ItemStack carried = meta.getMenu().getCarried();
+        int startIndex = meta.getMenu().slots.size() - 1; //changed: reversed button==0 condition
         for(int index = startIndex; index>=0 ; --index){
-            Slot scanning = metadata.getMenu().slots.get(index);
+            Slot scanning = meta.getMenu().slots.get(index);
             if(!(scanning.container instanceof Inventory)) break;
             ItemStack scanningItem =scanning.getItem();
             if(ItemStack.isSameItemSameComponents(carried,scanningItem)){
@@ -408,17 +404,9 @@ public abstract class ItemPage extends DisplayPage implements PageRenderer, Page
         }
     }
     protected void handleClone(ItemStack clicked){
-        Player player = metadata.getPlayer();
-        if(player.hasInfiniteMaterials() && metadata.getMenu().getCarried().isEmpty()){
-            metadata.getMenu().setCarried(clicked.copyWithCount(clicked.getMaxStackSize()));
+        Player player = meta.getPlayer();
+        if(player.hasInfiniteMaterials() && meta.getMenu().getCarried().isEmpty()){
+            meta.getMenu().setCarried(clicked.copyWithCount(clicked.getMaxStackSize()));
         }
-    }
-
-    public PageRenderer getPageRenderer(){
-        return this;
-    }
-
-    public PageClickHandler getPageClickHandler(){
-        return this;
     }
 }

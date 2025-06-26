@@ -35,7 +35,7 @@ public interface ToServerPayload extends ModPacketPayload {
             meta.getDisplayingPage().setChanged();
             if(!Objects.equals(context.pageData().pageRegKey(),meta.getDisplayingPageId())) {
                 meta.switchPageWithId(context.pageData().pageRegKey());
-            }else meta.getDisplayingPage().init(startIndex,length);
+            }else meta.getDisplayingPage().refreshContents(startIndex,length);
         }
 
         if(sync){

@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.common.client.gui.bg;
 
 import com.kwwsyk.endinv.common.client.ClientModInfo;
-import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,7 +9,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
 public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
 
-    protected final ScreenFrameWork frameWork;
+    protected final ScreenFramework frameWork;
 
     protected final int menuLeft;
     protected final int menuTop;
@@ -24,7 +24,7 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
 
     protected final PageMetaDataManager manager;
 
-    public ScreenBgRendererImpl(ScreenFrameWork frameWork){
+    public ScreenBgRendererImpl(ScreenFramework frameWork){
         this.frameWork = frameWork;
         this.screen = frameWork.screen;
         this.imageWidth = 256;
@@ -42,7 +42,7 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
         int pageY = pageSwitchTabParam.YPos();
         int selectedPageIndex = manager.getDisplayingPageIndex();
         for (int i = frameWork.firstPageIndex; i < frameWork.firstPageIndex+ frameWork.pageBarCount; ++i) {
-            manager.getPages().get(i).getPageRenderer().renderPageIcon(guiGraphics, pageX + 15, pageY + 5, partialTick);
+            manager.getPages().get(i).renderPageIcon(guiGraphics, pageX + 15, pageY + 5, partialTick);
             if (mouseX > pageX && mouseX < pageX + 32 && mouseY > pageY && mouseY < pageY + 28) {
                 guiGraphics.pose().pushPose();
                 guiGraphics.pose().translate(0, 0, 550.0f);
@@ -59,7 +59,7 @@ public abstract class ScreenBgRendererImpl implements ScreenBgRenderer{
     }
 
     @Override
-    public ScreenFrameWork getScreenFrameWork(){
+    public ScreenFramework getScreenFrameWork(){
         return frameWork;
     }
 }

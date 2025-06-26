@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.common.menu.page;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
-import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.network.payloads.toClient.SetStarredPagePayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
@@ -39,9 +39,9 @@ public class StarredItemPage extends ItemPage{
     }
 
     @Override
-    public void init(int startIndex,int length){
+    public void refreshContents(int startIndex, int length){
         this.startIndex = startIndex;
-        this.length = Math.min(length,metadata.getRowCount()*metadata.getColumnCount());
+        this.length = Math.min(length, meta.getRowCount()* meta.getColumnCount());
         this.items = NonNullList.withSize(length, ItemStack.EMPTY);
         this.countArray = new int[length];
         refreshItems();
@@ -89,7 +89,7 @@ public class StarredItemPage extends ItemPage{
     }
 
     public void requestContents(){
-        syncContentToServer();
+        sendChangesToServer();
     }
 
     @Override
@@ -103,7 +103,7 @@ public class StarredItemPage extends ItemPage{
     }
 
     @Override
-    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFrameWork frameWork){
+    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFramework frameWork){
         this.leftPos=x;
         this.topPos=y;
         this.frameWork = frameWork;
@@ -118,7 +118,7 @@ public class StarredItemPage extends ItemPage{
             if(!isHiddenBySortBox(rowIndex,columnIndex))
                 guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack,x+columnIndex*18,y+rowIndex*18+1, getDisplayAmount(stack.copyWithCount(count)));
             columnIndex++;
-            if(columnIndex>= metadata.getColumnCount()){
+            if(columnIndex>= meta.getColumnCount()){
                 columnIndex=0;
                 rowIndex++;
             }

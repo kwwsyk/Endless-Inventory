@@ -1,6 +1,6 @@
 package com.kwwsyk.endinv.common.client.gui.bg;
 
-import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
@@ -19,13 +19,13 @@ public abstract class FromResource extends ScreenBgRendererImpl {
     private static final ResourceLocation TAB_LEFT_MIDDLE_SELECTED = ResourceLocation.withDefaultNamespace("advancements/tab_left_middle_selected");
     private static final ResourceLocation TAB_LEFT_BOTTOM_SELECTED = ResourceLocation.withDefaultNamespace("advancements/tab_left_bottom_selected");
 
-    public FromResource(ScreenFrameWork frameWork){
+    public FromResource(ScreenFramework frameWork){
         super(frameWork);
     }
 
     public static class MenuMode extends FromResource{
 
-        public MenuMode(ScreenFrameWork frameWork, ScreenRectangleWidgetParam pageSwitchTabParam) {
+        public MenuMode(ScreenFramework frameWork, ScreenRectangleWidgetParam pageSwitchTabParam) {
             super(frameWork);
             this.pageSwitchTabParam = pageSwitchTabParam;
         }
@@ -46,7 +46,7 @@ public abstract class FromResource extends ScreenBgRendererImpl {
 
     public static class LeftLayout extends FromResource{
 
-        public LeftLayout(ScreenFrameWork frameWork, ScreenRectangleWidgetParam pageSwitchTabParam){
+        public LeftLayout(ScreenFramework frameWork, ScreenRectangleWidgetParam pageSwitchTabParam){
             super(frameWork);
             this.pageSwitchTabParam = pageSwitchTabParam;
         }

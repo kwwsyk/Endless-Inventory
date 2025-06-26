@@ -44,11 +44,6 @@ public class PayloadReg {
                 PageClickPayload.STREAM_CODEC,
                 (pl,cxt)->pl.handle(cxt::player)
         );
-        registrar.playToServer(
-                new CustomPacketPayload.Type<>(withModLocation("page_state")),
-                PageStatePayload.STREAM_CODEC,
-                (pl,cxt)->pl.handle(cxt::player)
-        );
         registrar.playToClient(
                 new CustomPacketPayload.Type<>(withModLocation("endinv_meta")),
                 EndInvMetadata.STREAM_CODEC,

@@ -3,76 +3,23 @@ package com.kwwsyk.endinv.common.client;
 import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.SourceInventory;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvMetadata;
-import com.kwwsyk.endinv.common.util.*;
+import com.kwwsyk.endinv.common.util.ItemKey;
+import com.kwwsyk.endinv.common.util.ItemState;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-@OnlyIn(Dist.CLIENT)
-public class CachedSrcInv implements SourceInventory {
+/**Client only {@link SourceInventory}
+ * Served as data cache of EndlessInventory.
+ */
+public class CachedSrcInv extends SourceInventory {
 
     public static final CachedSrcInv INSTANCE = new CachedSrcInv();
 
-    Minecraft mc =Minecraft.getInstance();
-    @Nullable
-    LocalPlayer player = mc.player;
-    private List<ItemStack> items;
-    private Map<ItemKey, ItemState> itemMap = new Object2ObjectLinkedOpenHashMap<>();
-
-    private int maxStackSize;
-    private boolean infinityMode;
-
-    private Accessibility accessibilty;
-    @Nullable
-    private UUID owner;
-    public List<UUID> white_list = new ArrayList<>();
-
-    private CachedSrcInv(){}
-
-    private List<ItemStack> getSortedView(SortType type, boolean reverse) {
-
-        List<ItemStack> view = itemMap.entrySet().stream()
-                .map(e -> e.getKey().toStack(e.getValue().count()))
-                .sorted(ModInfo.sortHelper.getComparator(type, this))
-                .collect(Collectors.toList());
-
-        var ret = view;
-        if(reverse) ret = ret.reversed();
-        return ret;
-    }
-
-    public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, boolean reverse,@Nullable Predicate<ItemStack> classify, String search){
-        Stream<ItemStack> base = getSortedView(sortType,reverse).stream();
-        List<ItemStack> filtered = base
-                .filter(classify!=null?classify:is->true)
-                .filter(stack -> SearchUtil.matchesSearch(stack,search))
-                .toList();
-        if(startIndex>= filtered.size()) return new ArrayList<>();
-        return filtered.subList(startIndex,Math.min(startIndex+length,filtered.size()));
-    }
-
-    public List<ItemStack> getItemsAsList(){
-        syncItemsFromMap();
-        return items;
-    }
-
-    public void syncItemsFromMap() {
-        this.items = itemMap.entrySet().stream()
-                .map(e -> e.getKey().toStack(e.getValue().count()))
-                .collect(Collectors.toList());
+    private CachedSrcInv(){
+        super(ModInfo.DEFAULT_UUID);
     }
 
     public void initializeContents(Map<ItemKey, ItemState> itemMap){
@@ -82,11 +29,6 @@ public class CachedSrcInv implements SourceInventory {
     @Override
     public boolean isRemote() {
         return true;
-    }
-
-    @Override
-    public ItemStack takeItem(ItemStack itemStack){
-        return takeItem(itemStack,itemStack.getMaxStackSize());
     }
 
     @Override
@@ -151,22 +93,6 @@ public class CachedSrcInv implements SourceInventory {
 
     }
 
-    @Override
-    public int getItemSize() {
-        syncItemsFromMap();
-        return items.size();
-    }
-
-    @Override
-    public ItemStack getItem(int i) {
-        return i>=0 && i<this.items.size() ? this.items.get(i) : ItemStack.EMPTY;
-    }
-
-    @Override
-    public Map<ItemKey, ItemState> getItemMap() {
-        return itemMap;
-    }
-
     public long updateLastModTime(){
         return Util.getMillis();
     }
@@ -174,20 +100,8 @@ public class CachedSrcInv implements SourceInventory {
     public void syncMetadata(EndInvMetadata endInvMetadata) {
         this.maxStackSize = endInvMetadata.maxStackSize();
         this.infinityMode = endInvMetadata.infinityMode();
-        this.accessibilty =endInvMetadata.config().accessibility();
+        this.accessibility =endInvMetadata.config().accessibility();
         this.owner = endInvMetadata.config().owner();
         this.white_list = endInvMetadata.config().white_list();
-    }
-
-    public Accessibility getAccessibility() {
-        return this.accessibilty;
-    }
-
-    public void setAccessibility(Accessibility accessibility) {
-        this.accessibilty = accessibility;
-    }
-
-    public UUID getOwnerUUID(){
-        return owner;
     }
 }

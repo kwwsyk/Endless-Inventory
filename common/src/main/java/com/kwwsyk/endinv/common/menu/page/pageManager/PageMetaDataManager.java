@@ -8,20 +8,15 @@ import com.kwwsyk.endinv.common.menu.page.PageTypeRegistry;
 import com.kwwsyk.endinv.common.network.payloads.PageData;
 import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
 import com.kwwsyk.endinv.common.util.SortType;
-import net.minecraft.core.Holder;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public interface PageMetaDataManager {
-
-    List<Holder<PageType>> defaultPages = new ArrayList<>();
 
     AbstractContainerMenu getMenu();
 
@@ -65,10 +60,6 @@ public interface PageMetaDataManager {
 
     default void scrollTo(float pos){
         getDisplayingPage().scrollTo(pos);
-    }
-
-    default float subtractInputFromScroll(float scrollOffs, double input) {
-        return Mth.clamp(scrollOffs - (float)(input / (double)getRowCount()), 0.0F, 1.0F);
     }
 
     default int getDisplayingPageIndex(){

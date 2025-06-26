@@ -2,7 +2,7 @@ package com.kwwsyk.endinv.common.menu.page;
 
 import com.kwwsyk.endinv.common.client.ClientModInfo;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
-import com.kwwsyk.endinv.common.client.gui.ScreenFrameWork;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenBgRenderer;
 import com.kwwsyk.endinv.common.client.option.TextureMode;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
@@ -28,19 +28,19 @@ public class ItemEntryDisplay extends ItemDisplay{
 
     public ItemEntryDisplay(PageType pageType, PageMetaDataManager metaDataManager) {
         super(pageType,metaDataManager);
-        this.length = metadata.getRowCount();
+        this.length = meta.getRowCount();
     }
 
     @Override
     public void scrollTo(float pos) {
         int startIndex = getRowIndexForScroll(pos);
-        this.init(startIndex,this.length);
+        this.refreshContents(startIndex,this.length);
     }
 
     @Override
-    public void init(int startIndex, int length) {
+    public void refreshContents(int startIndex, int length) {
         this.startIndex = startIndex;
-        this.length = Math.min(length,metadata.getRowCount());
+        this.length = Math.min(length, meta.getRowCount());
         if(items==null || length!=this.items.size()){
             this.items = NonNullList.withSize(length,ItemStack.EMPTY);
         }
@@ -63,7 +63,7 @@ public class ItemEntryDisplay extends ItemDisplay{
 
     @Override
     public int getSlotForMouseOffset(double XOffset, double YOffset) {
-        if(XOffset<0||YOffset<0||XOffset>18*metadata.getColumnCount()||YOffset>18*metadata.getRowCount()) return -1;
+        if(XOffset<0||YOffset<0||XOffset>18* meta.getColumnCount()||YOffset>18* meta.getRowCount()) return -1;
         return (int)YOffset/18;
     }
 
@@ -76,7 +76,7 @@ public class ItemEntryDisplay extends ItemDisplay{
     }
 
     @Override
-    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFrameWork frameWork) {
+    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFramework frameWork) {
         this.leftPos=x;
         this.topPos=y;
         this.frameWork = frameWork;
@@ -91,7 +91,7 @@ public class ItemEntryDisplay extends ItemDisplay{
             if(!isHiddenBySortBox(rowIndex,columnIndex))
                 guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack, x,y+rowIndex*18+1, getDisplayAmount(stack));
             rowIndex++;
-            if(rowIndex>= metadata.getRowCount()) break;
+            if(rowIndex>= meta.getRowCount()) break;
         }
         guiGraphics.pose().popPose();
     }
@@ -109,7 +109,7 @@ public class ItemEntryDisplay extends ItemDisplay{
             }
             Component tip1 = Component.literal(tip.getString());
             int strX1 = strX + font.width(tip.getVisualOrderText());
-            if(strX1 >= x + metadata.getColumnCount()*18 -18-3){
+            if(strX1 >= x + meta.getColumnCount()*18 -18-3){
                 graphics.drawString(font,Component.literal("..."),strX,y,0xFFFFFF00);
                 break;
             }
@@ -136,13 +136,13 @@ public class ItemEntryDisplay extends ItemDisplay{
     }
 
     protected void renderSlotHighlight(GuiGraphics graphics, int mouseX, int mouseY, float partialTick){
-        for(int v=0;v<metadata.getRowCount();++v){
+        for(int v = 0; v< meta.getRowCount(); ++v){
             int x1 = leftPos;
-            int x2 = leftPos + metadata.getColumnCount()*18 -2;
+            int x2 = leftPos + meta.getColumnCount()*18 -2;
             int y1 = topPos+18*v+1;
             int y2 = topPos+18*v+18;
             if(mouseX>x1 && mouseX<x2 && mouseY>y1 && mouseY<y2){
-                if(!metadata.getMenu().getCarried().isEmpty()) return;
+                if(!meta.getMenu().getCarried().isEmpty()) return;
                 graphics.fillGradient(RenderType.guiOverlay(),x1,y1,x2,y2,0x80ffffff,0x80ffffff,0);
             }
         }
@@ -150,14 +150,13 @@ public class ItemEntryDisplay extends ItemDisplay{
 
     @Override
     public void renderBg(ScreenBgRenderer screenBgRenderer, GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
-        super.renderBg(screenBgRenderer, guiGraphics, partialTicks, mouseX, mouseY);
         int pageX = screenBgRenderer.getScreenFrameWork().pageX;
         int startY = screenBgRenderer.getScreenFrameWork().pageY;
         int bgColor = ClientModInfo.getClientConfig().textureMode().get() == TextureMode.FROM_RESOURCE ? 0xFF8b8b8b : 0x37606037;
-        for(int i=0; i< metadata.getRowCount(); ++i){
-            guiGraphics.fill(pageX,startY,pageX+18*metadata.getColumnCount()-2,startY+1,0xFF373737);
-            guiGraphics.fill(pageX,startY+1,pageX+18*metadata.getColumnCount()-2,startY+17,bgColor);
-            guiGraphics.fill(pageX,startY+17,pageX+18*metadata.getColumnCount()-2,startY+18,0xFFFFFFFF);
+        for(int i = 0; i< meta.getRowCount(); ++i){
+            guiGraphics.fill(pageX,startY,pageX+18* meta.getColumnCount()-2,startY+1,0xFF373737);
+            guiGraphics.fill(pageX,startY+1,pageX+18* meta.getColumnCount()-2,startY+17,bgColor);
+            guiGraphics.fill(pageX,startY+17,pageX+18* meta.getColumnCount()-2,startY+18,0xFFFFFFFF);
             startY+=18;
         }
     }

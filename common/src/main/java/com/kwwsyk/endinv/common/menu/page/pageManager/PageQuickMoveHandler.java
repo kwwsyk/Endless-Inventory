@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class PageQuickMoveHandler {
     private final AbstractContainerMenu menu;
-    private final PageMetaDataManager manager;
+    //private PageMetaDataManager manager;
 
     /**
      * To add custom quick move action for custom menus.
@@ -17,8 +17,12 @@ public class PageQuickMoveHandler {
     }
 
     public PageQuickMoveHandler(PageMetaDataManager manager){
-        this.manager = manager;
+        //this.manager = manager;
         this.menu = manager.getMenu();
+    }
+
+    public PageQuickMoveHandler(AbstractContainerMenu menu){
+        this.menu = menu;
     }
 
     public ItemStack quickMoveFromPage(ItemStack stack){

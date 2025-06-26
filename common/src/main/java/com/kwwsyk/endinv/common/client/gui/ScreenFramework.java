@@ -12,11 +12,9 @@ import com.kwwsyk.endinv.common.client.option.TextureMode;
 import com.kwwsyk.endinv.common.menu.page.DisplayPage;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.common.network.payloads.toServer.PageClickPayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.QuickMoveToPagePayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
 import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -25,7 +23,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -40,11 +37,10 @@ import java.util.function.Consumer;
 import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
 import static com.kwwsyk.endinv.common.client.ClientModInfo.containerScreenHelper;
 import static com.kwwsyk.endinv.common.client.ClientModInfo.inputHandler;
-import static net.minecraft.client.gui.screens.Screen.hasShiftDown;
 
-public class ScreenFrameWork {
+public class ScreenFramework {
 
-    private static ScreenFrameWork INSTANCE;
+    private static ScreenFramework INSTANCE;
 
     private final Minecraft mc;
     public final PageMetaDataManager meta;
@@ -75,7 +71,7 @@ public class ScreenFrameWork {
     private Button configButton;
     private final List<AbstractWidget> widgets = new ArrayList<>();
     
-    public ScreenFrameWork(EndlessInventoryScreen screen){
+    public ScreenFramework(EndlessInventoryScreen screen){
         this.screen = screen;
         this.mc = Minecraft.getInstance();
         this.meta = screen.getPageMetadata();
@@ -103,7 +99,7 @@ public class ScreenFrameWork {
         INSTANCE = this;
     }
 
-    public ScreenFrameWork(AttachedScreen<?> attachedScreen){
+    public ScreenFramework(AttachedScreen<?> attachedScreen){
         this.screen = attachedScreen.screen;
         this.mc = Minecraft.getInstance();
         this.meta = attachedScreen.getPageMetadata();
@@ -149,7 +145,7 @@ public class ScreenFrameWork {
                         btn->{
                             meta.switchSortReversed();
                             SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(meta.getPlayer()).ofReverseSort());
-                            meta.getDisplayingPage().syncContentToServer();
+                            meta.getDisplayingPage().sendChangesToServer();
                         }
                 )
                 .pos(sortBoxParam.XPos()+sortBoxParam.XSize()+2,sortBoxParam.YPos())
@@ -195,7 +191,7 @@ public class ScreenFrameWork {
 
     public void renderBg(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick){
         screenBgRenderer.renderBg(guiGraphics,partialTick,mouseX,mouseY);
-        meta.getDisplayingPage().getPageRenderer().renderBg(screenBgRenderer,guiGraphics,partialTick,mouseX,mouseY);
+        meta.getDisplayingPage().renderBg(screenBgRenderer,guiGraphics,partialTick,mouseX,mouseY);
     }
 
     private boolean isHoveringOnPage;
@@ -206,8 +202,8 @@ public class ScreenFrameWork {
         isHoveringOnPage = hasClickedOnPage(mouseX,mouseY);
 
 
-        meta.getDisplayingPage().getPageRenderer().renderPage(guiGraphics,pageX,pageY,this);
-        if(!sortTypeSwitcher.isHoveringOnSortBox()) meta.getDisplayingPage().getPageRenderer().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
+        meta.getDisplayingPage().renderPage(guiGraphics,pageX,pageY,this);
+        if(!sortTypeSwitcher.isHoveringOnSortBox()) meta.getDisplayingPage().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
 
         if(searchBox.isHovered() && !searchBox.isFocused()) guiGraphics.renderTooltip(mc.font, List.of(
                 Component.translatable("search.endinv.prefix.sharp"),
@@ -223,13 +219,6 @@ public class ScreenFrameWork {
         return mouseX>=(double) pageX && mouseX<=(double)pageX+pageXSize
                 && mouseY>=(double) pageY && mouseY<=(double) pageY+pageYSize
                 && !sortTypeSwitcher.isHoveringOnSortBox();
-    }
-
-    protected void pageClicked(double mouseX, double mouseY, int keyCode, ClickType clickType){
-        //menu.syncContent();
-        meta.getDisplayingPage().getPageClickHandler().pageClicked(mouseX,mouseY,keyCode,clickType);
-        ModInfo.getPacketDistributor().sendToServer(
-                new PageClickPayload(menu.containerId, meta.getInPageContext(), mouseX, mouseY, keyCode, clickType));
     }
 
     protected int hasClickedOnPageSwitchBar(double mouseX, double mouseY){
@@ -283,18 +272,13 @@ public class ScreenFrameWork {
         ModInfo.getPacketDistributor().sendToServer(new QuickMoveToPagePayload(clicked.index));
     }
 
-    //handle input seg:
-    private boolean doubleClick;
-    private int lastClickedButton;
-    private double lastCLickedX;
-    private double lastClickedY;
-    private long lastClickedTime;
-    private boolean skipNextRelease;
-
-
     public boolean mouseClicked(double mouseX, double mouseY, int keyCode){
-        if(!searchBoxParam.hasClickedOn((int) mouseX, (int) mouseY) || keyCode==1){
+        if(!searchBoxParam.hasClickedOn((int) mouseX, (int) mouseY)){
             searchBox.setFocused(false);
+        }else if(keyCode==1){
+            searchBox.setValue("");
+            searchBox.setFocused(true);//this is what JEI behaves
+            return true;
         }
         //handle menu item quick move
         boolean flg = inputHandler.isActiveAndMatches(KeyMappings.QUICK_MOVE,InputConstants.Type.MOUSE.getOrCreate(keyCode));
@@ -312,59 +296,19 @@ public class ScreenFrameWork {
             return true;
         }
         //
-        if(!hasClickedOnPage(mouseX,mouseY)) return false;
-        double XOffset = mouseX-pageX;
-        double YOffset = mouseY-pageY;
-        InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
-        boolean isKeyPicking = inputHandler.isActiveAndMatches(mc.options.keyPickItem,mouseKey);//is mouse middle button and enabled for pickup or clone
-        long clickTime = Util.getMillis();
-        this.doubleClick = keyCode==lastClickedButton && meta.getDisplayingPage().getPageClickHandler().doubleClicked(XOffset,YOffset,lastCLickedX,lastClickedY,clickTime-lastClickedTime);
-        this.skipNextRelease = false;
-        if(keyCode!=0&&keyCode!=1&&!isKeyPicking){
-            checkHotBarClicked:
-            if (this.menu.getCarried().isEmpty()) {
-                if (this.mc.options.keySwapOffhand.matchesMouse(keyCode)) {
-                    pageClicked(XOffset,YOffset,40, ClickType.SWAP);
-                    break checkHotBarClicked;
-                }
-
-                for (int i = 0; i < 9; i++) {
-                    if (this.mc.options.keyHotbarSlots[i].matchesMouse(keyCode)) {
-                        pageClicked(XOffset,YOffset, i, ClickType.SWAP);
-                    }
-                }
-            }
-        }else {
-            if(menu.getCarried().isEmpty()){
-                if (inputHandler.isActiveAndMatches(mc.options.keyPickItem,mouseKey)) {
-                    pageClicked(XOffset, YOffset, keyCode, ClickType.CLONE);
-                } else {
-                    ClickType clicktype = ClickType.PICKUP;
-                    if (hasShiftDown()) {
-                        meta.getDisplayingPage().setHoldOn();
-                        //this.lastQuickMoved = slot != null && slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY;
-                        clicktype = ClickType.QUICK_MOVE;
-                    }
-
-                    pageClicked(XOffset, YOffset, keyCode, clicktype);
-                }
-                this.skipNextRelease = true;
-            }else {//deference to vanilla
-                pageClicked(XOffset, YOffset, keyCode, ClickType.PICKUP);
-            }
+        if(hasClickedOnPage(mouseX,mouseY)){
+            return meta.getDisplayingPage().mouseClicked(mouseX-pageX,mouseY-pageY,keyCode);
         }
-        this.lastClickedTime = clickTime;
-        this.lastClickedButton = keyCode;
-        this.lastCLickedX = XOffset;
-        this.lastClickedY = YOffset;
-        return true;
+        return false;
     }
 
-    private int lastDraggedPageSlot = -1;
+
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         ItemStack itemstack = this.menu.getCarried();
+        //ignore QUICK_CRAFT and touchscreen
         if(!itemstack.isEmpty() || mc.options.touchscreen().get())
             return false;
+        //CTRL-click(default) to quick move items as behavior as Mouse Tweaks
         if(inputHandler.isActiveAndMatches(KeyMappings.QUICK_MOVE,InputConstants.Type.MOUSE.getOrCreate(button))){
             Slot clicked = findSlot(mouseX,mouseY);
             if(clicked!=null && clicked.hasItem()){
@@ -372,57 +316,29 @@ public class ScreenFrameWork {
                 return true;
             }
         }
-        if(!hasClickedOnPage(mouseX, mouseY)) return false;
-        //handle page drag: mouse tweak style
-        if(hasShiftDown()){
-            int slotId = meta.getDisplayingPage().getPageClickHandler().getSlotForMouseOffset(mouseX-pageX,mouseY-pageY);
-            if(slotId>=0 && lastDraggedPageSlot>=0 && slotId!=lastDraggedPageSlot){
-                pageClicked(mouseX-pageX,mouseY-pageY,button,ClickType.QUICK_MOVE);
-            }
-            lastDraggedPageSlot = slotId;
-            return true;
-        }else return false;
+
+        if(hasClickedOnPage(mouseX, mouseY)) {
+            return meta.getDisplayingPage().mouseDragged(mouseX-pageX,mouseY-pageY, button,dragX,dragY);
+        }
+        return false;
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int keyCode){
         DisplayPage displayingPage = meta.getDisplayingPage();
         displayingPage.release();
         if(hasClickedOnPage(mouseX,mouseY)){
-            lastDraggedPageSlot = -1;
-            double XOffset = mouseX - pageX;
-            double YOffset = mouseY - pageY;
-            InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(keyCode);
-            if (this.doubleClick) {
-                this.pageClicked(XOffset,YOffset,keyCode,ClickType.PICKUP_ALL);
-                this.doubleClick = false;
-                this.lastClickedTime = 0L;
-            }else {
-                //ignore quick craft
-                if (this.skipNextRelease) {
-                    this.skipNextRelease = false;
-                    return true;
-                }
-                if(!menu.getCarried().isEmpty()){
-                    if (inputHandler.isActiveAndMatches(mc.options.keyPickItem,mouseKey)) {
-                        this.pageClicked(XOffset,YOffset,keyCode,ClickType.CLONE);
-                    }
-                }
-            }
+            return displayingPage.mouseReleased(mouseX-pageX,mouseY-pageY,keyCode);
         }
         return false;
     }
 
-    private float scrollOffs;
+
     public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
         if(hasClickedOnPage(mouseX,mouseY)){
-            if(!meta.getDisplayingPage().canScroll()) return false;
-            this.scrollOffs = this.meta.subtractInputFromScroll(this.scrollOffs,scrollY);
-            this.meta.scrollTo(scrollOffs);
-            return true;
+            return meta.getDisplayingPage().mouseScrolled(mouseX-pageX,mouseY=pageY,scrollX,scrollY);
         }
         return false;
     }
-
 
     private boolean ignoreTextInput;
 
@@ -434,40 +350,20 @@ public class ScreenFrameWork {
             if(clicked!=null && clicked.hasItem()){
                 ItemStack itemStack = clicked.getItem();
                 ModInfo.getPacketDistributor().sendToServer(new StarItemPayload(itemStack,true));
-                meta.getDisplayingPage().syncContentToServer();
+                meta.getDisplayingPage().sendChangesToServer();
                 return true;
             }
         }
 
-        boolean isNumericKey = InputConstants.getKey(keyCode, scanCode).getNumericKeyValue().isPresent();
         boolean flag = false;
         if(isHoveringOnPage){
-            checkHotBarKeyPressed:
-            if (isNumericKey && this.menu.getCarried().isEmpty()) {
-                if (inputHandler.isActiveAndMatches(mc.options.keySwapOffhand,InputConstants.getKey(keyCode, scanCode))) {
-                    pageClicked(roughMouseX-pageX, roughMouseY-pageY, 40, ClickType.SWAP);
-                    flag = true;
-                    break checkHotBarKeyPressed;
-                }
-
-                for(int i = 0; i < 9; ++i) {
-                    if (inputHandler.isActiveAndMatches(mc.options.keyHotbarSlots[i],InputConstants.getKey(keyCode, scanCode))) {
-                        pageClicked(roughMouseX-pageX, roughMouseY-pageY, i, ClickType.SWAP);
-                        flag = true;
-                        break checkHotBarKeyPressed;
-                    }
-                }
-            }
-
-            if(inputHandler.isActiveAndMatches(KeyMappings.STAR_ITEM,InputConstants.getKey(keyCode,scanCode))){
-                meta.getDisplayingPage().handleStarItem(roughMouseX-pageX,roughMouseY-pageY);
-                flag = true;
-            }
+            flag = meta.getDisplayingPage().keyPressed(keyCode,scanCode,modifiers,roughMouseX-pageX,roughMouseY-pageY);
         }
         if(flag){
             this.ignoreTextInput = true;
             return true;
         }
+
         if(meta.getDisplayingPage().hasSearchBar()){
             String s = this.searchBox.getValue();
             if (this.searchBox.keyPressed(keyCode, scanCode, modifiers)) {
@@ -508,10 +404,10 @@ public class ScreenFrameWork {
         meta.setSearching(searching);
         SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(meta.getPlayer()).searchingChanged(searching));
         meta.getDisplayingPage().release();
-        meta.getDisplayingPage().syncContentToServer();
+        meta.getDisplayingPage().sendChangesToServer();
     }
 
-    public static @Nullable ScreenFrameWork getInstance(){
+    public static @Nullable ScreenFramework getInstance(){
         return INSTANCE;
     }
 }

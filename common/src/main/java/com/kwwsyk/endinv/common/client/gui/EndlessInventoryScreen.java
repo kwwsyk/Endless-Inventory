@@ -19,7 +19,7 @@ import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedCon
 public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInventoryMenu> implements SortTypeSwitcher {
 
 
-    private ScreenFrameWork frameWork;
+    private ScreenFramework frameWork;
     public boolean isHoveringOnSortBox;
 
     public EndlessInventoryScreen(EndlessInventoryMenu menu, Inventory playerInventory, Component title) {
@@ -32,7 +32,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     public void init(){
         this.leftPos = (this.width - this.imageWidth) / 2;
         this.topPos = (this.height - this.imageHeight) / 2;
-        this.frameWork = new ScreenFrameWork(this);
+        this.frameWork = new ScreenFramework(this);
 
         frameWork.addWidgetToScreen(this::addRenderableWidget);
     }
@@ -99,7 +99,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         menu.sortType = type;
         SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(menu.getPlayer()).sortTypeChanged(type));
         menu.getDisplayingPage().release();
-        menu.getDisplayingPage().syncContentToServer();
+        menu.getDisplayingPage().sendChangesToServer();
     }
 
     @Override
@@ -121,7 +121,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         return this;
     }
 
-    public ScreenFrameWork getFrameWork() {
+    public ScreenFramework getFrameWork() {
         return frameWork;
     }
 
