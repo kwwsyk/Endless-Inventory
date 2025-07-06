@@ -71,6 +71,10 @@ public class EndlessInventory extends SourceInventory {
         return items.stream().map(this::getStackWithZeroCount).toList();
     }
 
+    public List<ItemStackLike> getStarredItems(){
+        return getStarredItems(0,affinities.starredItems.size());
+    }
+
     public ItemStackLike getStackWithZeroCount(ItemStack stack){
         var state = itemMap.get(ItemKey.asKey(stack));
         if(state==null) return ItemStackLike.asKey(stack);
@@ -102,7 +106,7 @@ public class EndlessInventory extends SourceInventory {
     }
 
     public void broadcastChanges(){
-        this.viewers.forEach(player -> ServerLevelEndInv.checkAndGetManagerForPlayer(player)
-                .ifPresent(manager -> manager.getDisplayingPage().syncContentToClient(player)));
+        /*this.viewers.forEach(player -> ServerLevelEndInv.checkAndGetManagerForPlayer(player)
+                .ifPresent(manager -> manager.getDisplayingPage().syncContentToClient(player)));*/
     }
 }

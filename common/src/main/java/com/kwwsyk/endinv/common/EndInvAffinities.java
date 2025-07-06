@@ -44,7 +44,7 @@ public class EndInvAffinities {
      * @return the sublist of starred items without copy.
      */
     public List<ItemStack> getStarredItems(@Nonnegative int startIndex,@Nonnegative int length){
-        if(length > starredItems.size()) return starredItems;
+        if(length >= starredItems.size()) return starredItems;
         if(startIndex+length > starredItems.size()) return starredItems.subList(startIndex,-1);
         return starredItems.subList(startIndex,startIndex+length);
     }

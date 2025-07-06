@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.common.menu.page;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
+import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import net.minecraft.world.item.ItemStack;
 
@@ -12,14 +13,10 @@ public class ItemDisplay extends ItemPage{
         super(pageType,metaDataManager);
     }
 
-
     public void refreshItems(){
-        if(srcInv.isRemote()){
-            requestContents();
-            return;
-        }
-        EndlessInventory endInv = (EndlessInventory) meta.getSourceInventory();
-        List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex,length,
+        if(!suppressRefresh) requestContents();
+
+        List<ItemStack> view = CachedSrcInv.INSTANCE.getSortedAndFilteredItemView(startIndex,length,
                 meta.sortType(), meta.isSortReversed(),
                 getClassify(), meta.searching());
         initializeContents(view);
@@ -28,7 +25,6 @@ public class ItemDisplay extends ItemPage{
     public void requestContents(){
         sendChangesToServer();
     }
-
 
     @Override
     public boolean hasSearchBar() {
@@ -41,7 +37,7 @@ public class ItemDisplay extends ItemPage{
     }
 
     public ItemStack takeItem(ItemStack itemStack,int count){
-        for(int i=0; i< items.size(); ++i){
+        for(int i=0; i< items.size(); ++i){//in the loop is the animation
             ItemStack stack = items.get(i);
             if(ItemStack.isSameItemSameComponents(stack,itemStack)){
                 ItemStack ret = itemStack.copyWithCount(count);
@@ -57,10 +53,8 @@ public class ItemDisplay extends ItemPage{
                         }
                         items.set(i,stack);
                     }
+                    setChanged();
                 }
-                ItemStack result = srcInv.takeItem(itemStack,count);
-                if(srcInv instanceof EndlessInventory) ret=result;
-                return ret;
             }
         }
         return this.srcInv.takeItem(itemStack,count);

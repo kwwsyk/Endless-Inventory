@@ -1,18 +1,13 @@
 package com.kwwsyk.endinv.common.menu.page;
 
-import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
-import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvContent;
-import com.kwwsyk.endinv.common.network.payloads.toClient.SetItemDisplayContentPayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.ItemClickPayload;
 import com.kwwsyk.endinv.common.network.payloads.toServer.ItemDisplayItemModPayload;
-import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
+import com.kwwsyk.endinv.common.network.payloads.toServer.ItemPageContext;
 import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
-import com.kwwsyk.endinv.common.options.ContentTransferMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,7 +15,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.NonNullList;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
@@ -32,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
-import static com.kwwsyk.endinv.common.ModInfo.getServerConfig;
 import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
 
 /**
@@ -45,11 +38,6 @@ public abstract class ItemPage extends DisplayPage {
     protected int startIndex = 0;
 
     protected int length;
-
-    //leftPos and topPos are used as Renderer param
-    protected ScreenFramework frameWork;
-    protected int leftPos;
-    protected int topPos;
 
     protected boolean suppressRefresh = false;
 
@@ -65,11 +53,16 @@ public abstract class ItemPage extends DisplayPage {
         int startIndex = getRowIndexForScroll(pos)* meta.getColumnCount();
         this.refreshContents(startIndex,this.length);
     }
+
+    @Override
+    public void refreshContents() {
+        refreshContents(0,meta.getRowCount()*meta.getColumnCount());
+    }
+
     /**Change displayed items of EndInv
      * @param startIndex the index of the item first displayed in EndInv
      * @param length the count of the item should be displayed, should equal to rows*columns
      */
-    @Override
     public void refreshContents(int startIndex, int length) {
         this.startIndex = startIndex;
         this.length = Math.min(length, meta.getRowCount()* meta.getColumnCount());
@@ -108,22 +101,7 @@ public abstract class ItemPage extends DisplayPage {
     }
 
     public void sendChangesToServer() {
-        getPacketDistributor().sendToServer(new PageContext(startIndex,length, getSyncedConfig().computeIfAbsent(meta.getPlayer()).pageData()));
-    }
-
-    public void syncContentToClient(ServerPlayer player){
-        EndlessInventory endInv = (EndlessInventory) meta.getSourceInventory();
-        if(getServerConfig().transferMode().get()== ContentTransferMode.PART) {
-            List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex, length, meta.sortType(), meta.isSortReversed(), getClassify(), meta.searching());
-
-            NonNullList<ItemStack> stacks = NonNullList.withSize(length, ItemStack.EMPTY);
-            for (int i = 0; i < view.size(); ++i) {
-                stacks.set(i, view.get(i));
-            }
-            getPacketDistributor().sendToPlayer(player, new SetItemDisplayContentPayload(stacks));
-        } else if (getServerConfig().transferMode().get() == ContentTransferMode.ALL) {
-            getPacketDistributor().sendToPlayer(player,new EndInvContent(endInv.getItemMap()));
-        }
+        getPacketDistributor().sendToServer(new ItemPageContext(startIndex,length, getSyncedConfig().computeIfAbsent(meta.getPlayer()).pageData()));
     }
 
     public int getStartIndex(){
@@ -169,19 +147,16 @@ public abstract class ItemPage extends DisplayPage {
         }
     }
 
-    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFramework frameWork){
-        this.leftPos=x;
-        this.topPos=y;
-        this.frameWork = frameWork;
+    public void renderPage(GuiGraphics guiGraphics){
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0.0F, 0.0F, 100.0F);
         int rowIndex = 0;
         int columnIndex = 0;
         for(ItemStack stack : items){
-            if(stack.isEmpty() && !stack.is(Items.AIR)) renderEmpty(guiGraphics,x+columnIndex*18,y+rowIndex*18+1,stack);
-            guiGraphics.renderItem(stack,x+columnIndex*18,y+rowIndex*18+1,columnIndex+rowIndex*180);
+            if(stack.isEmpty() && !stack.is(Items.AIR)) renderEmpty(guiGraphics,leftPos+columnIndex*18,topPos+rowIndex*18+1,stack);
+            guiGraphics.renderItem(stack,leftPos+columnIndex*18,topPos+rowIndex*18+1,columnIndex+rowIndex*180);
             if(!isHiddenBySortBox(rowIndex,columnIndex))
-                guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack,x+columnIndex*18,y+rowIndex*18+1, getDisplayAmount(stack));
+                guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack,leftPos+columnIndex*18,topPos+rowIndex*18+1, getDisplayAmount(stack));
             columnIndex++;
             if(columnIndex>= meta.getColumnCount()){
                 columnIndex=0;
@@ -201,7 +176,7 @@ public abstract class ItemPage extends DisplayPage {
         return rowIndex<=2 && columnIndex<=3 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
                 && (
                 screen instanceof EndlessInventoryScreen EIS && EIS.getFrameWork().sortTypeSwitchBox.isOpen() && columnIndex <=2
-                        || frameWork.sortTypeSwitchBox.isOpen()
+                        || framework.sortTypeSwitchBox.isOpen()
                 );
     }
 
@@ -276,6 +251,7 @@ public abstract class ItemPage extends DisplayPage {
         int slot = getSlotForMouseOffset(XOffset,YOffset);
         if(slot>=0&&slot<items.size()) {
             ItemStack clicked = items.get(slot);
+            var copy = clicked.copy();
             switch (clickType) {
                 case PICKUP -> handlePickup(clicked, button);
                 case QUICK_MOVE -> handleQuickMove(clicked);
@@ -286,7 +262,8 @@ public abstract class ItemPage extends DisplayPage {
                 default -> {
                 }
             }
-            ModInfo.getPacketDistributor().sendToServer(new ItemClickPayload(clicked,button,clickType));
+            ModInfo.getPacketDistributor().sendToServer(new ItemClickPayload(copy,button,clickType));
+            refreshItems();
         }
     }
 
@@ -295,25 +272,19 @@ public abstract class ItemPage extends DisplayPage {
     }
 
     public ItemStack takeItem(ItemStack itemStack,int count){
+        setChanged();
         return this.srcInv.takeItem(itemStack,count);
     }
 
     public ItemStack takeItem(int index, int count){
-        //Will take Client display item firstly
         ItemStack itemStack = this.items.get(index);
-        ItemStack ret = itemStack.copy();
-        //then affect server
-        ItemStack result = srcInv.takeItem(itemStack,count);
-        if(srcInv instanceof EndlessInventory) ret=result;
-        return ret;
+        setChanged();
+        return srcInv.takeItem(itemStack,count);
     }
 
     public ItemStack addItem(ItemStack itemStack){
-        ItemStack ret = ItemStack.EMPTY;
-        // Important: use `copy()` to avoid duplicate actions due to shared ItemStack references.
-        ItemStack remain = this.srcInv.addItem(itemStack.copy());
-        if(!remain.isEmpty()) ret = remain;
-        return ret;
+        setChanged();
+        return srcInv.addItem(itemStack.copy());
     }
 
     public boolean isFull(ItemStack itemStack){
@@ -332,7 +303,9 @@ public abstract class ItemPage extends DisplayPage {
     }
     @Override
     public ItemStack tryQuickMoveStackTo(ItemStack stack) {
-        return addItem(stack);
+        var remain = addItem(stack);
+        refreshContents();
+        return remain;
     }
     @Override
     public ItemStack tryExtractItem(ItemStack stack,int count){

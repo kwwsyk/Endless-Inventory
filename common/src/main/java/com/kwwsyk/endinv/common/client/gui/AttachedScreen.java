@@ -59,7 +59,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
         public void switchPageWithIndex(int index) {
             displayingPage = pages.get(index);
             SyncedConfig.updateSyncedConfig(getSyncedConfig().computeIfAbsent(player).pageKeyChanged(displayingPage.id));
-            displayingPage.refreshContents(0,rows*columns);
+            displayingPage.refreshContents();
         }
 
         @Override

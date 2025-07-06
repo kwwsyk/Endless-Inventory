@@ -31,7 +31,7 @@ public class PayloadReg {
         );
         registrar.playToServer(
                 new CustomPacketPayload.Type<>(withModLocation("page_context")),
-                PageContext.STREAM_CODEC,
+                ItemPageContext.STREAM_CODEC,
                 (pl,cxt)->pl.handle(cxt::player)
         );
         registrar.playToClient(
@@ -40,8 +40,8 @@ public class PayloadReg {
                 (pl,cxt)->pl.handle(cxt::player)
         );
         registrar.playToServer(
-                new CustomPacketPayload.Type<>(withModLocation("page_click")),
-                PageClickPayload.STREAM_CODEC,
+                new CustomPacketPayload.Type<>(withModLocation("item_click")),
+                ItemClickPayload.STREAM_CODEC,
                 (pl,cxt)->pl.handle(cxt::player)
         );
         registrar.playToClient(

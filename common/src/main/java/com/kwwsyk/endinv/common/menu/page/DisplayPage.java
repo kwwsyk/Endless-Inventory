@@ -52,7 +52,10 @@ public abstract class DisplayPage{
 
     protected final Minecraft mc;
 
-    public ScreenFramework framework;
+    //leftPos and topPos are used as Renderer param
+    protected ScreenFramework framework;
+    protected int leftPos;
+    protected int topPos;
     //if holding on the page view shall not change temporarily.
     protected boolean holdOn = false;
 
@@ -72,17 +75,11 @@ public abstract class DisplayPage{
         this.name = Component.translatable("page.endinv."+pageType.registerName);
     }
 
-    public void init(ScreenFramework frameWork){
-        this.framework = frameWork;
-    }
-
     //abstract methods
     /**Page
      *  and content is built here
-     * @param startIndex decide
-     * @param length
      */
-    public abstract void refreshContents(int startIndex, int length);
+    public abstract void refreshContents();
 
     /**
      * Controls page's scroll behavior.
@@ -135,10 +132,9 @@ public abstract class DisplayPage{
 
 
     public ItemStack tryQuickMoveStackTo(ItemStack stack){
-        if(!srcInv.isRemote()){
-            return srcInv.addItem(stack);
-        }
-        return stack.copy();
+        var remain =  srcInv.addItem(stack);
+        refreshContents();
+        return remain;
     }
 
     public ItemStack tryExtractItem(ItemStack item, int count){
@@ -187,10 +183,26 @@ public abstract class DisplayPage{
         screenBgRenderer.getDefaultPageBgRenderer().ifPresent(bgRenderer -> bgRenderer.renderBg(guiGraphics, partialTick, mouseX, mouseY));
     }
 
-    public abstract void renderPage(GuiGraphics graphics, int pageXPos, int pageYPos, ScreenFramework frameWork);
+    public void initRenderer(ScreenFramework framework, int pageXPos, int pageYPos){
+        this.framework = framework;
+        this.leftPos = pageXPos;
+        this.topPos = pageYPos;
+    }
 
-    public abstract void renderHovering(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick){
+        renderPage(graphics);
+        if(framework.notHoveringOnSortBox()){
+            renderHovering(graphics, mouseX, mouseY, partialTick);
+        }
+    }
 
+    public abstract void renderPage(GuiGraphics graphics);
+
+    public void renderHovering(GuiGraphics graphics, int mouseX, int mouseY, float partialTick){}
+
+    /**
+     *Invoked when page s not initialized (items) yet.
+     */
     public void renderPageIcon(GuiGraphics graphics, int x, int y, float partialTick) {
         if(getIcon()==null) return;
         Optional<Item> optionalItem = BuiltInRegistries.ITEM.getOptional(getIcon());

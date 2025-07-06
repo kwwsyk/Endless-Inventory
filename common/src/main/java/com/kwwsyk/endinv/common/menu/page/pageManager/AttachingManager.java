@@ -78,7 +78,7 @@ public class AttachingManager implements PageMetaDataManager{
     public void switchPageWithIndex(int index) {
         this.displayingPageIndex = index;
         this.displayingPage = pages.get(index);
-        this.displayingPage.refreshContents(0,rows*columns);
+        this.displayingPage.refreshContents();
     }
 
     @Override

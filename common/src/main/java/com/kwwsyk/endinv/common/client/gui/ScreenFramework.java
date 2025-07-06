@@ -201,9 +201,8 @@ public class ScreenFramework {
 
         isHoveringOnPage = hasClickedOnPage(mouseX,mouseY);
 
-
-        meta.getDisplayingPage().renderPage(guiGraphics,pageX,pageY,this);
-        if(!sortTypeSwitcher.isHoveringOnSortBox()) meta.getDisplayingPage().renderHovering(guiGraphics,mouseX,mouseY,partialTick);
+        meta.getDisplayingPage().initRenderer(this,pageX,pageY);
+        meta.getDisplayingPage().render(guiGraphics,mouseX,mouseY,partialTick);
 
         if(searchBox.isHovered() && !searchBox.isFocused()) guiGraphics.renderTooltip(mc.font, List.of(
                 Component.translatable("search.endinv.prefix.sharp"),
@@ -250,6 +249,10 @@ public class ScreenFramework {
                 && mouseX < (double)(x + width + 1)
                 && mouseY >= (double)(y - 1)
                 && mouseY < (double)(y + height + 1);
+    }
+
+    public boolean notHoveringOnSortBox(){
+        return !sortTypeSwitcher.isHoveringOnSortBox();
     }
 
     @Nullable

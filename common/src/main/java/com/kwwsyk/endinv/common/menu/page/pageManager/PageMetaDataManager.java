@@ -6,7 +6,7 @@ import com.kwwsyk.endinv.common.menu.page.ItemPage;
 import com.kwwsyk.endinv.common.menu.page.PageType;
 import com.kwwsyk.endinv.common.menu.page.PageTypeRegistry;
 import com.kwwsyk.endinv.common.network.payloads.PageData;
-import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
+import com.kwwsyk.endinv.common.network.payloads.toServer.ItemPageContext;
 import com.kwwsyk.endinv.common.util.SortType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -88,14 +88,14 @@ public interface PageMetaDataManager {
 
     default void slotQuickMoved(Slot clicked) {
         ItemStack itemStack = clicked.getItem();
-        ItemStack remain = getDisplayingPage().tryQuickMoveStackTo(itemStack);
+        ItemStack remain = getSourceInventory().addItem(itemStack);
         clicked.setByPlayer(remain);
         clicked.onTake(getPlayer(), itemStack);
     }
 
-    default PageContext getInPageContext(){
+    default ItemPageContext getInPageContext(){
         DisplayPage page = getDisplayingPage();
-        return new PageContext(
+        return new ItemPageContext(
                 page instanceof ItemPage itemPage ? itemPage.getStartIndex() : 0,
                 getRowCount()*getColumnCount(),
                 getPageData()

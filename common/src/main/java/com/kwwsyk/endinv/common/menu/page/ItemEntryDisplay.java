@@ -2,7 +2,6 @@ package com.kwwsyk.endinv.common.menu.page;
 
 import com.kwwsyk.endinv.common.client.ClientModInfo;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
-import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import com.kwwsyk.endinv.common.client.gui.bg.ScreenBgRenderer;
 import com.kwwsyk.endinv.common.client.option.TextureMode;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
@@ -71,25 +70,23 @@ public class ItemEntryDisplay extends ItemDisplay{
     protected boolean isHiddenBySortBox(int rowIndex, int columnIndex) {
         return rowIndex<=2 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen && (
                 screen instanceof EndlessInventoryScreen EIS && EIS.getFrameWork().sortTypeSwitchBox.isOpen()
-                        || frameWork.sortTypeSwitchBox.isOpen()
+                        || framework.sortTypeSwitchBox.isOpen()
         );
     }
 
     @Override
-    public void renderPage(GuiGraphics guiGraphics, int x, int y, ScreenFramework frameWork) {
-        this.leftPos=x;
-        this.topPos=y;
-        this.frameWork = frameWork;
+    public void renderPage(GuiGraphics guiGraphics) {
+
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0.0F, 0.0F, 100.0F);
         int rowIndex = 0;
         int columnIndex = 0;
         for(ItemStack stack : items){
-            guiGraphics.renderItem(stack,x,y+rowIndex*18+1,columnIndex+rowIndex<<8);
+            guiGraphics.renderItem(stack,leftPos,topPos+rowIndex*18+1,columnIndex+rowIndex<<8);
             if(!stack.isEmpty())
-                renderItemEntry(stack,x+18,y+rowIndex*18+5,guiGraphics);
+                renderItemEntry(stack,leftPos+18,topPos+rowIndex*18+5,guiGraphics);
             if(!isHiddenBySortBox(rowIndex,columnIndex))
-                guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack, x,y+rowIndex*18+1, getDisplayAmount(stack));
+                guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack, leftPos,topPos+rowIndex*18+1, getDisplayAmount(stack));
             rowIndex++;
             if(rowIndex>= meta.getRowCount()) break;
         }
@@ -150,6 +147,7 @@ public class ItemEntryDisplay extends ItemDisplay{
 
     @Override
     public void renderBg(ScreenBgRenderer screenBgRenderer, GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        screenBgRenderer.getDefaultPageBgRenderer().ifPresent(bgRenderer -> bgRenderer.renderBg(guiGraphics, partialTicks, mouseX, mouseY));
         int pageX = screenBgRenderer.getScreenFrameWork().pageX;
         int startY = screenBgRenderer.getScreenFrameWork().pageY;
         int bgColor = ClientModInfo.getClientConfig().textureMode().get() == TextureMode.FROM_RESOURCE ? 0xFF8b8b8b : 0x37606037;

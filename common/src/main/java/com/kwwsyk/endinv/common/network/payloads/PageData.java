@@ -1,7 +1,7 @@
 package com.kwwsyk.endinv.common.network.payloads;
 
 import com.kwwsyk.endinv.common.menu.page.PageType;
-import com.kwwsyk.endinv.common.network.payloads.toServer.PageContext;
+import com.kwwsyk.endinv.common.network.payloads.toServer.ItemPageContext;
 import com.kwwsyk.endinv.common.util.SortType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -12,7 +12,7 @@ import net.minecraft.network.codec.StreamCodec;
 import java.util.Objects;
 
 /**Both stored and synced data of player and page, obtained in specific Payloads.
- * See {@link PageContext},{@link SyncedConfig}
+ * See {@link ItemPageContext},{@link SyncedConfig}
  */
 public record PageData(String pageRegKey, int rows, int columns, SortType sortType, boolean reverseSort, String search) {
     
