@@ -19,6 +19,10 @@ public abstract class FromResource extends ScreenBgRendererImpl {
     private static final ResourceLocation TAB_LEFT_MIDDLE_SELECTED = new ResourceLocation("minecraft","advancements/tab_left_middle_selected");
     private static final ResourceLocation TAB_LEFT_BOTTOM_SELECTED = new ResourceLocation("minecraft","advancements/tab_left_bottom_selected");
 
+    private static void blitSprite(GuiGraphics graphics, ResourceLocation sprite, int x, int y, int width, int height) {
+        graphics.blitSprite(graphics.getSprite(sprite), x, y, width, height);
+    }
+
     public FromResource(ScreenFramework frameWork){
         super(frameWork);
     }
@@ -146,13 +150,13 @@ public abstract class FromResource extends ScreenBgRendererImpl {
         for (int i = frameWork.firstPageIndex; i < frameWork.firstPageIndex + frameWork.pageBarCount; ++i) {
             if (i == selectedPageIndex) {
                 if (i == 0) {
-                    guiGraphics.blitSprite(TAB_LEFT_TOP_SELECTED, pageX,pageY,32,28);
+                    blitSprite(guiGraphics, TAB_LEFT_TOP_SELECTED, pageX,pageY,32,28);
                 } else if (i == frameWork.firstPageIndex + frameWork.pageBarCount-1) {
-                    guiGraphics.blitSprite(TAB_LEFT_BOTTOM_SELECTED, pageX,pageY,32,28);
+                    blitSprite(guiGraphics, TAB_LEFT_BOTTOM_SELECTED, pageX,pageY,32,28);
                 } else
-                    guiGraphics.blitSprite(TAB_LEFT_MIDDLE_SELECTED, pageX,pageY,32,28);
+                    blitSprite(guiGraphics, TAB_LEFT_MIDDLE_SELECTED, pageX,pageY,32,28);
             } else {
-                guiGraphics.blitSprite(TAB_LEFT_MIDDLE_SPRITE, pageX+4,pageY,32,28);
+                blitSprite(guiGraphics, TAB_LEFT_MIDDLE_SPRITE, pageX+4,pageY,32,28);
             }
             pageY+=28;
         }

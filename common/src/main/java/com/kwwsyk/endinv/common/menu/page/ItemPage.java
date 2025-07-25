@@ -368,7 +368,7 @@ public abstract class ItemPage extends DisplayPage {
             Slot scanning = meta.getMenu().slots.get(index);
             if(!(scanning.container instanceof Inventory)) break;
             ItemStack scanningItem =scanning.getItem();
-            if(ItemStack.isSameItemSameComponents(carried,scanningItem)){
+            if(ItemStack.isSameItemSameTags(carried,scanningItem)){
                 ItemStack taken = scanning.safeTake(scanningItem.getCount(), scanningItem.getCount(), player);
                 ItemStack remain = addItem(taken);
                 if(!remain.isEmpty()) scanning.set(remain);
@@ -378,7 +378,7 @@ public abstract class ItemPage extends DisplayPage {
     }
     protected void handleClone(ItemStack clicked){
         Player player = meta.getPlayer();
-        if(player.hasInfiniteMaterials() && meta.getMenu().getCarried().isEmpty()){
+        if(player.getAbilities().instabuild && meta.getMenu().getCarried().isEmpty()){
             meta.getMenu().setCarried(clicked.copyWithCount(clicked.getMaxStackSize()));
         }
     }
