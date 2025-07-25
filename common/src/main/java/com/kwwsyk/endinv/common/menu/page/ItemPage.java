@@ -167,7 +167,7 @@ public abstract class ItemPage extends DisplayPage {
     }
 
     protected void renderEmpty(GuiGraphics guiGraphics,int x,int y,ItemStack itemStack){
-        ItemStack toRender = new ItemStack(itemStack.getItemHolder(),1,itemStack.getComponentsPatch());
+        ItemStack toRender = itemStack.copyWithCount(1);
         guiGraphics.renderItem(toRender,x,y,0);
         guiGraphics.renderItemDecorations(Minecraft.getInstance().font,toRender,x,y,ChatFormatting.RED+"0");
     }

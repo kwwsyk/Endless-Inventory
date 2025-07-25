@@ -51,11 +51,7 @@ public class SearchUtil {
     }
 
     private static boolean matchesTooltip(ItemStack stack, String tooltipSearch) {
-        List<Component> tooltip = stack.getTooltipLines(
-                Item.TooltipContext.EMPTY,
-                null,
-                TooltipFlag.Default.NORMAL
-        );
+        List<Component> tooltip = stack.getTooltipLines(null, TooltipFlag.Default.NORMAL);
         for (Component line : tooltip) {
             if (line.getString().toLowerCase(Locale.ROOT).contains(tooltipSearch)) {
                 return true;

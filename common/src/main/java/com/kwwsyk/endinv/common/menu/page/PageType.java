@@ -2,7 +2,6 @@ package com.kwwsyk.endinv.common.menu.page;
 
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.*;
@@ -31,7 +30,7 @@ public class PageType {
     public static final PageType CONSUMABLE = createClassifiedPage("consumable",PageType::isFoodOrPotion,"bread");
     public static final PageType ENCHANTED_BOOKS = createItemEntry("enchanted_books",stack->stack.getItem() instanceof EnchantedBookItem,"enchanted_book");
     public static final PageType VANISHING = createClassifiedPage("vanishing_enchantable",stack->stack.is(VANISHING_ENCHANTABLE),"diamond_helmet");
-    public static final PageType BOOKMARK = new PageType(StarredItemPage::new,"bookmark",null,ResourceLocation.withDefaultNamespace("book"));
+    public static final PageType BOOKMARK = new PageType(StarredItemPage::new,"bookmark",null,new ResourceLocation("minecraft","book"));
 
     private final PageConstructor constructor;
     @Nullable
@@ -64,11 +63,11 @@ public class PageType {
     }
 
     public static PageType createClassifiedPage(String registerName, Predicate<ItemStack> itemClassify, String icon){
-        return new PageType(ItemDisplay::new,registerName,itemClassify,ResourceLocation.withDefaultNamespace(icon));
+        return new PageType(ItemDisplay::new,registerName,itemClassify,new ResourceLocation("minecraft", icon));
     }
 
     public static PageType createItemEntry(String registerName, Predicate<ItemStack> itemClassify, String icon){
-        return new PageType(ItemEntryDisplay::new,registerName,itemClassify, ResourceLocation.withDefaultNamespace(icon));
+        return new PageType(ItemEntryDisplay::new,registerName,itemClassify, new ResourceLocation("minecraft", icon));
     }
 
     public DisplayPage buildPage(PageMetaDataManager meta){
@@ -98,7 +97,6 @@ public class PageType {
         return item instanceof SwordItem ||
                 item instanceof  AxeItem ||
                 item instanceof  TridentItem ||
-                item instanceof  MaceItem ||
                 item instanceof ProjectileWeaponItem ||
                 WEAPON_TAGS.stream().anyMatch(itemStack::is);
     }
@@ -125,7 +123,7 @@ public class PageType {
     private static boolean isFoodOrPotion(ItemStack itemStack){
         Item item = itemStack.getItem();
         return item instanceof PotionItem ||
-                itemStack.get(DataComponents.FOOD) != null;
+                itemStack.isEdible();
     }
 
     static {

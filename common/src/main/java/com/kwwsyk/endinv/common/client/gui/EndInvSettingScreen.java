@@ -26,7 +26,7 @@ import static com.kwwsyk.endinv.common.client.CachedSrcInv.INSTANCE;
 import static com.kwwsyk.endinv.common.client.ClientModInfo.getClientConfig;
 public class EndInvSettingScreen extends Screen {
 
-    private static final ResourceLocation BLANK_LOCATION = ResourceLocation.withDefaultNamespace("textures/gui/demo_background.png");
+    private static final ResourceLocation BLANK_LOCATION = new ResourceLocation("minecraft","textures/gui/demo_background.png");
     private static final int CONFIG_ENTRY_Y_OFFSET = 17;
     private static final int CONFIG_ENTRY_X_OFFSET = 10;
     private static final int ENTRY_HEIGHT = 20,MAX_ENTRY_COUNT = 7;
