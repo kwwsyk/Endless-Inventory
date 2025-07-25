@@ -1,4 +1,4 @@
-package com.kwwsyk.endinv.neoforge.mixin;
+package com.kwwsyk.endinv.forge.mixin;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;

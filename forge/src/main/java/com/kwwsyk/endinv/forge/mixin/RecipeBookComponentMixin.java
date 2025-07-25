@@ -1,4 +1,4 @@
-package com.kwwsyk.endinv.neoforge.mixin;
+package com.kwwsyk.endinv.forge.mixin;
 
 import com.kwwsyk.endinv.common.client.CachedSrcInv;
 import com.kwwsyk.endinv.common.util.recipeTransferHelper.RecipeItemProvider;
