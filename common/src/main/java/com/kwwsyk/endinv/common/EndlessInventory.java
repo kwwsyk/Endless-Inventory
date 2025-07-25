@@ -50,8 +50,8 @@ public class EndlessInventory extends SourceInventory {
             sortedViews[idx] = view;
             lastSortedTimes[idx] = lastModTime;
         }
-        var ret = sortedViews[idx];
-        if(reverse) ret = ret.reversed();
+        var ret = new ArrayList<>(sortedViews[idx]);
+        if(reverse) Collections.reverse(ret);
         return ret;
     }
 
