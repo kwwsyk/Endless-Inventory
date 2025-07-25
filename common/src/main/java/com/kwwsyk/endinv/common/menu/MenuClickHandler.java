@@ -144,14 +144,14 @@ public abstract class MenuClickHandler {
                     clickedSlot.onTake(player, p_150421_);
                 });
             } else if (clickedSlot.mayPlace(carried)) {
-                if (ItemStack.isSameItemSameComponents(clickedSlotItem, carried)) {
+                if (ItemStack.isSameItemSameTags(clickedSlotItem, carried)) {
                     int k3 = clickaction == ClickAction.PRIMARY ? carried.getCount() : 1;
                     menu.setCarried(clickedSlot.safeInsert(carried, k3));
                 } else if (carried.getCount() <= clickedSlot.getMaxStackSize(carried)) {
                     menu.setCarried(clickedSlotItem);
                     clickedSlot.setByPlayer(carried);
                 }
-            } else if (ItemStack.isSameItemSameComponents(clickedSlotItem, carried)) {
+            } else if (ItemStack.isSameItemSameTags(clickedSlotItem, carried)) {
                 Optional<ItemStack> optional = clickedSlot.tryRemove(clickedSlotItem.getCount(), carried.getMaxStackSize() - carried.getCount(), player);
                 optional.ifPresent((p_150428_) -> {
                     carried.grow(p_150428_.getCount());
@@ -256,7 +256,7 @@ public abstract class MenuClickHandler {
         }
     }
     public static void handleClone(AbstractContainerMenu menu, int slotId, int button,  Player player){
-        if(player.hasInfiniteMaterials() && menu.getCarried().isEmpty() && slotId >= 0){
+        if(player.getAbilities().instabuild && menu.getCarried().isEmpty() && slotId >= 0){
             Slot slot4 = menu.slots.get(slotId);
             if (slot4.hasItem()) {
                 ItemStack itemstack5 = slot4.getItem();
@@ -293,7 +293,7 @@ public abstract class MenuClickHandler {
                 if(carried.getCount() < carried.getMaxStackSize()){
                     ItemStack taken = EIM.getDisplayingPage().tryExtractItem(carried,carried.getMaxStackSize()-carried.getCount());
                     carried.grow(taken.getCount());
-                    carried.limitSize(carried.getMaxStackSize());
+                    carried.setCount(Math.min(carried.getCount(), carried.getMaxStackSize()));
                 }
             }
         }

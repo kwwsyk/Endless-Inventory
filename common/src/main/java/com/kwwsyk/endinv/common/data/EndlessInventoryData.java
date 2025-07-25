@@ -9,6 +9,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.Level;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.LevelResource;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +49,7 @@ public class EndlessInventoryData extends SavedData {
             //LOGGER.warn("Skipped EndlessInventoryData initialization in dimension: {}", level.dimension().location());
             return; // 仅在主世界执行
         }
-        Factory<EndlessInventoryData> factory = new Factory<>(EndlessInventoryData::create,EndlessInventoryData::load, DataFixTypes.HOTBAR);
+        SavedData.Factory<EndlessInventoryData> factory = new SavedData.Factory<>(EndlessInventoryData::load, EndlessInventoryData::create, DataFixTypes.HOTBAR);
         ServerLevelEndInv.levelEndInvData = level.getDataStorage().computeIfAbsent(factory,END_INV_LIST_KEY);
 
         LOGGER.info("Initialized EndlessInventoryData in {} with {} inventories", level.dimension().location(), ServerLevelEndInv.levelEndInvData.levelEndInvs.size());
@@ -142,7 +143,8 @@ public class EndlessInventoryData extends SavedData {
     }
 
     @Override
-    public @NotNull CompoundTag save(@NotNull CompoundTag compoundTag, HolderLookup.@NotNull Provider provider) {
+    public @NotNull CompoundTag save(@NotNull CompoundTag compoundTag) {
+        HolderLookup.Provider provider = RegistryAccess.builtinCopy().asLookup();
         // []:List of {}EndInv
         ListTag nbtTagList = new ListTag();
 

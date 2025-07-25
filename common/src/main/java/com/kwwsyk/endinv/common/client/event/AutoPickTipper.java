@@ -25,7 +25,7 @@ public class AutoPickTipper {
         }
         // 尝试合并已有物品
         for (PickupDisplayItem item : pickupQueue) {
-            if (ItemStack.isSameItemSameComponents(item.stack, stack)) {
+            if (ItemStack.isSameItemSameTags(item.stack, stack)) {
                 item.stack.grow(stack.getCount());
                 item.timeLeft = DISPLAY_TICKS;
                 pickupQueue.remove(item);
