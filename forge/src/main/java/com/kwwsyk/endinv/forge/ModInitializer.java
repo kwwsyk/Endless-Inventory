@@ -12,6 +12,8 @@ import com.kwwsyk.endinv.common.options.IServerConfig;
 import com.kwwsyk.endinv.forge.nbtAttcachment.AttachingCapabilities;
 import com.kwwsyk.endinv.forge.nbtAttcachment.EndInvUuid;
 import com.kwwsyk.endinv.forge.network.ModPacketHandler;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlags;
@@ -39,6 +41,11 @@ public class ModInitializer extends AbstractModInitializer {
     public ModInitializer(IEventBus modEventBus, ModContainer container){
         super.init();
 
+        ITEM.register(modEventBus);
+        MENU.register(modEventBus);
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.SERVER,
+                ServerConfig.CONFIG_SPEC);
 
     }
 
@@ -117,6 +124,31 @@ public class ModInitializer extends AbstractModInitializer {
 
     @Override
     protected NbtAttachment<SyncedConfig> createSyncedConfig(String name) {
-        return null;
+        return new NbtAttachment<>() {
+            @Nullable
+            @Override
+            public SyncedConfig getWith(Player player) {
+                CompoundTag tag = player.getPersistentData().getCompound(name);
+                if (tag.isEmpty()) return null;
+                return SyncedConfig.CODEC.parse(NbtOps.INSTANCE, tag).result().orElse(null);
+            }
+
+            @Override
+            public void setTo(Player player, SyncedConfig syncedConfig) {
+                SyncedConfig.CODEC.encodeStart(NbtOps.INSTANCE, syncedConfig)
+                        .result()
+                        .ifPresent(t -> player.getPersistentData().put(name, (CompoundTag) t));
+            }
+
+            @Override
+            public SyncedConfig computeIfAbsent(Player player) {
+                SyncedConfig config = getWith(player);
+                if (config == null) {
+                    config = SyncedConfig.DEFAULT;
+                    setTo(player, config);
+                }
+                return config;
+            }
+        };
     }
 }
