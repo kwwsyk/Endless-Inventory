@@ -26,7 +26,6 @@ public class PageTypeRegistry {
         register(EQUIPMENTS);
         register(CONSUMABLE);
         register(ENCHANTED_BOOKS);
-        register(VANISHING);
         register(BOOKMARK);
     }
 

@@ -25,7 +25,7 @@ public class EndInvAffinities {
     public void addStarredItem(ItemStack stack){
         if(stack.isEmpty()) return;
         for(ItemStack item : starredItems){
-            if(ItemStack.isSameItemSameComponents(item,stack)){
+            if(ItemStack.isSameItemSameTags(item,stack)){
                 return;
             }
         }
@@ -34,7 +34,7 @@ public class EndInvAffinities {
 
     public void removeStarredItem(ItemStack stack){
         if (stack.isEmpty()) return;
-        starredItems.removeIf(item -> ItemStack.isSameItemSameComponents(item, stack));
+        starredItems.removeIf(item -> ItemStack.isSameItemSameTags(item, stack));
     }
 
     /**

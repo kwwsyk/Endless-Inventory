@@ -212,7 +212,7 @@ public abstract class DisplayPage{
             return;
         }
         try {
-            graphics.blitSprite(getIcon(),x,y,18,18);
+            graphics.blit(getIcon(),x,y,0,0,18,18);
         }catch (Exception ignored){}
     }
 
@@ -310,7 +310,7 @@ public abstract class DisplayPage{
 
     protected float scrollOffs;
 
-    public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
+    public boolean mouseScrolled(double mouseX,double mouseY,double scrollY){
         if(!canScroll()) return false;
         this.scrollOffs = subtractInputFromScroll(this.scrollOffs,scrollY);
         scrollTo(scrollOffs);

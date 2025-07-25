@@ -336,9 +336,9 @@ public class ScreenFramework {
     }
 
 
-    public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
+    public boolean mouseScrolled(double mouseX,double mouseY,double scrollY){
         if(hasClickedOnPage(mouseX,mouseY)){
-            return meta.getDisplayingPage().mouseScrolled(mouseX-pageX,mouseY=pageY,scrollX,scrollY);
+            return meta.getDisplayingPage().mouseScrolled(mouseX-pageX,mouseY=pageY,scrollY);
         }
         return false;
     }

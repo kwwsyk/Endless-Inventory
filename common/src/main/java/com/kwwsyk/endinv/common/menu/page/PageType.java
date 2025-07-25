@@ -1,7 +1,6 @@
 package com.kwwsyk.endinv.common.menu.page;
 
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.*;
@@ -29,7 +28,6 @@ public class PageType {
     public static final PageType EQUIPMENTS = createClassifiedPage("equipments",PageType::isDefenceEquipment,"iron_chestplate");
     public static final PageType CONSUMABLE = createClassifiedPage("consumable",PageType::isFoodOrPotion,"bread");
     public static final PageType ENCHANTED_BOOKS = createItemEntry("enchanted_books",stack->stack.getItem() instanceof EnchantedBookItem,"enchanted_book");
-    public static final PageType VANISHING = createClassifiedPage("vanishing_enchantable",stack->stack.is(VANISHING_ENCHANTABLE),"diamond_helmet");
     public static final PageType BOOKMARK = new PageType(StarredItemPage::new,"bookmark",null,new ResourceLocation("minecraft","book"));
 
     private final PageConstructor constructor;
@@ -77,11 +75,7 @@ public class PageType {
     }
 
     public String toString(){
-        try {
-            return Holder.direct(this).getRegisteredName();
-        } catch (Exception e) {
-            return super.toString();
-        }
+        return this.registerName;
     }
 
     @Override
@@ -129,13 +123,9 @@ public class PageType {
     static {
         WEAPON_TAGS.add(SWORDS);
         WEAPON_TAGS.add(AXES);
-        WEAPON_TAGS.add(BOW_ENCHANTABLE);
-        WEAPON_TAGS.add(CROSSBOW_ENCHANTABLE);
         TOOL_TAGS.add(AXES);
         TOOL_TAGS.add(PICKAXES);
         TOOL_TAGS.add(HOES);
         TOOL_TAGS.add(SHOVELS);
-        TOOL_TAGS.add(MINING_ENCHANTABLE);
-        EQUIPPABLE_TAGS.add(EQUIPPABLE_ENCHANTABLE);
     }
 }

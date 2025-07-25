@@ -25,13 +25,10 @@ public class PageQuickMoveHandler {
         this.menu = menu;
     }
 
-    public ItemStack quickMoveFromPage(ItemStack stack){
-        switch (menu){
-            case PageQuickMoveOverride override -> stack = override.quickMoveFromPage(stack);
-            //add extends
-            case InventoryMenu ignored -> moveItemStackTo(stack,0,menu.slots.size()-1,true);
-            default -> moveItemStackTo(stack,0,menu.slots.size()-1,false);
-        }
+    public ItemStack quickMoveFromPage(ItemStack stack) {
+        if (menu instanceof PageQuickMoveOverride override) {
+            stack = override.quickMoveFromPage(stack);
+        } else moveItemStackTo(stack, 0, menu.slots.size() - 1, menu instanceof InventoryMenu);
 
         return stack;
     }
@@ -63,7 +60,7 @@ public class PageQuickMoveHandler {
 
                 Slot slot = menu.slots.get(i);
                 ItemStack itemstack = slot.getItem();
-                if (!itemstack.isEmpty() && ItemStack.isSameItemSameComponents(stack, itemstack)) {
+                if (!itemstack.isEmpty() && ItemStack.isSameItemSameTags(stack, itemstack)) {
                     int j = itemstack.getCount() + stack.getCount();
                     int k = slot.getMaxStackSize(itemstack);
                     if (j <= k) {

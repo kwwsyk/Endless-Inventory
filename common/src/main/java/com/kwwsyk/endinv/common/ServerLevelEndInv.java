@@ -4,7 +4,6 @@ import com.kwwsyk.endinv.common.data.EndlessInventoryData;
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.common.menu.page.pageManager.AttachingManager;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
-import com.kwwsyk.endinv.common.options.MissingEndInvPolicy;
 import com.kwwsyk.endinv.common.util.Accessibility;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,8 +48,8 @@ public final class ServerLevelEndInv {
         }
         if(endlessInventory==null){
             switch (ModInfo.getServerConfig().policyHandlingMissing().get()){
-                case MissingEndInvPolicy.CREATE_PER_PLAYER -> endlessInventory = createForPlayer(player);
-                case MissingEndInvPolicy.USE_GLOBAL_SHARED -> {
+                case CREATE_PER_PLAYER -> endlessInventory = createForPlayer(player);
+                case USE_GLOBAL_SHARED -> {
                     endlessInventory = getFirstPublicEndInv();
                     ModRegistries.NbtAttachments.getEndInvUUID().setTo(player,endlessInventory.getUuid());
                 }

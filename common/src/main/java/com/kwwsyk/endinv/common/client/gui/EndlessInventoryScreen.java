@@ -68,8 +68,8 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         return frameWork.mouseReleased(mouseX,mouseY,keyCode) || super.mouseReleased(mouseX,mouseY,keyCode);
     }
 
-    public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
-        return super.mouseScrolled(mouseX,mouseY,scrollX,scrollY) || frameWork.mouseScrolled(mouseX,mouseY,scrollX,scrollY);
+    public boolean mouseScrolled(double mouseX,double mouseY,double scrollY){
+        return super.mouseScrolled(mouseX,mouseY,scrollY) || frameWork.mouseScrolled(mouseX,mouseY,scrollY);
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers){
