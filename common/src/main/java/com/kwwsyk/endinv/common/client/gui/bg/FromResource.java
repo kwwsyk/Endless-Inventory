@@ -20,7 +20,7 @@ public abstract class FromResource extends ScreenBgRendererImpl {
     private static final ResourceLocation TAB_LEFT_BOTTOM_SELECTED = new ResourceLocation("minecraft","advancements/tab_left_bottom_selected");
 
     private static void blitSprite(GuiGraphics graphics, ResourceLocation sprite, int x, int y, int width, int height) {
-        graphics.blitSprite(graphics.getSprite(sprite), x, y, width, height);
+        graphics.blit(sprite,x,y,0,0,width,height);
     }
 
     public FromResource(ScreenFramework frameWork){

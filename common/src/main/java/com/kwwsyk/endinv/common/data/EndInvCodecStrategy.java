@@ -4,9 +4,10 @@ import com.kwwsyk.endinv.common.EndInvAffinities;
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.util.Accessibility;
 import com.mojang.logging.LogUtils;
-import net.minecraft.Util;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.*;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -32,12 +33,12 @@ public interface EndInvCodecStrategy {
     String ACCESSIBILITY_KEY = "Accessibility";
 
 
-    default EndlessInventory deserializeEndInv(CompoundTag invTag, HolderLookup.Provider lookupProvider){
+    default EndlessInventory deserializeEndInv(CompoundTag invTag){
         //handle uuid and itemMap/items.
         EndlessInventory endlessInventory = new EndlessInventory(invTag.getUUID(UUID_KEY));
-        deserializeItems(endlessInventory,lookupProvider,invTag);
+        deserializeItems(endlessInventory,invTag);
         //handle affinities
-        decodeAffinities(endlessInventory,lookupProvider, (CompoundTag) invTag.get(AFFINITY_KEY));
+        decodeAffinities(endlessInventory, (CompoundTag) invTag.get(AFFINITY_KEY));
         //handle player uuid
         if(invTag.contains(OWNER_UUID_KEY)) endlessInventory.setOwner(invTag.getUUID(OWNER_UUID_KEY));
         if(invTag.contains(WHITE_LIST_KEY)){
@@ -53,18 +54,15 @@ public interface EndInvCodecStrategy {
         return  endlessInventory;
     }
 
-    default CompoundTag serializeEndInv(EndlessInventory endInv,HolderLookup.Provider provider){
+    default CompoundTag serializeEndInv(EndlessInventory endInv){
         CompoundTag nbt = new CompoundTag();
 
-        CompoundTag itemData = serializeItems(endInv, provider);
+        CompoundTag itemData = serializeItems(endInv);
         nbt.merge(itemData);
 
-        CompoundTag affTag = encodeAffinities(endInv.affinities,provider);
+        CompoundTag affTag = encodeAffinities(endInv.affinities);
         nbt.put(AFFINITY_KEY,affTag);
 
-        if (endInv.getUuid() == null) {
-            endInv.giveNewUuid();
-        }
         nbt.putUUID(UUID_KEY,endInv.getUuid());
 
         if (endInv.getOwnerUUID() != null) {
@@ -84,13 +82,13 @@ public interface EndInvCodecStrategy {
         return nbt;
     }
 
-    void deserializeItems(EndlessInventory endlessInventory, HolderLookup.Provider provider, CompoundTag nbt);
+    void deserializeItems(EndlessInventory endlessInventory,CompoundTag nbt);
 
-    CompoundTag serializeItems(EndlessInventory endlessInventory,HolderLookup.Provider provider);
+    CompoundTag serializeItems(EndlessInventory endlessInventory);
 
     boolean canHandle(CompoundTag tag);
 
-    default CompoundTag encodeAffinities(EndInvAffinities affinities,HolderLookup.Provider provider){
+    default CompoundTag encodeAffinities(EndInvAffinities affinities){
         CompoundTag ret = new CompoundTag();
         if(affinities==null) return ret;
         ListTag nbtTagList = new ListTag();
@@ -99,7 +97,7 @@ public interface EndInvCodecStrategy {
             if (!itemStack.isEmpty()) {
                 CompoundTag itemTag = new CompoundTag();
 
-                nbtTagList.add(saveItem(itemStack.copyWithCount(1), provider, itemTag));
+                nbtTagList.add(saveItem(itemStack.copyWithCount(1), itemTag));
             }
         }
         ret.put(BOOKMARK_LIST_KEY,nbtTagList);
@@ -107,17 +105,17 @@ public interface EndInvCodecStrategy {
         return  ret;
     }
 
-    default void decodeAffinities(EndlessInventory endlessInventory, HolderLookup.Provider provider,@Nullable CompoundTag nbt){
+    default void decodeAffinities(EndlessInventory endlessInventory,@Nullable CompoundTag nbt){
         EndInvAffinities aff = endlessInventory.affinities;
         if(nbt==null) return;
         ListTag tagList = nbt.getList(BOOKMARK_LIST_KEY, Tag.TAG_COMPOUND);
         for (int i = 0; i < tagList.size(); i++) {
             CompoundTag itemTag = tagList.getCompound(i);
-            parse(provider, itemTag).filter(it -> !it.isEmpty()).ifPresent(aff::addStarredItem);
+            parse(itemTag).filter(it -> !it.isEmpty()).ifPresent(aff::addStarredItem);
         }
     }
 
-    static Optional<ItemStack> parse(HolderLookup.Provider lookupProvider, Tag tag) {
+    static Optional<ItemStack> parse(Tag tag) {
         if (!(tag instanceof CompoundTag compound)) {
             return Optional.empty();
         }
@@ -129,10 +127,10 @@ public interface EndInvCodecStrategy {
         }
     }
 
-    static Tag saveItem(ItemStack itemStack, HolderLookup.Provider levelRegistryAccess, Tag outputTag) {
+    static Tag saveItem(ItemStack itemStack, CompoundTag outputTag) {
         if (itemStack.isEmpty()) {
             throw new IllegalStateException("Cannot encode empty ItemStack");
         }
-        return itemStack.save(new CompoundTag());
+        return itemStack.save(outputTag);
     }
 }

@@ -224,7 +224,7 @@ public class AttachedScreen<T extends AbstractContainerMenu> implements SortType
 
     public void mouseScrolled(IScreenEvent event) {
         double scrollY = event.getScrollDeltaY();
-        frameWork.mouseScrolled(event.getMouseX(),event.getMouseY(),event.getScrollDeltaX(),scrollY);
+        frameWork.mouseScrolled(event.getMouseX(),event.getMouseY(),scrollY);
     }
 
     public void keyPressed(IScreenEvent event) {
