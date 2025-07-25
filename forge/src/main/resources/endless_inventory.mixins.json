@@ -1,5 +1,5 @@
 {
-  "package": "com.kwwsyk.endinv.neoforge.mixin",
+  "package": "com.kwwsyk.endinv.forge.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "RecipeBookComponentMixin",
