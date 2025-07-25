@@ -15,7 +15,8 @@ import java.util.Optional;
 public class FullCodecStrategy implements EndInvCodecStrategy{
 
     public boolean canHandle(CompoundTag tag){
-        return ((CompoundTag)tag.getList(ITEM_LIST_KEY, Tag.TAG_COMPOUND).getFirst()).contains(LAST_MOD_TIME_LONG_KEY);
+        ListTag list = tag.getList(ITEM_LIST_KEY, Tag.TAG_COMPOUND);
+        return !list.isEmpty() && list.getCompound(0).contains(LAST_MOD_TIME_LONG_KEY);
     }
 
     public void deserializeItems(EndlessInventory endlessInventory, HolderLookup.Provider provider, CompoundTag nbt) {

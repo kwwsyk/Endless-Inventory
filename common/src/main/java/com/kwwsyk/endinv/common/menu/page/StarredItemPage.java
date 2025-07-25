@@ -20,7 +20,7 @@ import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
 
 public class StarredItemPage extends ItemPage{
 
-    public ResourceLocation icon = ResourceLocation.withDefaultNamespace("book");
+    public ResourceLocation icon = new ResourceLocation("minecraft","book");
     private int[] countArray;
 
     public StarredItemPage(PageType type,PageMetaDataManager metaDataManager) {

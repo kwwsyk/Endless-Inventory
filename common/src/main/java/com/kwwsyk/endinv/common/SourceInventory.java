@@ -204,7 +204,7 @@ public abstract class SourceInventory {
                 .map(e -> e.getKey().toStack(e.getValue().count()))
                 .sorted(ModInfo.sortHelper.getComparator(type, this))
                 .collect(Collectors.toList());
-        if(reverse) ret = ret.reversed();
+        if(reverse) Collections.reverse(ret);
         return ret;
     }
 

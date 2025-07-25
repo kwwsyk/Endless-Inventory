@@ -4,15 +4,9 @@ import com.kwwsyk.endinv.common.EndInvAffinities;
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.util.Accessibility;
 import com.mojang.logging.LogUtils;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.Util;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponentHolder;
-import net.minecraft.core.component.DataComponentPatch;
-import net.minecraft.core.component.PatchedDataComponentMap;
 import net.minecraft.nbt.*;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -24,18 +18,6 @@ import java.util.Optional;
 public interface EndInvCodecStrategy {
 
     Logger LOGGER = LogUtils.getLogger();
-    Codec<ItemStack> ITEM_CODEC = Codec.lazyInitialized(
-            () -> RecordCodecBuilder.create(
-                    p_381569_ -> p_381569_.group(
-                                    ItemStack.ITEM_NON_AIR_CODEC.fieldOf("id").forGetter(ItemStack::getItemHolder),
-                                    ExtraCodecs.intRange(1, 2147483647).fieldOf("count").orElse(1).forGetter(ItemStack::getCount),
-                                    DataComponentPatch.CODEC
-                                            .optionalFieldOf("tag", DataComponentPatch.EMPTY)
-                                            .forGetter(p_330103_ -> ((PatchedDataComponentMap)p_330103_.getComponents()).asPatch())
-                            )
-                            .apply(p_381569_, ItemStack::new)
-            )
-    );
     String END_INV_LIST_KEY = "endless_inventories";
     String ITEM_LIST_KEY = "Items";
     String SIZE_INT_KEY = "Size";
@@ -136,39 +118,21 @@ public interface EndInvCodecStrategy {
     }
 
     static Optional<ItemStack> parse(HolderLookup.Provider lookupProvider, Tag tag) {
-        return ITEM_CODEC.parse(lookupProvider
-                .createSerializationContext(NbtOps.INSTANCE), tag)
-                .resultOrPartial((p_330102_) -> LOGGER.error("Tried to load invalid item: '{}'", p_330102_));
+        if (!(tag instanceof CompoundTag compound)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(ItemStack.of(compound));
+        } catch (Exception e) {
+            LOGGER.error("Tried to load invalid item: '{}'", compound, e);
+            return Optional.empty();
+        }
     }
 
-    static Tag saveItem(ItemStack itemStack,HolderLookup.Provider levelRegistryAccess, Tag outputTag) {
+    static Tag saveItem(ItemStack itemStack, HolderLookup.Provider levelRegistryAccess, Tag outputTag) {
         if (itemStack.isEmpty()) {
             throw new IllegalStateException("Cannot encode empty ItemStack");
-        } else {
-            return wrapEncodingExceptions(itemStack, EndInvCodecStrategy.ITEM_CODEC, levelRegistryAccess, outputTag);
         }
-    }
-
-    static <T extends DataComponentHolder> Tag wrapEncodingExceptions(T componentHolder, Codec<T> codec, HolderLookup.Provider provider, Tag tag) {
-        try {
-            return codec.encode(componentHolder, provider.createSerializationContext(NbtOps.INSTANCE), tag).getOrThrow();
-        } catch (Exception exception) {
-            logDataComponentSaveError(componentHolder, exception, tag);
-            throw exception;
-        }
-    }
-
-    static void logDataComponentSaveError(DataComponentHolder componentHolder, Exception original, @Nullable Tag tag) {
-        StringBuilder cause = new StringBuilder("Error saving [" + componentHolder + "]. Original cause: " + original);
-
-        cause.append("\nWith tag:\n{");
-        componentHolder.getComponents().forEach((component) -> {
-            cause.append("\n\t").append(component);
-        });
-        cause.append("\n}");
-        if (tag != null) {
-            cause.append("\nWith tag: ").append(tag);
-        }
-        Util.logAndPauseIfInIde(cause.toString());
+        return itemStack.save(new CompoundTag());
     }
 }
