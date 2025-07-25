@@ -2,15 +2,15 @@ package com.kwwsyk.endinv.common.network.payloads.toServer;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketContext;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketPayload;
 import com.kwwsyk.endinv.common.network.payloads.PageData;
 import com.kwwsyk.endinv.common.network.payloads.toClient.EndInvContent;
 import com.kwwsyk.endinv.common.network.payloads.toClient.SetItemDisplayContentPayload;
 import com.kwwsyk.endinv.common.options.ContentTransferMode;
 import com.kwwsyk.endinv.common.util.SortType;
 import net.minecraft.core.NonNullList;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -20,20 +20,24 @@ import java.util.Objects;
 import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
 import static com.kwwsyk.endinv.common.ModInfo.getServerConfig;
 
-/**In page context used on Page operations.
+/**
+ * In page context used on Page operations.
+ *
  * @param startIndex
  * @param length
  * @param pageData
  */
-public record ItemPageContext(int startIndex, int length, PageData pageData) implements ToServerPayload {
+public record ItemPageContext(int startIndex, int length, PageData pageData) implements ModPacketPayload {
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, ItemPageContext> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.INT, ItemPageContext::startIndex,
-            ByteBufCodecs.INT, ItemPageContext::length,
-            PageData.STREAM_CODEC, ItemPageContext::pageData,
-            ItemPageContext::new
-    );
+    public static void encode(ItemPageContext context, FriendlyByteBuf o) {
+        o.writeInt(context.startIndex);
+        o.writeInt(context.length);
+        PageData.encode(o, context.pageData);
+    }
 
+    public static ItemPageContext decode(FriendlyByteBuf o) {
+        return new ItemPageContext(o.readInt(), o.readInt(), PageData.decode(o));
+    }
 
     public SortType sortType() {
         return pageData.sortType();
@@ -46,8 +50,8 @@ public record ItemPageContext(int startIndex, int length, PageData pageData) imp
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof ItemPageContext(int index, int length1, PageData data))) return false;
-        return length == length1 && startIndex == index && Objects.equals(pageData,data);
+        if (!(o instanceof ItemPageContext context)) return false;
+        return length == context.length && startIndex == context.startIndex && Objects.equals(pageData, context.pageData);
     }
 
     @Override
@@ -60,12 +64,12 @@ public record ItemPageContext(int startIndex, int length, PageData pageData) imp
         return "page_context";
     }
 
-    public void handle(ToServerPacketContext iPayloadContext){
+    public void handle(ModPacketContext iPayloadContext) {
         ServerPlayer serverPlayer = (ServerPlayer) iPayloadContext.player();
         var optional = ServerLevelEndInv.checkAndGetManagerForPlayer(serverPlayer);
         optional.ifPresent(manager -> {
 
-            if(!Objects.equals(manager.getInPageContext(),this)) {
+            if (!Objects.equals(manager.getInPageContext(), this)) {
                 SortType sortType = pageData.sortType();
                 boolean reverseSort = pageData.reverseSort();
                 String search = pageData.search();
@@ -82,7 +86,7 @@ public record ItemPageContext(int startIndex, int length, PageData pageData) imp
 
 
             EndlessInventory endInv = (EndlessInventory) manager.getSourceInventory();
-            if(getServerConfig().transferMode().get()== ContentTransferMode.PART) {
+            if (getServerConfig().transferMode().get() == ContentTransferMode.PART) {
                 List<ItemStack> view = endInv.getSortedAndFilteredItemView(startIndex, length,
                         manager.sortType(), manager.isSortReversed(),
                         manager.getDisplayingPageType().itemClassify, manager.searching());
@@ -93,7 +97,7 @@ public record ItemPageContext(int startIndex, int length, PageData pageData) imp
                 }
                 getPacketDistributor().sendToPlayer(serverPlayer, new SetItemDisplayContentPayload(stacks));
             } else if (getServerConfig().transferMode().get() == ContentTransferMode.ALL) {
-                getPacketDistributor().sendToPlayer(serverPlayer,new EndInvContent(endInv.getItemMap()));
+                getPacketDistributor().sendToPlayer(serverPlayer, new EndInvContent(endInv.getItemMap()));
             }
         });
     }

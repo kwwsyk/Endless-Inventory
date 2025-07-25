@@ -2,23 +2,31 @@ package com.kwwsyk.endinv.common.network.payloads.toClient;
 
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.client.CachedSrcInv;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketContext;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketPayload;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 
 /**
  * holds various attributes that influent ItemDisplay,
  *  compared to {@link EndInvConfig}
  */
-public record EndInvMetadata(int itemSize, int maxStackSize, boolean infinityMode, EndInvConfig config) implements ToClientPayload {
+public record EndInvMetadata(int itemSize, int maxStackSize, boolean infinityMode, EndInvConfig config) implements ModPacketPayload {
 
-    public static final StreamCodec<FriendlyByteBuf,EndInvMetadata> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.INT,EndInvMetadata::itemSize,
-            ByteBufCodecs.INT,EndInvMetadata::maxStackSize,
-            ByteBufCodecs.BOOL,EndInvMetadata::infinityMode,
-            EndInvConfig.STREAM_CODEC,EndInvMetadata::config,
-            EndInvMetadata::new
-    );
+    public static void encode(EndInvMetadata endInvMetadata,FriendlyByteBuf o){
+        o.writeInt(endInvMetadata.itemSize);
+        o.writeInt(endInvMetadata.maxStackSize);
+        o.writeBoolean(endInvMetadata.infinityMode);
+        EndInvConfig.encode(o,endInvMetadata.config);
+    }
+
+    public static EndInvMetadata decode(FriendlyByteBuf o){
+        return new EndInvMetadata(
+                o.readInt(),
+                o.readInt(),
+                o.readBoolean(),
+                EndInvConfig.decode(o)
+        );
+    }
 
     public static EndInvMetadata getWith(EndlessInventory endInv) {
         return new EndInvMetadata(
@@ -29,7 +37,7 @@ public record EndInvMetadata(int itemSize, int maxStackSize, boolean infinityMod
         );
     }
 
-    public void handle(ToClientPacketContext context) {
+    public void handle(ModPacketContext context) {
         CachedSrcInv.INSTANCE.syncMetadata(this);
 
         //todo

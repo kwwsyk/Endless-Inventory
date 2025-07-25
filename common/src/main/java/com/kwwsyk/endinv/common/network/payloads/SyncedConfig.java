@@ -2,17 +2,13 @@ package com.kwwsyk.endinv.common.network.payloads;
 
 import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.client.option.IClientConfig;
-import com.kwwsyk.endinv.common.network.payloads.toClient.ToClientPacketContext;
-import com.kwwsyk.endinv.common.network.payloads.toServer.ToServerPacketContext;
 import com.kwwsyk.endinv.common.util.SortType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 
 import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
 import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments;
@@ -34,20 +30,22 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
             ).apply(instance, SyncedConfig::new)
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, SyncedConfig> STREAM_CODEC = StreamCodec.composite(
-            PageData.STREAM_CODEC,SyncedConfig::pageData,
-            ByteBufCodecs.BOOL,SyncedConfig::attaching,
-            ByteBufCodecs.BOOL,SyncedConfig::autoPicking,
-            SyncedConfig::new
-    );
+    public static void encode(SyncedConfig config, FriendlyByteBuf o){
+        PageData.encode(o, config.pageData);
+        o.writeBoolean(config.attaching);
+        o.writeBoolean(config.autoPicking);
+    }
 
+    public static SyncedConfig decode(FriendlyByteBuf o){
+        return new SyncedConfig(PageData.decode(o),o.readBoolean(),o.readBoolean());
+    }
 
     /**
      * Used when player is not viewing EndInv.
      * e.g. player joined world or player opened menu screen with EndInv attaching allowed.
      */
     public static void readAndSyncClientConfigToServer(boolean ofMenu){
-        if(Minecraft.getInstance().player instanceof LocalPlayer player){
+        if(Minecraft.getInstance().player != null){
             SyncedConfig config = readClientConfig(ofMenu);
             updateSyncedConfig(config);
         }
@@ -59,7 +57,8 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
      */
     public static void updateSyncedConfig(SyncedConfig config){
         IClientConfig clientConfig = getClientConfig();
-        if(Minecraft.getInstance().player instanceof LocalPlayer player){
+        LocalPlayer player;
+        if((player = Minecraft.getInstance().player)!=null){
             int rows = clientConfig.rows().get();
             int syncedRows = config.pageData.rows();
             if(rows==0){
@@ -79,7 +78,8 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
     }
     public static SyncedConfig readClientConfig(boolean ofMenu){
         IClientConfig clientConfig = getClientConfig();
-        if(Minecraft.getInstance().player instanceof LocalPlayer player){
+        LocalPlayer player;
+        if((player=Minecraft.getInstance().player)!=null){
             int rows = clientConfig.rows().get();
             if(rows==0){
                 rows = clientConfig.calculateDefaultRowCount(ofMenu);
@@ -103,11 +103,7 @@ public record SyncedConfig(PageData pageData,boolean attaching,boolean autoPicki
         return "endinv_settings";
     }
 
-    public void handleClient(ToClientPacketContext context){
-        ModRegistries.NbtAttachments.getSyncedConfig().setTo(context.player(), this);
-    }
-
-    public void handleServer(ToServerPacketContext context){
+    public void handle(ModPacketContext context){
         ModRegistries.NbtAttachments.getSyncedConfig().setTo(context.player(), this);
     }
 

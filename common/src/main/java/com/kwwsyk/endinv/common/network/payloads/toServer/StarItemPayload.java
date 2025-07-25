@@ -1,28 +1,31 @@
 package com.kwwsyk.endinv.common.network.payloads.toServer;
 
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketContext;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
-public record StarItemPayload(ItemStack stack,boolean isAdding) implements ToServerPayload {
+public record StarItemPayload(ItemStack stack,boolean isAdding) implements ModPacketPayload {
 
+    public static void encode(StarItemPayload payload, FriendlyByteBuf o){
+        o.writeItem(payload.stack);
+        o.writeBoolean(payload.isAdding);
+    }
 
-    public static final StreamCodec<RegistryFriendlyByteBuf,StarItemPayload> STREAM_CODEC = StreamCodec.composite(
-            ItemStack.STREAM_CODEC,StarItemPayload::stack,
-            ByteBufCodecs.BOOL,StarItemPayload::isAdding,
-            StarItemPayload::new
-    );
+    public static StarItemPayload decode(FriendlyByteBuf o){
+        return new StarItemPayload(o.readItem(),o.readBoolean());
+    }
 
     @Override
     public String id() {
         return "star_item";
     }
 
-    public void handle(ToServerPacketContext iPayloadContext) {
+    public void handle(ModPacketContext iPayloadContext) {
         ServerPlayer player = (ServerPlayer) iPayloadContext.player();
+        if(player==null) return;
         ServerLevelEndInv.getEndInvForPlayer(player).ifPresent(endInv->{
             if(isAdding()) {
                 endInv.affinities.addStarredItem(stack());

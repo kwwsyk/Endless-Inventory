@@ -1,27 +1,29 @@
 package com.kwwsyk.endinv.common.util;
 
-import net.minecraft.core.component.DataComponentPatch;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-public record ItemKey(Item item, DataComponentPatch components) {
+public record ItemKey(Item item, CompoundTag tag) {
 
-    public static final StreamCodec<RegistryFriendlyByteBuf,ItemKey> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.registry(Registries.ITEM),ItemKey::item,
-            DataComponentPatch.STREAM_CODEC,ItemKey::components,
-            ItemKey::new
-    );
+
+    public static void encode(FriendlyByteBuf o,ItemKey key){
+        o.writeItem(key.toStack(1));
+    }
+
+    public static ItemKey decode(FriendlyByteBuf o){
+        ItemStack stack = o.readItem();
+        return asKey(stack);
+    }
 
     public ItemStack toStack(int count){
-        return new ItemStack(BuiltInRegistries.ITEM.wrapAsHolder(item),count,components);
+        var ret = new ItemStack(item);
+        ret.setTag(tag);
+        return ret;
     }
 
     public static ItemKey asKey(ItemStack stack){
-        return new ItemKey(stack.getItem(),stack.getComponentsPatch());
+        return new ItemKey(stack.getItem(),stack.getTag());
     }
 }

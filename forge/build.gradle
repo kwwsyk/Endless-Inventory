@@ -1,19 +1,65 @@
+//copied from multiloader
+//todo: compare with neoforge
 plugins {
-    id 'java'
+    id 'net.neoforged.moddev.legacyforge'
+    id 'idea'
 }
 
-group = 'com.kwwsyk'
-version = '0.0.1'
+mixin {
+    add(sourceSets.main, "${mod_id}.refmap.json")
 
-repositories {
-    mavenCentral()
+    config("${mod_id}.mixins.json")
+    config("${mod_id}.forge.mixins.json")
 }
+
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
+
+    validateAccessTransformers = true
+
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers = ["src/main/resources/META-INF/accesstransformer.cfg"]
+    }
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+    runs {
+        client {
+            client()
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+        server {
+            server()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir 'src/generated/resources'
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation project(":common")
+
+
+
+    annotationProcessor("org.spongepowered:mixin:0.8.7:processor")
 }
 
-test {
-    useJUnitPlatform()
+jar {
+    from project(":common").sourceSets.main.output
+
+    finalizedBy('reobfJar')
+    manifest.attributes([
+            "MixinConfigs": "${mod_id}.mixins.json,${mod_id}.forge.mixins.json"
+    ])
 }

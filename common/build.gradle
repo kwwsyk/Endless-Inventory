@@ -1,31 +1,17 @@
+//todo compare with multi-loader's common build
 plugins {
-    id 'java-library'
-    id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.80'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.77'
     id 'idea'
 }
 
-group = mod_group_id
-version = mod_version
-
-repositories {
-    mavenCentral()
-}
-
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-}
-
-base {
-    archivesName.set(mod_id)
-}
-
-neoForge {
-    neoFormVersion = "$minecraft_version-$neoformTimestamp"
-
+legacyForge {
+    mcpVersion = minecraft_version
+    if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
+        accessTransformers = ["src/main/resources/META-INF/accesstransformer.cfg"]
+    }
     parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
     }
 }
 

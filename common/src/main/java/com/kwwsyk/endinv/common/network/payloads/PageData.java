@@ -5,10 +5,9 @@ import com.kwwsyk.endinv.common.network.payloads.toServer.ItemPageContext;
 import com.kwwsyk.endinv.common.util.SortType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 
+import java.nio.charset.Charset;
 import java.util.Objects;
 
 /**Both stored and synced data of player and page, obtained in specific Payloads.
@@ -28,15 +27,26 @@ public record PageData(String pageRegKey, int rows, int columns, SortType sortTy
             ).apply(instance, PageData::new)
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, PageData> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8,PageData::pageRegKey,
-            ByteBufCodecs.INT, PageData::rows,
-            ByteBufCodecs.INT, PageData::columns,
-            SortType.STREAM_CODEC,PageData::sortType,
-            ByteBufCodecs.BOOL,PageData::reverseSort,
-            ByteBufCodecs.STRING_UTF8,PageData::search,
-            PageData::new
-    );
+    public static void encode(FriendlyByteBuf o,PageData data){
+        o.writeCharSequence(data.pageRegKey, Charset.defaultCharset());
+        o.writeInt(data.rows);
+        o.writeInt(data.columns);
+        o.writeEnum(data.sortType);
+        o.writeBoolean(data.reverseSort);
+        o.writeCharSequence(data.search, Charset.defaultCharset());
+    }
+
+    public static PageData decode(FriendlyByteBuf o){
+        return new PageData(
+                o.readUtf(),
+                o.readInt(),
+                o.readInt(),
+                o.readEnum(SortType.class),
+                o.readBoolean(),
+                o.readUtf()
+        );
+    }
+
     public PageData copy(){
         return new PageData(this.pageRegKey,this.rows,this.columns,this.sortType,this.reverseSort,this.search);
     }
@@ -61,12 +71,10 @@ public record PageData(String pageRegKey, int rows, int columns, SortType sortTy
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof PageData(
-                String type, int rows1, int columns1, SortType sortType1, boolean sort, String search1
-        )
-                && type.equals(pageRegKey)
-                && rows1 == rows && columns1 ==columns
-                && sort == reverseSort && sortType ==sortType1
-                && Objects.equals(search1,search);
+        return obj instanceof PageData pageData
+                && pageData.pageRegKey.equals(pageRegKey)
+                && pageData.rows == rows && pageData.columns() ==columns
+                && pageData.reverseSort == reverseSort && sortType ==pageData.sortType
+                && Objects.equals(pageData.search,search);
     }
 }

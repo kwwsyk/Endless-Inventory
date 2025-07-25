@@ -3,8 +3,9 @@ package com.kwwsyk.endinv.common.network.payloads.toServer;
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
 import com.kwwsyk.endinv.common.menu.page.pageManager.PageQuickMoveHandler;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketContext;
+import com.kwwsyk.endinv.common.network.payloads.ModPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -12,28 +13,27 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public record ItemClickPayload(ItemStack stack, int button, ClickType clickType) implements ToServerPayload {
+public record ItemClickPayload(ItemStack stack, int button, ClickType clickType) implements ModPacketPayload {
 
-    public static final StreamCodec<RegistryFriendlyByteBuf,ItemClickPayload> STREAM_CODEC = new StreamCodec<>() {
-        @Override
-        public ItemClickPayload decode(RegistryFriendlyByteBuf registryFriendlyByteBuf) {
-            return new ItemClickPayload(
-                    ItemStack.OPTIONAL_STREAM_CODEC.decode(registryFriendlyByteBuf),
-                    registryFriendlyByteBuf.readInt(),
-                    registryFriendlyByteBuf.readEnum(ClickType.class)
-            );
-        }
 
-        @Override
-        public void encode(RegistryFriendlyByteBuf o, ItemClickPayload itemClickPayload) {
-            ItemStack.OPTIONAL_STREAM_CODEC.encode(o, itemClickPayload.stack);
-            o.writeInt(itemClickPayload.button);
-            o.writeEnum(itemClickPayload.clickType);
-        }
-    };
+
+    public static ItemClickPayload decode(FriendlyByteBuf buf) {
+        return new ItemClickPayload(
+                buf.readItem(),
+                buf.readInt(),
+                buf.readEnum(ClickType.class)
+        );
+    }
+
+
+    public static void encode(ItemClickPayload itemClickPayload,FriendlyByteBuf o) {
+        o.writeItem(itemClickPayload.stack);
+        o.writeInt(itemClickPayload.button);
+        o.writeEnum(itemClickPayload.clickType);
+    }
 
     @Override
-    public void handle(ToServerPacketContext context) {
+    public void handle(ModPacketContext context) {
         Player player = context.player();
         AbstractContainerMenu menu = player.containerMenu;
         ItemStack carried = menu.getCarried();
@@ -89,7 +89,7 @@ public record ItemClickPayload(ItemStack stack, int button, ClickType clickType)
                     Slot scanning = menu.slots.get(index);
                     if(!(scanning.container instanceof Inventory)) break;
                     ItemStack scanningItem =scanning.getItem();
-                    if(ItemStack.isSameItemSameComponents(carried,scanningItem)){
+                    if(ItemStack.isSameItemSameTags(carried,scanningItem)){
                         ItemStack taken = scanning.safeTake(scanningItem.getCount(), scanningItem.getCount(), player);
                         ItemStack remain = endInv.addItem(taken);
                         if(!remain.isEmpty()) scanning.set(remain);
@@ -98,7 +98,7 @@ public record ItemClickPayload(ItemStack stack, int button, ClickType clickType)
                 }
             }
             case CLONE -> {
-                if(player.hasInfiniteMaterials() && carried.isEmpty()){
+                if(player.isCreative() && carried.isEmpty()){
                     menu.setCarried(stack.copyWithCount(stack.getMaxStackSize()));
                 }
             }

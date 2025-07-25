@@ -30,7 +30,7 @@ public interface EndInvCodecStrategy {
                                     ItemStack.ITEM_NON_AIR_CODEC.fieldOf("id").forGetter(ItemStack::getItemHolder),
                                     ExtraCodecs.intRange(1, 2147483647).fieldOf("count").orElse(1).forGetter(ItemStack::getCount),
                                     DataComponentPatch.CODEC
-                                            .optionalFieldOf("components", DataComponentPatch.EMPTY)
+                                            .optionalFieldOf("tag", DataComponentPatch.EMPTY)
                                             .forGetter(p_330103_ -> ((PatchedDataComponentMap)p_330103_.getComponents()).asPatch())
                             )
                             .apply(p_381569_, ItemStack::new)
@@ -161,7 +161,7 @@ public interface EndInvCodecStrategy {
     static void logDataComponentSaveError(DataComponentHolder componentHolder, Exception original, @Nullable Tag tag) {
         StringBuilder cause = new StringBuilder("Error saving [" + componentHolder + "]. Original cause: " + original);
 
-        cause.append("\nWith components:\n{");
+        cause.append("\nWith tag:\n{");
         componentHolder.getComponents().forEach((component) -> {
             cause.append("\n\t").append(component);
         });

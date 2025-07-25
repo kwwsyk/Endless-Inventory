@@ -1,15 +1,17 @@
 package com.kwwsyk.endinv.common.network.payloads;
 
-import com.kwwsyk.endinv.common.ModInfo;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
+import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 
-public interface ModPacketPayload extends CustomPacketPayload {
+import java.util.Optional;
 
-    default Type<? extends CustomPacketPayload> type(){
-        return new Type<>(ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID,id()));
-    }
+public interface ModPacketPayload{
 
     String id();
 
+    void handle(ModPacketContext context);
+
+    static Optional<PageMetaDataManager> getClientPageMeta(){
+        return Optional.ofNullable(ScreenFramework.getInstance()).map(fr->fr.meta);
+    }
 }

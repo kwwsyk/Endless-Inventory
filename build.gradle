@@ -1,38 +1,72 @@
+//todo compare with multi-loader's common build
 plugins {
     id 'java-library'
-    id 'maven-publish'
-    //id 'net.neoforged.moddev' version '2.0.80'
-    //id 'fabric-loom' version "1.11.0-alpha.26"
     id 'idea'
+    id 'fabric-loom' version '1.9-SNAPSHOT' apply(false)
+    id 'net.neoforged.moddev.legacyforge' version '2.0.77' apply(false)
 }
 
-version = mod_version
 group = mod_group_id
+version = mod_version
 
-tasks.named('wrapper', Wrapper).configure {
+subprojects {
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(java_version))
+    }
+
+    base {
+        archivesName.set(mod_id)
+    }
+
+    // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
+    idea {
+        module {
+            downloadSources = true
+            downloadJavadoc = true
+        }
+    }
+
+    repositories {
+        mavenCentral()
+        // https://docs.gradle.org/current/userguide/declaring_repositories.html#declaring_content_exclusively_found_in_one_repository
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Sponge'
+                    url = 'https://repo.spongepowered.org/repository/maven-public'
+                }
+            }
+            filter { includeGroupAndSubgroups('org.spongepowered') }
+        }
+        exclusiveContent {
+            forRepositories(
+                    maven {
+                        name = 'ParchmentMC'
+                        url = 'https://maven.parchmentmc.org/'
+                    },
+                    maven {
+                        name = "NeoForge"
+                        url = 'https://maven.neoforged.net/releases'
+                    }
+            )
+            filter { includeGroup('org.parchmentmc.data') }
+        }
+        maven {
+            name = 'BlameJared'
+            url = 'https://maven.blamejared.com'
+        }
+    }
+}
+
+/*tasks.named('wrapper', Wrapper).configure {
     // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
     // Switching this to Wrapper.DistributionType.ALL will download the full gradle sources that comes with
     // documentation attached on cursor hover of gradle classes and methods. However, this comes with increased
     // file size for Gradle. If you do switch this to ALL, run the Gradle wrapper task twice afterwards.
     // (Verify by checking gradle/wrapper/gradle-wrapper.properties to see if distributionUrl now points to `-all`)
     distributionType = Wrapper.DistributionType.ALL
-}
-
-repositories {
-    mavenLocal()
-}
-
-base {
-    archivesName = mod_id
-}
-
-// Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
-
-// IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
+}*/

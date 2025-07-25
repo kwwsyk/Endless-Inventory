@@ -3,13 +3,8 @@ package com.kwwsyk.endinv.common;
 
 import com.kwwsyk.endinv.common.util.ItemKey;
 import com.kwwsyk.endinv.common.util.ItemStackLike;
-import com.kwwsyk.endinv.common.util.ItemState;
 import com.kwwsyk.endinv.common.util.SortType;
 import com.mojang.logging.LogUtils;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -25,12 +20,6 @@ public class EndlessInventory extends SourceInventory {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static final StreamCodec<RegistryFriendlyByteBuf,Map<ItemKey, ItemState>> ITEM_MAP_STREAM_CODEC = ByteBufCodecs.map(
-            Object2ObjectLinkedOpenHashMap::new,
-            ItemKey.STREAM_CODEC,
-            ItemState.STREAM_CODEC,
-            Integer.MAX_VALUE
-    );
 
     @SuppressWarnings("unchecked")
     private final List<ItemStack>[] sortedViews = new List[SortType.values().length];
