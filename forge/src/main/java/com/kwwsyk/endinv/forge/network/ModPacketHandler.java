@@ -5,6 +5,7 @@ import com.kwwsyk.endinv.common.network.payloads.ModPacketContext;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
 import com.kwwsyk.endinv.common.network.payloads.toClient.*;
 import com.kwwsyk.endinv.common.network.payloads.toServer.*;
+import com.kwwsyk.endinv.forge.network.payloads.JeiTransferRecipePayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -83,6 +84,7 @@ public class ModPacketHandler {
         INSTANCE.registerMessage(i++, QuickMoveToPagePayload.class,QuickMoveToPagePayload::encode,QuickMoveToPagePayload::decode,convert(QuickMoveToPagePayload::handle));
         INSTANCE.registerMessage(i++, StarItemPayload.class,StarItemPayload::encode,StarItemPayload::decode,convert(StarItemPayload::handle));
         INSTANCE.registerMessage(i++, ToggleCraftingPayload.class, ToggleCraftingPayload::encode, ToggleCraftingPayload::decode, convert(ToggleCraftingPayload::handle));
+        INSTANCE.registerMessage(i++, JeiTransferRecipePayload.class, JeiTransferRecipePayload::encode, JeiTransferRecipePayload::decode, convert(JeiTransferRecipePayload::handle));
 
         INSTANCE.registerMessage(i, SyncedConfig.class,SyncedConfig::encode,SyncedConfig::decode,convertBi(SyncedConfig::handle));
     }

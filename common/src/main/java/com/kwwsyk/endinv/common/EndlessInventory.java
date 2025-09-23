@@ -15,13 +15,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**An item container may have endless storage.
- * TODO EFFECTIVITY
- *  on hand in ADDing and TAKing item(s)
- *  other hand is let it able to handle A-VERY-BIG storage, like when the size of itemMap reaches 2147483647
- * TODO THREAD-SAFETY
- *  the item ADD and TAKE may be invoked a lot on server. think how to make a thread-safe big item container and manager.
- */
+/**An item container may have endless storage.*/
 public class EndlessInventory extends SourceInventory {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -47,18 +41,18 @@ public class EndlessInventory extends SourceInventory {
 
     protected List<ItemStack> getSortedView(SortType type, boolean reverse) {
         int idx = type.ordinal();
-        if (lastSortedTimes[idx] != lastModTime || sortedViews[idx] == null) {
-            List<ItemStack> view = itemMap.entrySet().stream()
-                    .map(e -> e.getKey().toStack(e.getValue().count()))
-                    .sorted(ModInfo.sortHelper.getComparator(type, this))
-                    .collect(Collectors.toList());
-
-            sortedViews[idx] = view;
-            lastSortedTimes[idx] = lastModTime;
+        List<ItemStack> result;
+        synchronized (sortedViews) {
+            if (lastSortedTimes[idx] != lastModTime || sortedViews[idx] == null) {
+                List<ItemStack> view = snapshotItems();
+                view.sort(ModInfo.sortHelper.getComparator(type, this));
+                sortedViews[idx] = view;
+                lastSortedTimes[idx] = lastModTime;
+            }
+            result = new ArrayList<>(sortedViews[idx]);
         }
-        var ret = new ArrayList<>(sortedViews[idx]);
-        if(reverse) Collections.reverse(ret);
-        return ret;
+        if(reverse) Collections.reverse(result);
+        return result;
     }
 
     public List<ItemStackLike> getStarredItems(@Nonnegative int startIndex, @Nonnegative int length){

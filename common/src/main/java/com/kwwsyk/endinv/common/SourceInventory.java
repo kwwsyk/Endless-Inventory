@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,12 +27,12 @@ public abstract class SourceInventory {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     //item container
-    protected Map<ItemKey, ItemState> itemMap;
+    protected final Map<ItemKey, ItemState> itemMap;
     protected List<ItemStack> items;
 
     //meta
     protected UUID uuid;
-    protected long lastModTime = Util.getMillis();
+    protected volatile long lastModTime = Util.getMillis();
     protected int maxStackSize;
     protected boolean infinityMode;
     //accessibility attributes
@@ -38,6 +40,11 @@ public abstract class SourceInventory {
     protected UUID owner;
     public List<UUID> white_list = new ArrayList<>();
     protected Accessibility accessibility;
+
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final Lock readLock = lock.readLock();
+    private final Lock writeLock = lock.writeLock();
+    private volatile boolean itemsDirty = true;
 
     public SourceInventory(UUID uuid){
         this.items = new ArrayList<>();
@@ -69,16 +76,30 @@ public abstract class SourceInventory {
     }
 
     public List<ItemStack> getItemsAsList(){
-        syncItemsFromMap();
-        return this.items;
+        return Collections.unmodifiableList(snapshotItems());
     }
 
     /**
      * @return Size of Endless Inventory.
      */
     public int getItemSize() {
-        syncItemsFromMap();
-        return this.items.size();
+        readLock.lock();
+        try {
+            if (!itemsDirty) {
+                return this.items.size();
+            }
+        } finally {
+            readLock.unlock();
+        }
+        writeLock.lock();
+        try {
+            if (itemsDirty) {
+                refreshItemsFromMap();
+            }
+            return this.items.size();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     public int getMaxItemStackSize() {
@@ -140,42 +161,46 @@ public abstract class SourceInventory {
      * @param count the max count of items taken away | 拿走的最大数目
      * @return taken items | 被拿走的物品
      */
-    public ItemStack takeItem(ItemStack stack, int count){//todo thread-safe take
+    public ItemStack takeItem(ItemStack stack, int count){
         if(stack.isEmpty()) return ItemStack.EMPTY;
-        ItemKey key = ItemKey.asKey(stack);
-        LOGGER.debug("EI:takeItem:stack->itemKay, stack={},itemKay = {}",stack,key);
-        ItemState state = itemMap.get(key);
-        if (state == null) {
-            LOGGER.warn("EI:takeItem: no state for {}", key);
-            LOGGER.debug("EI:Current Source Inventory: Class:{},UUID:{},Items:{}",this.getClass(),uuid,getItemsAsList());
-            if(getServerConfig().doConvertEmptyTag().get() && stack.getTag()!=null){
-                key = new ItemKey(key.item(),null);
-                if((state=itemMap.get(key))!=null){
-                    LOGGER.info("EI:takeItem: converted ItemKey with empty tag {} to null tag",ItemKey.asKey(stack));
+        writeLock.lock();
+        try {
+            ItemKey key = ItemKey.asKey(stack);
+            LOGGER.debug("EI:takeItem:stack->itemKay, stack={},itemKay = {}",stack,key);
+            ItemState state = itemMap.get(key);
+            if (state == null) {
+                LOGGER.warn("EI:takeItem: no state for {}", key);
+                LOGGER.debug("EI:Current Source Inventory: Class:{},UUID:{},Items:{}",this.getClass(),uuid,buildSnapshotLocked());
+                if(getServerConfig().doConvertEmptyTag().get() && stack.getTag()!=null){
+                    key = new ItemKey(key.item(),null);
+                    if((state=itemMap.get(key))!=null){
+                        LOGGER.info("EI:takeItem: converted ItemKey with empty tag {} to null tag",ItemKey.asKey(stack));
+                    }else return ItemStack.EMPTY;
                 }else return ItemStack.EMPTY;
-            }else return ItemStack.EMPTY;
-        }
-        LOGGER.info("EI:takeItem: key={} availableCount={} requestedCount={}", key, state.count(), count);
-        //if infinity
-        if(state.count() >= maxStackSize && infinityMode){
-            LOGGER.info("EI:takeItem: infinity mode for {} returning {}", key, count);
+            }
+            LOGGER.info("EI:takeItem: key={} availableCount={} requestedCount={}", key, state.count(), count);
+            if(state.count() >= maxStackSize && infinityMode){
+                LOGGER.info("EI:takeItem: infinity mode for {} returning {}", key, count);
+                setChanged();
+                return stack.copyWithCount(count);
+            }
+
+            int taken = Math.min(count, state.count());
+            ItemStack result = stack.copyWithCount(taken);
+            if (taken == state.count()) {
+                itemMap.remove(key);
+                updateLastModTime();
+                LOGGER.info("EI:takeItem: removed all of {} (taken={})", key, taken);
+            } else {
+                itemMap.put(key, new ItemState(state.count() - taken, updateLastModTime()));
+                LOGGER.info("EI:takeItem: taken={} remaining={} for {}", taken, state.count()-taken, key);
+            }
+            markCacheDirty();
             setChanged();
-            return stack.copyWithCount(count);
+            return result;
+        } finally {
+            writeLock.unlock();
         }
-
-        int taken = Math.min(count, state.count());
-        ItemStack result = stack.copyWithCount(taken);
-        if (taken == state.count()) {
-            itemMap.remove(key);
-            updateLastModTime();
-            LOGGER.info("EI:takeItem: removed all of {} (taken={})", key, taken);
-        } else {
-            itemMap.put(key, new ItemState(state.count() - taken, updateLastModTime()));
-            LOGGER.info("EI:takeItem: taken={} remaining={} for {}", taken, state.count()-taken, key);
-        }
-        setChanged();
-        return result;
-
     }
 
     /**
@@ -185,88 +210,156 @@ public abstract class SourceInventory {
      * @param itemStack to add
      * @return Remain item copied, or {@link ItemStack#EMPTY} if all inserted.
      */
-    public ItemStack addItem(ItemStack itemStack){//todo thread-safe add
+    public ItemStack addItem(ItemStack itemStack){
         if(itemStack.isEmpty()) return ItemStack.EMPTY;
-        ItemKey key = ItemKey.asKey(itemStack);
-        if(getServerConfig().doConvertEmptyTag().get() && itemStack.getTag()!=null && Objects.equals(itemStack.getTag(),new CompoundTag())){
-            key = new ItemKey(itemStack.getItem(),null);
-        }
-        ItemState state = itemMap.get(key);
-        int count = itemStack.getCount();
-        int original = 0;
-
-        if (state != null) {
-            original = state.count();
-        }
-        int increased;
-        if(original < maxStackSize){
-            increased = original+count;
-            if(increased <= maxStackSize){
-                itemMap.put(key, new ItemState(increased, updateLastModTime()));
-                setChanged();
-                return ItemStack.EMPTY;
-            }else {
-                itemMap.put(key, new ItemState(maxStackSize, updateLastModTime()));
-                setChanged();
-                return itemStack.copyWithCount(increased-maxStackSize);
+        writeLock.lock();
+        try {
+            ItemKey key = ItemKey.asKey(itemStack);
+            if(getServerConfig().doConvertEmptyTag().get() && itemStack.getTag()!=null && Objects.equals(itemStack.getTag(),new CompoundTag())){
+                key = new ItemKey(itemStack.getItem(),null);
             }
-        }else if(infinityMode){
-            itemMap.put(key, new ItemState(original, updateLastModTime()));
+            ItemState state = itemMap.get(key);
+            int count = itemStack.getCount();
+            int original = 0;
+
+            if (state != null) {
+                original = state.count();
+            }
+            int increased;
+            ItemStack remain;
+            if(original < maxStackSize){
+                increased = original+count;
+                if(increased <= maxStackSize){
+                    itemMap.put(key, new ItemState(increased, updateLastModTime()));
+                    remain = ItemStack.EMPTY;
+                }else {
+                    itemMap.put(key, new ItemState(maxStackSize, updateLastModTime()));
+                    remain = itemStack.copyWithCount(increased-maxStackSize);
+                }
+            }else if(infinityMode){
+                itemMap.put(key, new ItemState(original, updateLastModTime()));
+                remain = ItemStack.EMPTY;
+            }else {
+                return itemStack.copy();
+            }
+            markCacheDirty();
             setChanged();
-            return ItemStack.EMPTY;
-        }else {
-            return itemStack.copy();
+            return remain;
+        } finally {
+            writeLock.unlock();
         }
     }
 
     public void clearContent() {
-        this.itemMap.clear();
-        this.setChanged();
+        writeLock.lock();
+        try {
+            this.itemMap.clear();
+            markCacheDirty();
+            updateLastModTime();
+            this.setChanged();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     //item handler: item view methods
 
-    protected List<ItemStack> getSortedView(SortType type, boolean reverse) {//todo effective
-        var ret = itemMap.entrySet().stream()
-                .map(e -> e.getKey().toStack(e.getValue().count()))
-                .sorted(ModInfo.sortHelper.getComparator(type, this))
-                .collect(Collectors.toList());
+    protected List<ItemStack> getSortedView(SortType type, boolean reverse) {
+        List<ItemStack> ret = snapshotItems();
+        ret.sort(ModInfo.sortHelper.getComparator(type, this));
         if(reverse) Collections.reverse(ret);
         return ret;
     }
 
     public List<ItemStack> getSortedAndFilteredItemView(int startIndex, int length, SortType sortType, boolean reverse, @Nullable Predicate<ItemStack> classify, String search){
-        Stream<ItemStack> base = getSortedView(sortType,reverse).stream();//todo effective
-        List<ItemStack> filtered = base
+        Stream<ItemStack> base = getSortedView(sortType,reverse).stream();
+        return base
                 .filter(classify!=null?classify:is->true)
                 .filter(stack -> SearchUtil.matchesSearch(stack,search))
-                .toList();
-        if(startIndex>= filtered.size()) return new ArrayList<>();
-        return filtered.subList(startIndex,Math.min(startIndex+length,filtered.size()));
+                .skip(startIndex)
+                .limit(Math.max(length, 0))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     //item handler: map-list sync methods
 
     public void syncItemsFromMap() {
-        this.items = itemMap.entrySet().stream()
-                .map(e -> e.getKey().toStack(e.getValue().count()))
-                .collect(Collectors.toList());
+        writeLock.lock();
+        try {
+            refreshItemsFromMap();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     public void syncMapFromItems() {
-        this.itemMap.clear();
-        for (ItemStack stack : items) {
-            if (stack.isEmpty()) continue;
-            long now = updateLastModTime();
-            var key = ItemKey.asKey(stack);
-            this.itemMap.put(key, new ItemState(stack.getCount(), now));
+        writeLock.lock();
+        try {
+            this.itemMap.clear();
+            for (ItemStack stack : items) {
+                if (stack.isEmpty()) continue;
+                long now = updateLastModTime();
+                var key = ItemKey.asKey(stack);
+                this.itemMap.put(key, new ItemState(stack.getCount(), now));
+            }
+            markCacheDirty();
+        } finally {
+            writeLock.unlock();
         }
-        //invalidateCaches(); ?
     }
 
     //modification version mangers
     public long updateLastModTime(){
         lastModTime=Util.getMillis();
         return lastModTime;
+    }
+
+    protected List<ItemStack> snapshotItems() {
+        readLock.lock();
+        try {
+            if (!itemsDirty) {
+                return new ArrayList<>(items);
+            }
+        } finally {
+            readLock.unlock();
+        }
+        writeLock.lock();
+        try {
+            if (itemsDirty) {
+                refreshItemsFromMap();
+            }
+            return new ArrayList<>(items);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    private void refreshItemsFromMap() {
+        this.items = itemMap.entrySet().stream()
+                .map(e -> e.getKey().toStack(e.getValue().count()))
+                .collect(Collectors.toList());
+        itemsDirty = false;
+    }
+
+    private List<ItemStack> buildSnapshotLocked() {
+        return itemMap.entrySet().stream()
+                .map(e -> e.getKey().toStack(e.getValue().count()))
+                .collect(Collectors.toList());
+    }
+
+    private void markCacheDirty() {
+        itemsDirty = true;
+    }
+
+    protected void overwriteItems(Map<ItemKey, ItemState> newItems) {
+        writeLock.lock();
+        try {
+            this.itemMap.clear();
+            this.itemMap.putAll(newItems);
+            markCacheDirty();
+            updateLastModTime();
+        } finally {
+            writeLock.unlock();
+        }
     }
 }

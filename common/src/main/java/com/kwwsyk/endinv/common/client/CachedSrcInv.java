@@ -23,7 +23,7 @@ public class CachedSrcInv extends SourceInventory {
     }
 
     public void initializeContents(Map<ItemKey, ItemState> itemMap){
-        this.itemMap = new Object2ObjectLinkedOpenHashMap<>(itemMap);
+        overwriteItems(new Object2ObjectLinkedOpenHashMap<>(itemMap));
     }
 
     @Override

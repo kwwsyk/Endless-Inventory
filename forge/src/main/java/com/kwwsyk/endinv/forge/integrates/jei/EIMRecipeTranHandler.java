@@ -1,7 +1,9 @@
 package com.kwwsyk.endinv.forge.integrates.jei;
 
+import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
+import com.kwwsyk.endinv.forge.network.payloads.JeiTransferRecipePayload;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IJeiHelpers;
@@ -19,6 +21,7 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,130 +99,19 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
                 return transferHelper.createUserErrorWithTooltip(Component.literal("Crafter is disabled by server rules"));
             }
 
-            // (2) Pre-check ingredients availability across player inventory and source inventory
-            List<Ingredient> ingredients = recipe.getIngredients();
-            List<Slot> playerInvSlots = container.getPlayerInvSlots();
-            List<ItemStack> pageItems = container.getSourceInventory().getItemsAsList();
-
-            // Choose a concrete candidate per ingredient slot and compute max crafts possible
-            ItemStack[] chosenPerSlot = new ItemStack[9];
-            int craftsPossible = Integer.MAX_VALUE;
-            int perSlotStackLimit = Integer.MAX_VALUE; // min of selected item stack sizes
-            int inputsToCheck = Math.min(9, ingredients.size());
-            for (int i = 0; i < inputsToCheck; i++) {
-                Ingredient ing = ingredients.get(i);
-                if (ing.isEmpty()) {
-                    continue;
-                }
-                ItemStack selected = chooseBestCandidate(ing, playerInvSlots, pageItems);
-                chosenPerSlot[i] = selected;
-                int available = selected.isEmpty() ? 0 : countAvailableOfType(selected, playerInvSlots, pageItems);
-                craftsPossible = Math.min(craftsPossible, available);
-                if (!selected.isEmpty()) {
-                    perSlotStackLimit = Math.min(perSlotStackLimit, selected.getMaxStackSize());
-                }
-            }
-            if (craftsPossible == Integer.MAX_VALUE) craftsPossible = 0; // no non-empty ingredients
-            if (perSlotStackLimit == Integer.MAX_VALUE) perSlotStackLimit = 64;
-
-            int craftsWanted = maxTransfer ? Math.min(craftsPossible, perSlotStackLimit) : (craftsPossible > 0 ? 1 : 0);
-            boolean missing = craftsWanted <= 0;
+            TransferPlan plan = createTransferPlan(container, recipe, maxTransfer);
+            boolean missing = plan.isMissing();
 
             if (!doTransfer) {
                 // Client-side status: return error to color the button if missing
                 return missing ? transferHelper.createUserErrorWithTooltip(Component.literal("Missing ingredient(s)")) : null;
             }
 
-            // (3) Perform transfer on server only, but report error status to client when missing
-            //todo it seems that DO_TRANSFER only happens on client, so the sync-to-server work of ItemExtraction,ItemPlaceToGrid,InventoryItemMove
-            // and other data sync should be done in this method.
-            // Consider send different packets for each steps or send a EIMDoTransferRecipePacket
-            // id use dedicated packet, it is possible to extract DO_TRANSFER block to a static method and reuse the codes.
-            // If what I remember is not wrong, it is what Jei do.
-            /// @see mezz.jei.common.transfer.RecipeTransferUtil, the static method #transferRecipe
-            DO_TRANSFER: {//if(!player.level().isClientSide)
-                // Ensure the crafter is visible only when transfer starts
+            if (player.level().isClientSide) {
                 container.setCraftingVisible(true);
-
-                // Clear crafting grid back to player inventory
-                List<Slot> craftingSlots = container.getCraftingSlots();
-                for (Slot cSlot : craftingSlots) {
-                    if (!cSlot.hasItem()) continue;
-                    int count = cSlot.getItem().getCount();
-                    if (count <= 0) continue;
-                    ItemStack removed = cSlot.safeTake(count, count, player);
-                    if (!removed.isEmpty()) {
-                        player.getInventory().placeItemBackInInventory(removed);
-                    }
-                }
-
-                // Fill crafting grid from player inventory first, then from the page
-                for (int i = 0; i < 9; i++) {
-                    Ingredient ing = i < ingredients.size() ? ingredients.get(i) : Ingredient.EMPTY;
-                    if (ing.isEmpty()) continue;
-                    Slot target = craftingSlots.get(i);
-
-                    int toTake = craftsWanted;
-                    if (toTake <= 0) continue;
-
-                    ItemStack chosen = chosenPerSlot[i];
-                    ItemStack placedStack = ItemStack.EMPTY;
-
-                    // From player inventory
-                    for (Slot invSlot : playerInvSlots) {
-                        if (toTake <= 0) break;
-                        if (!invSlot.hasItem()) continue;
-                        ItemStack in = invSlot.getItem();
-                        if (!(chosen.isEmpty() ? ing.test(in) : sameType(chosen, in))) continue;
-                        int can = Math.min(toTake, in.getCount());
-                        if (can <= 0) continue;
-                        ItemStack taken = invSlot.safeTake(can, can, player);
-                        if (!taken.isEmpty()) {
-                            if (placedStack.isEmpty()) {
-                                placedStack = taken;
-                            } else if (sameType(placedStack, taken)) {
-                                placedStack.grow(taken.getCount());
-                            } else {
-                                // different type shouldn't happen when sameType constraint is used
-                                player.getInventory().placeItemBackInInventory(taken);
-                                break;
-                            }
-                            toTake -= taken.getCount();
-                        }
-                    }
-
-                    // From page
-                    if (toTake > 0) {
-                        ItemStack template = !chosen.isEmpty() ? chosen : (ing.getItems().length > 0 ? ing.getItems()[0] : ItemStack.EMPTY);
-                        if (!template.isEmpty()) {
-                            ItemStack extracted = container.tryExtractFromPage(template, toTake);
-                            if (!extracted.isEmpty()) {
-                                if (placedStack.isEmpty()) {
-                                    placedStack = extracted;
-                                } else if (sameType(placedStack, extracted)) {
-                                    placedStack.grow(extracted.getCount());
-                                } else {
-                                    // put back if mismatched (shouldn't occur)
-                                    player.getInventory().placeItemBackInInventory(extracted);
-                                }
-                                toTake -= extracted.getCount();
-                            }
-                        }
-                    }
-
-                    if (!placedStack.isEmpty()) {
-                        // Cap by target slot limit just in case
-                        int cap = Math.min(placedStack.getMaxStackSize(), target.getMaxStackSize());
-                        if (placedStack.getCount() > cap) {
-                            ItemStack overflow = placedStack.copyWithCount(placedStack.getCount() - cap);
-                            placedStack.setCount(cap);
-                            // push overflow back to player inventory
-                            player.getInventory().placeItemBackInInventory(overflow);
-                        }
-                        target.set(placedStack);
-                    }
-                    // allow partial; if nothing gathered, leave empty
-                }
+                ModInfo.getPacketDistributor().sendToServer(new JeiTransferRecipePayload(container.containerId, recipe.getId(), maxTransfer));
+            } else {
+                performTransfer(container, recipe, plan, player);
             }
 
             // When missing, still allow partial transfer, but communicate status on client
@@ -227,6 +119,11 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
         } catch (Exception e) {
             return transferHelper.createInternalError();
         }
+    }
+
+    public static void performServerTransfer(EndlessInventoryMenu container, CraftingRecipe recipe, Player player, boolean maxTransfer) {
+        TransferPlan plan = createTransferPlan(container, recipe, maxTransfer);
+        performTransfer(container, recipe, plan, player);
     }
 
     private static boolean sameType(ItemStack a, ItemStack b) {
@@ -283,6 +180,121 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
             }
         }
         return best;
+    }
+
+    private static TransferPlan createTransferPlan(EndlessInventoryMenu container, CraftingRecipe recipe, boolean maxTransfer) {
+        List<Ingredient> ingredients = recipe.getIngredients();
+        List<Slot> playerInvSlots = container.getPlayerInvSlots();
+        List<ItemStack> pageItems = container.getSourceInventory().getItemsAsList();
+
+        ItemStack[] chosenPerSlot = new ItemStack[9];
+        Arrays.fill(chosenPerSlot, ItemStack.EMPTY);
+        int craftsPossible = Integer.MAX_VALUE;
+        int perSlotStackLimit = Integer.MAX_VALUE;
+        int inputsToCheck = Math.min(9, ingredients.size());
+        for (int i = 0; i < inputsToCheck; i++) {
+            Ingredient ing = ingredients.get(i);
+            if (ing.isEmpty()) {
+                continue;
+            }
+            ItemStack selected = chooseBestCandidate(ing, playerInvSlots, pageItems);
+            chosenPerSlot[i] = selected;
+            int available = selected.isEmpty() ? 0 : countAvailableOfType(selected, playerInvSlots, pageItems);
+            craftsPossible = Math.min(craftsPossible, available);
+            if (!selected.isEmpty()) {
+                perSlotStackLimit = Math.min(perSlotStackLimit, selected.getMaxStackSize());
+            }
+        }
+        if (craftsPossible == Integer.MAX_VALUE) craftsPossible = 0;
+        if (perSlotStackLimit == Integer.MAX_VALUE) perSlotStackLimit = 64;
+
+        int craftsWanted = maxTransfer ? Math.min(craftsPossible, perSlotStackLimit) : (craftsPossible > 0 ? 1 : 0);
+        boolean missing = craftsWanted <= 0;
+        return new TransferPlan(chosenPerSlot, craftsWanted, missing);
+    }
+
+    private static void performTransfer(EndlessInventoryMenu container, CraftingRecipe recipe, TransferPlan plan, Player player) {
+        container.setCraftingVisible(true);
+
+        List<Slot> craftingSlots = container.getCraftingSlots();
+        for (Slot cSlot : craftingSlots) {
+            if (!cSlot.hasItem()) continue;
+            int count = cSlot.getItem().getCount();
+            if (count <= 0) continue;
+            ItemStack removed = cSlot.safeTake(count, count, player);
+            if (!removed.isEmpty()) {
+                player.getInventory().placeItemBackInInventory(removed);
+            }
+        }
+
+        List<Ingredient> ingredients = recipe.getIngredients();
+        List<Slot> playerInvSlots = container.getPlayerInvSlots();
+
+        for (int i = 0; i < 9; i++) {
+            Ingredient ing = i < ingredients.size() ? ingredients.get(i) : Ingredient.EMPTY;
+            if (ing.isEmpty()) continue;
+            Slot target = craftingSlots.get(i);
+
+            int toTake = plan.craftsWanted;
+            if (toTake <= 0) continue;
+
+            ItemStack chosen = plan.chosenPerSlot[i];
+            ItemStack placedStack = ItemStack.EMPTY;
+
+            for (Slot invSlot : playerInvSlots) {
+                if (toTake <= 0) break;
+                if (!invSlot.hasItem()) continue;
+                ItemStack in = invSlot.getItem();
+                if (!(chosen.isEmpty() ? ing.test(in) : sameType(chosen, in))) continue;
+                int can = Math.min(toTake, in.getCount());
+                if (can <= 0) continue;
+                ItemStack taken = invSlot.safeTake(can, can, player);
+                if (!taken.isEmpty()) {
+                    if (placedStack.isEmpty()) {
+                        placedStack = taken;
+                    } else if (sameType(placedStack, taken)) {
+                        placedStack.grow(taken.getCount());
+                    } else {
+                        player.getInventory().placeItemBackInInventory(taken);
+                        break;
+                    }
+                    toTake -= taken.getCount();
+                }
+            }
+
+            if (toTake > 0) {
+                ItemStack template = !chosen.isEmpty() ? chosen : (ing.getItems().length > 0 ? ing.getItems()[0] : ItemStack.EMPTY);
+                if (!template.isEmpty()) {
+                    ItemStack extracted = container.tryExtractFromPage(template, toTake);
+                    if (!extracted.isEmpty()) {
+                        if (placedStack.isEmpty()) {
+                            placedStack = extracted;
+                        } else if (sameType(placedStack, extracted)) {
+                            placedStack.grow(extracted.getCount());
+                        } else {
+                            player.getInventory().placeItemBackInInventory(extracted);
+                        }
+                        toTake -= extracted.getCount();
+                    }
+                }
+            }
+
+            if (!placedStack.isEmpty()) {
+                int cap = Math.min(placedStack.getMaxStackSize(), target.getMaxStackSize());
+                if (placedStack.getCount() > cap) {
+                    ItemStack overflow = placedStack.copyWithCount(placedStack.getCount() - cap);
+                    placedStack.setCount(cap);
+                    player.getInventory().placeItemBackInInventory(overflow);
+                }
+                target.set(placedStack);
+            }
+        }
+    }
+
+    private record TransferPlan(ItemStack[] chosenPerSlot, int craftsWanted, boolean missing) {
+        boolean isMissing() {
+            return missing;
+        }
     }
 
     public class EIMRecipeTranInfo implements IRecipeTransferInfo<EndlessInventoryMenu,CraftingRecipe>{
