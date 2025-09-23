@@ -3,6 +3,7 @@ package com.kwwsyk.endinv.forge.integrates.jei;
 import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
+import com.kwwsyk.endinv.common.util.ItemKey;
 import com.kwwsyk.endinv.forge.network.payloads.JeiTransferRecipePayload;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -19,11 +20,10 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.ShapedRecipe;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /** {@link EndlessInventoryMenu}'s recipe transfer handler.
  *
@@ -74,17 +74,9 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
         return RecipeTypes.CRAFTING;
     }
 
-    //TODO PROBLEM: unable to handle some shaped recipe. Such as (CraftingTable)XXO;XXO;OOO->XXX;XOO;OOO, which means crucial EMPTY slots are ignored.
-    // An other example: (Door)XXO;XXO;XXO->XXX;XXX;OOO.
-    // Some shaped recipe can process successfully:
-    /*My other concern is this:
-       if the length of SrcInv’s item list—which can reach into the thousands—is the dominant factor N,
-       then the process seems to have time complexity as high as O(N²).
-       It would be better to reduce it to O(N).
-       That being the case, chooseBestCandidate and countAvailableOfType are quite confusing, and you should add more comments to them.
-       In addition, prioritize items in the inventory; if plain items (without NBT) in the inventory already satisfy the requirement,
-       there is no need to consider the items on the Page.
-    * */
+    // The transfer logic aligns shaped recipes with the crafting grid and caches item availability so that
+    // we only scan the inventory once per transfer. The candidate selection also prefers items from the
+    // player's inventory when possible to avoid unnecessary page extractions.
     /**
      * @param container   the container to act on
      * @param recipe      the raw recipe instance
@@ -145,83 +137,140 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
         return java.util.Objects.equals(ta, tb);
     }
 
-    private static int countAvailableOfType(ItemStack type, List<Slot> invSlots, List<ItemStack> pageItems) {
-        if (type.isEmpty()) return 0;
-        int total = 0;
-        for (Slot s : invSlots) {
-            if (!s.hasItem()) continue;
-            ItemStack st = s.getItem();
-            if (sameType(type, st)) total += st.getCount();
+    private static Ingredient[] buildRecipeLayout(CraftingRecipe recipe) {
+        Ingredient[] layout = new Ingredient[9];
+        Arrays.fill(layout, Ingredient.EMPTY);
+        if (recipe instanceof ShapedRecipe shaped) {
+            int width = Math.min(3, shaped.getWidth());
+            int height = Math.min(3, shaped.getHeight());
+            List<Ingredient> ingredients = shaped.getIngredients();
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int srcIndex = y * shaped.getWidth() + x;
+                    if (srcIndex < ingredients.size()) {
+                        layout[y * 3 + x] = ingredients.get(srcIndex);
+                    }
+                }
+            }
+        } else {
+            List<Ingredient> ingredients = recipe.getIngredients();
+            for (int i = 0; i < Math.min(ingredients.size(), layout.length); i++) {
+                layout[i] = ingredients.get(i);
+            }
         }
-        for (ItemStack st : pageItems) {
-            if (sameType(type, st)) total += st.getCount();
-        }
-        return total;
+        return layout;
     }
 
-    private static ItemStack chooseBestCandidate(Ingredient ing, List<Slot> invSlots, List<ItemStack> pageItems) {
-        ItemStack best = ItemStack.EMPTY;
-        int bestCount = 0;
-        // Consider explicit candidates first
+    /**
+     * Looks up the cached availability information for the requested stack type.
+     * The result exposes both the total amount and how many items remain in the player's inventory,
+     * so candidate selection can prefer inventory items over pulling from the page.
+     */
+    @Nullable
+    private static ItemCounts countAvailableOfType(ItemStack type, ItemAvailability availability) {
+        if (type.isEmpty()) {
+            return null;
+        }
+        return availability.lookup(ItemKey.asKey(type));
+    }
+
+    /**
+     * Selects the most appropriate stack template for the given ingredient.
+     * The search first considers the ingredient's declared stacks, then falls back to any matching stack
+     * seen in the player's inventory or the page. Each option is evaluated against the cached availability:
+     *  - prefer plain items from the player's inventory,
+     *  - then other inventory items,
+     *  - finally fall back to page items.
+     * Reservation state prevents us from picking the same stack type more times than it actually exists.
+     */
+    private static Selection chooseBestCandidate(Ingredient ing, ItemAvailability availability, Reservation reservation) {
+        Candidate best = Candidate.NONE;
+        Set<ItemKey> seen = new HashSet<>();
+
         for (ItemStack cand : ing.getItems()) {
-            if (cand.isEmpty()) continue;
-            int count = countAvailableOfType(cand, invSlots, pageItems);
-            if (count > bestCount) {
-                best = cand;
-                bestCount = count;
+            ItemCounts counts = countAvailableOfType(cand, availability);
+            Candidate candidate = Candidate.fromCounts(counts, reservation);
+            if (!candidate.isValid()) {
+                continue;
             }
-        }
-        // Also consider any matching stacks present in inventory/page
-        for (Slot s : invSlots) {
-            if (!s.hasItem()) continue;
-            ItemStack st = s.getItem();
-            if (!ing.test(st)) continue;
-            int count = countAvailableOfType(st, invSlots, pageItems);
-            if (count > bestCount) {
-                best = st.copyWithCount(1);
-                bestCount = count;
+            if (!seen.add(candidate.selection().key())) {
+                continue;
             }
+            best = Candidate.pickBetter(best, candidate);
         }
-        for (ItemStack st : pageItems) {
-            if (!ing.test(st)) continue;
-            int count = countAvailableOfType(st, invSlots, pageItems);
-            if (count > bestCount) {
-                best = st.copyWithCount(1);
-                bestCount = count;
+
+        for (ItemCounts counts : availability.all()) {
+            if (!ing.test(counts.representative())) {
+                continue;
             }
+            Candidate candidate = Candidate.fromCounts(counts, reservation);
+            if (!candidate.isValid()) {
+                continue;
+            }
+            if (!seen.add(candidate.selection().key())) {
+                continue;
+            }
+            best = Candidate.pickBetter(best, candidate);
         }
-        return best;
+
+        return best.selection();
     }
 
     private static TransferPlan createTransferPlan(EndlessInventoryMenu container, CraftingRecipe recipe, boolean maxTransfer) {
-        List<Ingredient> ingredients = recipe.getIngredients();
+        Ingredient[] layout = buildRecipeLayout(recipe);
         List<Slot> playerInvSlots = container.getPlayerInvSlots();
         List<ItemStack> pageItems = container.getSourceInventory().getItemsAsList();
 
-        ItemStack[] chosenPerSlot = new ItemStack[9];
+        ItemAvailability availability = ItemAvailability.build(playerInvSlots, pageItems);
+        Reservation reservation = new Reservation();
+        ItemStack[] chosenPerSlot = new ItemStack[layout.length];
         Arrays.fill(chosenPerSlot, ItemStack.EMPTY);
-        int craftsPossible = Integer.MAX_VALUE;
+
+        boolean missing = false;
         int perSlotStackLimit = Integer.MAX_VALUE;
-        int inputsToCheck = Math.min(9, ingredients.size());
-        for (int i = 0; i < inputsToCheck; i++) {
-            Ingredient ing = ingredients.get(i);
+
+        for (int i = 0; i < layout.length; i++) {
+            Ingredient ing = layout[i];
             if (ing.isEmpty()) {
                 continue;
             }
-            ItemStack selected = chooseBestCandidate(ing, playerInvSlots, pageItems);
-            chosenPerSlot[i] = selected;
-            int available = selected.isEmpty() ? 0 : countAvailableOfType(selected, playerInvSlots, pageItems);
-            craftsPossible = Math.min(craftsPossible, available);
-            if (!selected.isEmpty()) {
-                perSlotStackLimit = Math.min(perSlotStackLimit, selected.getMaxStackSize());
+            Selection selection = chooseBestCandidate(ing, availability, reservation);
+            if (selection.isEmpty()) {
+                missing = true;
+                continue;
+            }
+            reservation.reserve(selection);
+            chosenPerSlot[i] = selection.stack();
+            perSlotStackLimit = Math.min(perSlotStackLimit, selection.stack().getMaxStackSize());
+        }
+
+        int craftsPossible;
+        if (missing || reservation.isEmpty()) {
+            craftsPossible = 0;
+        } else {
+            craftsPossible = Integer.MAX_VALUE;
+            for (Map.Entry<ItemKey, Integer> entry : reservation.totalDemand().entrySet()) {
+                ItemCounts counts = availability.lookup(entry.getKey());
+                if (counts == null) {
+                    craftsPossible = 0;
+                    missing = true;
+                    break;
+                }
+                int possible = counts.total() / entry.getValue();
+                craftsPossible = Math.min(craftsPossible, possible);
+            }
+            if (craftsPossible == Integer.MAX_VALUE) {
+                craftsPossible = 0;
             }
         }
-        if (craftsPossible == Integer.MAX_VALUE) craftsPossible = 0;
-        if (perSlotStackLimit == Integer.MAX_VALUE) perSlotStackLimit = 64;
+
+        if (perSlotStackLimit == Integer.MAX_VALUE) {
+            perSlotStackLimit = 64;
+        }
 
         int craftsWanted = maxTransfer ? Math.min(craftsPossible, perSlotStackLimit) : (craftsPossible > 0 ? 1 : 0);
-        boolean missing = craftsWanted <= 0;
-        return new TransferPlan(chosenPerSlot, craftsWanted, missing);
+        boolean finalMissing = missing || craftsWanted <= 0;
+        return new TransferPlan(layout, chosenPerSlot, craftsWanted, finalMissing);
     }
 
     private static void performTransfer(EndlessInventoryMenu container, CraftingRecipe recipe, TransferPlan plan, Player player) {
@@ -238,18 +287,18 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
             }
         }
 
-        List<Ingredient> ingredients = recipe.getIngredients();
         List<Slot> playerInvSlots = container.getPlayerInvSlots();
+        Ingredient[] layout = plan.layout();
 
-        for (int i = 0; i < 9; i++) {
-            Ingredient ing = i < ingredients.size() ? ingredients.get(i) : Ingredient.EMPTY;
+        for (int i = 0; i < Math.min(craftingSlots.size(), layout.length); i++) {
+            Ingredient ing = layout[i];
             if (ing.isEmpty()) continue;
             Slot target = craftingSlots.get(i);
 
-            int toTake = plan.craftsWanted;
+            int toTake = plan.craftsWanted();
             if (toTake <= 0) continue;
 
-            ItemStack chosen = plan.chosenPerSlot[i];
+            ItemStack chosen = plan.chosenPerSlot()[i];
             ItemStack placedStack = ItemStack.EMPTY;
 
             for (Slot invSlot : playerInvSlots) {
@@ -302,9 +351,173 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
         }
     }
 
-    private record TransferPlan(ItemStack[] chosenPerSlot, int craftsWanted, boolean missing) {
+    private record TransferPlan(Ingredient[] layout, ItemStack[] chosenPerSlot, int craftsWanted, boolean missing) {
         boolean isMissing() {
             return missing;
+        }
+    }
+
+    private static final class ItemAvailability {
+        private final Map<ItemKey, ItemCounts> counts = new HashMap<>();
+
+        private ItemAvailability() {
+        }
+
+        static ItemAvailability build(List<Slot> invSlots, List<ItemStack> pageItems) {
+            ItemAvailability availability = new ItemAvailability();
+            for (Slot slot : invSlots) {
+                if (!slot.hasItem()) continue;
+                availability.add(slot.getItem(), Source.INVENTORY);
+            }
+            for (ItemStack stack : pageItems) {
+                if (stack.isEmpty()) continue;
+                availability.add(stack, Source.PAGE);
+            }
+            return availability;
+        }
+
+        private void add(ItemStack stack, Source source) {
+            ItemKey key = ItemKey.asKey(stack);
+            ItemCounts counts = this.counts.computeIfAbsent(key, k -> new ItemCounts(k, stack.copyWithCount(1)));
+            counts.add(stack.getCount(), source);
+        }
+
+        @Nullable
+        ItemCounts lookup(ItemKey key) {
+            return counts.get(key);
+        }
+
+        Collection<ItemCounts> all() {
+            return counts.values();
+        }
+
+        private enum Source {
+            INVENTORY,
+            PAGE
+        }
+    }
+
+    private static final class ItemCounts {
+        private final ItemKey key;
+        private final ItemStack representative;
+        private int inventoryCount;
+        private int pageCount;
+
+        ItemCounts(ItemKey key, ItemStack representative) {
+            this.key = key;
+            this.representative = representative;
+        }
+
+        void add(int amount, ItemAvailability.Source source) {
+            if (source == ItemAvailability.Source.INVENTORY) {
+                inventoryCount += amount;
+            } else {
+                pageCount += amount;
+            }
+        }
+
+        ItemKey key() {
+            return key;
+        }
+
+        ItemStack representative() {
+            return representative.copy();
+        }
+
+        int total() {
+            return inventoryCount + pageCount;
+        }
+
+        int totalRemaining(Reservation reservation) {
+            return total() - reservation.totalReserved(key);
+        }
+
+        int inventoryRemaining(Reservation reservation) {
+            return inventoryCount - reservation.inventoryReserved(key);
+        }
+
+        boolean isPlain() {
+            return key.tag() == null;
+        }
+    }
+
+    private static final class Reservation {
+        private final Map<ItemKey, Integer> total = new HashMap<>();
+        private final Map<ItemKey, Integer> inventory = new HashMap<>();
+
+        void reserve(Selection selection) {
+            if (selection.key() == null) return;
+            total.merge(selection.key(), 1, Integer::sum);
+            if (selection.useInventory()) {
+                inventory.merge(selection.key(), 1, Integer::sum);
+            }
+        }
+
+        int totalReserved(ItemKey key) {
+            return total.getOrDefault(key, 0);
+        }
+
+        int inventoryReserved(ItemKey key) {
+            return inventory.getOrDefault(key, 0);
+        }
+
+        Map<ItemKey, Integer> totalDemand() {
+            return total;
+        }
+
+        boolean isEmpty() {
+            return total.isEmpty();
+        }
+    }
+
+    private record Selection(ItemStack stack, ItemKey key, boolean useInventory) {
+        static final Selection EMPTY = new Selection(ItemStack.EMPTY, null, false);
+
+        boolean isEmpty() {
+            return stack.isEmpty();
+        }
+    }
+
+    private record Candidate(Selection selection, int priority, int totalRemaining, int inventoryRemaining) {
+        private static final Candidate NONE = new Candidate(Selection.EMPTY, -1, 0, 0);
+
+        boolean isValid() {
+            return selection != null && !selection.isEmpty();
+        }
+
+        static Candidate fromCounts(@Nullable ItemCounts counts, Reservation reservation) {
+            if (counts == null) {
+                return NONE;
+            }
+            int totalRemaining = counts.totalRemaining(reservation);
+            if (totalRemaining <= 0) {
+                return NONE;
+            }
+            int inventoryRemaining = counts.inventoryRemaining(reservation);
+            boolean hasInventory = inventoryRemaining > 0;
+            boolean hasPlainInventory = hasInventory && counts.isPlain();
+            int priority = hasPlainInventory ? 3 : (hasInventory ? 2 : 1);
+            Selection selection = new Selection(counts.representative(), counts.key(), hasInventory);
+            return new Candidate(selection, priority, totalRemaining, inventoryRemaining);
+        }
+
+        static Candidate pickBetter(Candidate current, Candidate challenger) {
+            if (!challenger.isValid()) {
+                return current;
+            }
+            if (!current.isValid()) {
+                return challenger;
+            }
+            if (challenger.priority != current.priority) {
+                return challenger.priority > current.priority ? challenger : current;
+            }
+            if (challenger.totalRemaining != current.totalRemaining) {
+                return challenger.totalRemaining > current.totalRemaining ? challenger : current;
+            }
+            if (challenger.inventoryRemaining != current.inventoryRemaining) {
+                return challenger.inventoryRemaining > current.inventoryRemaining ? challenger : current;
+            }
+            return current;
         }
     }
 

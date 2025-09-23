@@ -76,7 +76,7 @@ public abstract class SourceInventory {
     }
 
     public List<ItemStack> getItemsAsList(){
-        return Collections.unmodifiableList(snapshotItems());
+        return snapshotItems();
     }
 
     /**
