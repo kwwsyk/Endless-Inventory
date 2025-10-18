@@ -36,11 +36,11 @@ public class PageType {
     public static final PageType TOOLS = createClassifiedPage("tools",PageType::isTool,"iron_pickaxe");
     public static final PageType EQUIPMENTS = new PageType(
             (type,manager)->new SegClassifyItemDisplay(type,manager,equipmentSubclassifications,false,true),
-            "equipments",PageType::isDefenceEquipment,new ResourceLocation("minecraft","iron_chestplate")
+            "equipments",PageType::isDefenceEquipment,ResourceLocation.fromNamespaceAndPath("minecraft", "iron_chestplate")
     );
     public static final PageType CONSUMABLE = createClassifiedPage("consumable",PageType::isFoodOrPotion,"bread");
     public static final PageType ENCHANTED_BOOKS = createItemEntry("enchanted_books",stack->stack.getItem() instanceof EnchantedBookItem,"enchanted_book");
-    public static final PageType BOOKMARK = new PageType(StarredItemPage::new,"bookmark",null,new ResourceLocation("minecraft","book"));
+    public static final PageType BOOKMARK = new PageType(StarredItemPage::new,"bookmark",null,ResourceLocation.fromNamespaceAndPath("minecraft", "book"));
 
     private final PageConstructor constructor;
     @Nullable
@@ -83,11 +83,11 @@ public class PageType {
     }
 
     public static PageType createClassifiedPage(String registerName, Predicate<ItemStack> itemClassify, String icon){
-        return new PageType(ItemDisplay::new,registerName,itemClassify,new ResourceLocation("minecraft", icon));
+        return new PageType(ItemDisplay::new,registerName,itemClassify,ResourceLocation.fromNamespaceAndPath("minecraft", icon));
     }
 
     public static PageType createItemEntry(String registerName, Predicate<ItemStack> itemClassify, String icon){
-        return new PageType(ItemEntryDisplay::new,registerName,itemClassify, new ResourceLocation("minecraft", icon));
+        return new PageType(ItemEntryDisplay::new,registerName,itemClassify, ResourceLocation.fromNamespaceAndPath("minecraft", icon));
     }
 
     /**

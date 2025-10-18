@@ -18,7 +18,7 @@ import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
 @SuppressWarnings("removal")
 public class StarredItemPage extends ItemPage{
 
-    public ResourceLocation icon = new ResourceLocation("minecraft","book");
+    public ResourceLocation icon = ResourceLocation.fromNamespaceAndPath("minecraft", "book");
     private int[] countArray;
 
     public StarredItemPage(PageType type, PageManager metaDataManager) {

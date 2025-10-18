@@ -151,7 +151,7 @@ public interface EndInvCodecStrategy {
     static ItemStack load(CompoundTag compoundTag) {
         try {
             var ret = new ItemStack(
-                    BuiltInRegistries.ITEM.get(new ResourceLocation(compoundTag.getString("id"))),
+                    BuiltInRegistries.ITEM.get(ResourceLocation.parse(compoundTag.getString("id"))),
                     compoundTag.getInt("Count")
             );
             if (compoundTag.contains("tag", 10)) {

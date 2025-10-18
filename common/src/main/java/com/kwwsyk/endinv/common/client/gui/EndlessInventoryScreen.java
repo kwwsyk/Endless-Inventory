@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("removal")
 public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInventoryMenu> {
-    private static final ResourceLocation CRAFTING_TEXTURE = new ResourceLocation("minecraft", "textures/gui/container/crafting_table.png");
+    private static final ResourceLocation CRAFTING_TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/gui/container/crafting_table.png");
     private ScreenFramework frameWork;
     private CycleButton<Boolean> craftingToggleButton;
     private boolean craftingVisible;

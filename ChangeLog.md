@@ -1,4 +1,13 @@
 # Change Log
+__branch 1.21.1__
+
+## 2025-10-18
+- Bumped Gradle properties to target Minecraft 1.21.1 and refreshed loader/tooling versions for Forge, NeoForge, and Fabric builds.
+- Reworked common/loader build scripts to resolve 1.21.1 dependencies (NeoForm, JEI, Curios, Cloth Config) and add missing central Maven mirrors.
+- Began API migration by replacing deprecated `ResourceLocation` constructors with the new 1.21 static factories across common and loader integrations.
+- Updated JEI recipe-transfer hooks to the new identifier helpers while preparing to restore optional startup configuration gating.
+- Note: Further work remains to finish data-component migrations and stabilize Fabric tooling once upstream repositories are reachable.
+
 __branch 1.20.1__
 
 ## 2025, before Sept: *A Brief*

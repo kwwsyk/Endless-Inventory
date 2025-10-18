@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.9-SNAPSHOT'
+    id 'fabric-loom' version "${loom_version}"
     id 'idea'
     id 'java'
 }
@@ -41,6 +41,7 @@ sourceSets {
 }
 
 repositories {
+    mavenCentral()
     maven {
         name = "Progwml6's maven"
         url = "https://dvs1.progwml6.com/files/maven/"

@@ -18,7 +18,7 @@ public class JeiCompat implements IModPlugin{
 
     @Override
     public ResourceLocation getPluginUid() {
-        return new ResourceLocation(ModInfo.MOD_ID,"compatibility");
+        return ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID, "compatibility");
     }
 
     @Override

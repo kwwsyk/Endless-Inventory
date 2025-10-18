@@ -5,7 +5,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath 'org.spongepowered:mixingradle:0.7.38'
     }
 }
 
@@ -29,7 +29,7 @@ mixin {
 }
 
 minecraft {
-    mappings channel: "parchment", version: "2023.09.03-1.20.1"
+    mappings channel: "parchment", version: "${parchment_version}-${parchment_minecraft}"
 
     runs {
         client {
@@ -40,18 +40,19 @@ minecraft {
             workingDirectory project.file('run-data')
 
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')        }
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
         server {
 
         }
         configureEach {
-             mods {
+            mods {
                 "${mod_id}" {
                     source(sourceSets.main)
                     source(project(":common").sourceSets.main)
                 }
-                jvmArg '--add-opens=java.base/java.lang.ref=ALL-UNNAMED'
             }
+            jvmArg '--add-opens=java.base/java.lang.ref=ALL-UNNAMED'
         }
     }
 }
@@ -60,6 +61,7 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 
 repositories {
     maven { url = 'https://maven.parchmentmc.org' }
+    mavenCentral()
     maven {
         // location of the maven that hosts JEI files before January 2023
         name = "Progwml6's maven"

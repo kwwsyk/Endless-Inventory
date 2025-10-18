@@ -16,6 +16,7 @@ repositories {
 }
 
 repositories {
+    mavenCentral()
     maven {
         // location of the maven that hosts JEI files since January 2023
         name = "Jared's maven"
@@ -25,6 +26,10 @@ repositories {
         // location of a maven mirror for JEI files, as a fallback
         name = "ModMaven"
         url = "https://modmaven.dev"
+    }
+    maven {
+        name = "Curios"
+        url = uri("https://maven.theillusivec4.top/")
     }
 }
 
@@ -41,19 +46,17 @@ dependencies {
 
     runtimeOnly("top.theillusivec4.curios:curios-forge:${curio_version}")
     compileOnly("top.theillusivec4.curios:curios-forge:${curio_version}:api")
-
-    implementation("me.shedaniel.cloth:cloth-config-forge:${cloth_config_version}")
 }
 
 project.evaluationDependsOn(":common")
 
 neoForge {
     // Specify the version of NeoForge to use.
-    version = project.neo_version
+    version = project.neoforge_version
 
     parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
+        mappingsVersion = project.parchment_version
+        minecraftVersion = project.parchment_minecraft
     }
 
     // This line is optional. Access Transformers are automatically detected
@@ -130,6 +133,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 // a dependency that will be present for runtime testing but that is
 // "optional", meaning it will not be pulled by dependents of this mod.
 configurations {
+    localRuntime
     runtimeClasspath.extendsFrom localRuntime
 }
 
@@ -139,9 +143,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
+            neo_version            : neoforge_version,
             neo_version_range      : neo_version_range,
-            loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
