@@ -115,7 +115,7 @@ public record ItemClickPayload(ItemStack stack, int button, ClickType clickType)
                     Slot scanning = menu.slots.get(index);
                     if(!(scanning.container instanceof Inventory)) break;
                     ItemStack scanningItem =scanning.getItem();
-                    if(ItemStack.isSameItemSameTags(carried,scanningItem)){
+                    if (ItemStack.isSameItemSameComponents(carried, scanningItem)) {
                         ItemStack taken = scanning.safeTake(scanningItem.getCount(), scanningItem.getCount(), player);
                         LOGGER.debug("ItemClickPayload.PICKUP_ALL: took {} from slot index={}", taken, index);
                         ItemStack remain = endInv.addItem(taken);

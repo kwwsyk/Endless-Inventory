@@ -68,7 +68,7 @@ public class ItemDisplay extends ItemPage{
     public ItemStack takeItem(ItemStack itemStack,int count){
         for(int i=0; i< items.size(); ++i){//in the loop is the animation
             ItemStack stack = items.get(i);
-            if(ItemStack.isSameItemSameTags(stack,itemStack)){
+            if (ItemStack.isSameItemSameComponents(stack, itemStack)) {
                 if(!isInfinite(stack)) {
                     if (count < stack.getCount()) {
                         stack.split(count);
@@ -112,7 +112,7 @@ public class ItemDisplay extends ItemPage{
         {
             for (int i = 0; i < this.length; ++i) {
                 ItemStack itemStack1 = this.items.get(i);
-                if (ItemStack.isSameItemSameTags(itemStack1, itemStack)) {
+                if (ItemStack.isSameItemSameComponents(itemStack1, itemStack)) {
                     if(!isFull(itemStack1)) {
                         int additional = itemStack1.getCount();
                         int max = meta.getMaxStackSize();

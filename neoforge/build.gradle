@@ -49,11 +49,11 @@ project.evaluationDependsOn(":common")
 
 neoForge {
     // Specify the version of NeoForge to use.
-    version = project.neo_version
+    version = project.neoforge_version
 
     parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
+        mappingsVersion = project.parchment_version
+        minecraftVersion = project.parchment_minecraft
     }
 
     // This line is optional. Access Transformers are automatically detected
@@ -102,7 +102,7 @@ neoForge {
             // "REGISTRYDUMP": For getting the contents of all registries.
             systemProperty 'forge.logging.markers', 'REGISTRIES'
 
-            jvmArg '--add-opens=java.base/java.lang.ref=ALL-UNNAMED'
+            jvmArgument '--add-opens=java.base/java.lang.ref=ALL-UNNAMED'
 
             // Recommended logging level for the console
             // You can set various levels here.
@@ -139,9 +139,9 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
+            neo_version            : neoforge_version,
             neo_version_range      : neo_version_range,
-            loader_version_range   : loader_version_range,
+            loader_version_range   : neo_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,

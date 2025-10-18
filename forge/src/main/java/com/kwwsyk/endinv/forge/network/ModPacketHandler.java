@@ -28,7 +28,7 @@ public class ModPacketHandler {
     private static final String PROTOCOL_VERSION = "1";
     @SuppressWarnings("removal")
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(ModInfo.MOD_ID, "main"),
+            ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID, "main"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,
             PROTOCOL_VERSION::equals

@@ -60,7 +60,7 @@ public class PageQuickMoveHandler {
 
                 Slot slot = menu.slots.get(i);
                 ItemStack itemstack = slot.getItem();
-                if (!itemstack.isEmpty() && ItemStack.isSameItemSameTags(stack, itemstack)) {
+                if (!itemstack.isEmpty() && ItemStack.isSameItemSameComponents(stack, itemstack)) {
                     int j = itemstack.getCount() + stack.getCount();
                     int k = slot.getMaxStackSize(itemstack);
                     if (j <= k) {

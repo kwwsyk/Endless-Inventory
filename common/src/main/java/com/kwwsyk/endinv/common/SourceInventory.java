@@ -4,7 +4,6 @@ import com.kwwsyk.endinv.common.util.*;
 import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
@@ -169,7 +168,7 @@ public abstract class SourceInventory {
             if (state == null) {
                 LOGGER.warn("EI:takeItem: no state for {}", key);
                 LOGGER.debug("EI:Current Source Inventory: Class:{},UUID:{},Items:{}",this.getClass(),uuid,buildSnapshotLocked());
-                if(getServerConfig().doConvertEmptyTag().get() && stack.getTag()!=null){
+                if(getServerConfig().doConvertEmptyTag().get() && key.customData() != null){
                     key = new ItemKey(key.item(),null);
                     if((state=itemMap.get(key))!=null){
                         LOGGER.info("EI:takeItem: converted ItemKey with empty tag {} to null tag",ItemKey.asKey(stack));
@@ -212,7 +211,7 @@ public abstract class SourceInventory {
         writeLock.lock();
         try {
             ItemKey key = ItemKey.asKey(itemStack);
-            if(getServerConfig().doConvertEmptyTag().get() && itemStack.getTag()!=null && Objects.equals(itemStack.getTag(),new CompoundTag())){
+            if (getServerConfig().doConvertEmptyTag().get() && key.customData() != null && ItemKey.isEmpty(key.customData())) {
                 key = new ItemKey(itemStack.getItem(),null);
             }
             ItemState state = itemMap.get(key);

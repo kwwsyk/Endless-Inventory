@@ -195,7 +195,7 @@ public final class AutoPickHelper {
     }
 
     private static boolean canMerge(Player player, ItemStack stack){
-        return player.inventoryMenu.slots.stream().anyMatch(slot -> ItemStack.isSameItemSameTags(slot.getItem(),stack));
+        return player.inventoryMenu.slots.stream().anyMatch(slot -> ItemStack.isSameItemSameComponents(slot.getItem(), stack));
     }
 
     private static boolean hasSuch(Player player, Item item){

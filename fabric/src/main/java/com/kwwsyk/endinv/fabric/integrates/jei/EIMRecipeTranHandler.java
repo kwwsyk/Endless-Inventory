@@ -131,10 +131,7 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
 
     private static boolean sameType(ItemStack a, ItemStack b) {
         if (a.isEmpty() || b.isEmpty()) return false;
-        if (a.getItem() != b.getItem()) return false;
-        var ta = a.getTag();
-        var tb = b.getTag();
-        return java.util.Objects.equals(ta, tb);
+        return ItemStack.isSameItemSameComponents(a, b);
     }
 
     private static Ingredient[] buildRecipeLayout(CraftingRecipe recipe) {
@@ -437,7 +434,7 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
         }
 
         boolean isPlain() {
-            return key.tag() == null;
+            return !key.hasCustomData();
         }
     }
 

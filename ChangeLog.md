@@ -1,4 +1,23 @@
 # Change Log
+## 1.21.1-alpha.1
+
+### Toolchain updates
+- Raised the project-wide Java toolchain to 21 and removed the hardcoded Gradle wrapper JDK override to unblock 1.21.1 builds.
+
+### Dependencies bumped
+- None.
+
+### API changes addressed
+- Replaced direct ItemStack tag access with Custom Data component copies across serialization helpers and source inventory, aligning with Minecraft 1.21.1’s data component system without temporary helpers.
+- Migrated inventory keys, codec serialization, JEI recipe transfer comparisons, and inventory equality checks to the new `minecraft:custom_data` component instead of legacy CompoundTag tags.
+- Updated GUI and networking resources to use `ResourceLocation.fromNamespaceAndPath`/`ResourceLocation.parse` ahead of constructor removals in 1.21.1.
+
+### Known issues
+- Loader-specific wiring is not yet migrated; Fabric, Forge, and NeoForge entry points remain on 1.20.1 logic.
+
+### Links
+- Pending bootstrap PR.
+
 __branch 1.20.1__
 
 ## 2025, before Sept: *A Brief*

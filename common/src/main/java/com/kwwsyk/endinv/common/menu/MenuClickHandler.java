@@ -144,14 +144,14 @@ public abstract class MenuClickHandler {
                     clickedSlot.onTake(player, p_150421_);
                 });
             } else if (clickedSlot.mayPlace(carried)) {
-                if (ItemStack.isSameItemSameTags(clickedSlotItem, carried)) {
+                if (ItemStack.isSameItemSameComponents(clickedSlotItem, carried)) {
                     int k3 = clickaction == ClickAction.PRIMARY ? carried.getCount() : 1;
                     menu.setCarried(clickedSlot.safeInsert(carried, k3));
                 } else if (carried.getCount() <= clickedSlot.getMaxStackSize(carried)) {
                     menu.setCarried(clickedSlotItem);
                     clickedSlot.setByPlayer(carried);
                 }
-            } else if (ItemStack.isSameItemSameTags(clickedSlotItem, carried)) {
+            } else if (ItemStack.isSameItemSameComponents(clickedSlotItem, carried)) {
                 Optional<ItemStack> optional = clickedSlot.tryRemove(clickedSlotItem.getCount(), carried.getMaxStackSize() - carried.getCount(), player);
                 optional.ifPresent((p_150428_) -> {
                     carried.grow(p_150428_.getCount());

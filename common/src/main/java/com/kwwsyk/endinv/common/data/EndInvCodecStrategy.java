@@ -3,7 +3,9 @@ package com.kwwsyk.endinv.common.data;
 import com.kwwsyk.endinv.common.EndInvAffinities;
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.util.Accessibility;
+import com.kwwsyk.endinv.common.util.ItemKey;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -11,6 +13,7 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -33,6 +36,8 @@ public interface EndInvCodecStrategy {
     String OWNER_UUID_KEY = "Owner";
     String WHITE_LIST_KEY = "white_list";
     String ACCESSIBILITY_KEY = "Accessibility";
+    String COMPONENTS_KEY = "components";
+    String CUSTOM_DATA_COMPONENT_KEY = DataComponents.CUSTOM_DATA.toString();
 
 
     default EndlessInventory deserializeEndInv(CompoundTag invTag){
@@ -140,8 +145,11 @@ public interface EndInvCodecStrategy {
         ResourceLocation resourcelocation = BuiltInRegistries.ITEM.getKey(stack.getItem());
         compoundTag.putString("id", resourcelocation.toString());
         compoundTag.putInt("Count", stack.getCount());
-        if (stack.getTag() != null) {
-            compoundTag.put("tag", stack.getTag().copy());
+        CustomData customData = ItemKey.copyCustomData(stack);
+        if (!ItemKey.isEmpty(customData)) {
+            CompoundTag components = new CompoundTag();
+            components.put(CUSTOM_DATA_COMPONENT_KEY, customData.copyTag());
+            compoundTag.put(COMPONENTS_KEY, components);
         }
 
         return compoundTag;
@@ -151,13 +159,22 @@ public interface EndInvCodecStrategy {
     static ItemStack load(CompoundTag compoundTag) {
         try {
             var ret = new ItemStack(
-                    BuiltInRegistries.ITEM.get(new ResourceLocation(compoundTag.getString("id"))),
+                    BuiltInRegistries.ITEM.get(ResourceLocation.parse(compoundTag.getString("id"))),
                     compoundTag.getInt("Count")
             );
-            if (compoundTag.contains("tag", 10)) {
-                CompoundTag tag = compoundTag.getCompound("tag");
-                ret.setTag(tag);
+            CustomData customData = null;
+            if (compoundTag.contains(COMPONENTS_KEY, Tag.TAG_COMPOUND)) {
+                CompoundTag components = compoundTag.getCompound(COMPONENTS_KEY);
+                if (components.contains(CUSTOM_DATA_COMPONENT_KEY, Tag.TAG_COMPOUND)) {
+                    customData = CustomData.of(components.getCompound(CUSTOM_DATA_COMPONENT_KEY).copy());
+                }
+            } else if (compoundTag.contains("tag", Tag.TAG_COMPOUND)) {
+                CompoundTag legacy = compoundTag.getCompound("tag");
+                if (!legacy.isEmpty()) {
+                    customData = CustomData.of(legacy.copy());
+                }
             }
+            ItemKey.applyCustomData(ret, customData);
             return ret;
         } catch (RuntimeException runtimeexception) {
             LOGGER.debug("Tried to load invalid item: {}", compoundTag, runtimeexception);

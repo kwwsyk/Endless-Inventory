@@ -15,12 +15,12 @@ import java.util.Optional;
 public abstract class FromResource extends SFBgRendererImpl {
 
 
-    public static final ResourceLocation CONTAINER_TEXTURE_RESOURCE = new ResourceLocation("minecraft","textures/gui/container/generic_54.png");
-    public static final ResourceLocation TABS_RESOURCE = new ResourceLocation("minecraft","textures/gui/advancements/tabs.png");
+    public static final ResourceLocation CONTAINER_TEXTURE_RESOURCE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/gui/container/generic_54.png");
+    public static final ResourceLocation TABS_RESOURCE = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/gui/advancements/tabs.png");
 
-    public static final ResourceLocation DEDICATED_CONTAINER_TEXTURE = new ResourceLocation(ModInfo.MOD_ID,"textures/gui/item_grid.png");
-    public static final ResourceLocation DEDICATED_TABS = new ResourceLocation(ModInfo.MOD_ID,"textures/gui/tabs.png");
-    public static final ResourceLocation ITEM_ENTRY_DISPLAY_RESOURCE = new ResourceLocation(ModInfo.MOD_ID,"textures/gui/item_entry.png");
+    public static final ResourceLocation DEDICATED_CONTAINER_TEXTURE = ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID, "textures/gui/item_grid.png");
+    public static final ResourceLocation DEDICATED_TABS = ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID, "textures/gui/tabs.png");
+    public static final ResourceLocation ITEM_ENTRY_DISPLAY_RESOURCE = ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID, "textures/gui/item_entry.png");
 
     private static ResourceLocation getContainerTexture(){
         return ClientModInfo.getClientConfig().textureMode().get() == TextureMode.DEDICATED_LOCATION ? DEDICATED_CONTAINER_TEXTURE : CONTAINER_TEXTURE_RESOURCE;

@@ -28,7 +28,7 @@ public abstract class AbstractModInitializer {
 
     @SuppressWarnings({"removal"})
     public static ResourceLocation withModLocation(String id){
-        return new ResourceLocation(ModInfo.MOD_ID,id);
+        return ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID, id);
     }
 
     protected AbstractModInitializer(){}

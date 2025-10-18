@@ -83,7 +83,7 @@ public final class AEIRecipeTransferHandler {
             recipeId = mcRecipe.getId();
         } else {
             // Best-effort: use JEI's displayed recipe location via slots view hash; fall back to container id scoping
-            recipeId = new ResourceLocation("endless_inventory", "jei/unknown/" + container.containerId);
+            recipeId = ResourceLocation.fromNamespaceAndPath("endless_inventory", "jei/unknown/" + container.containerId);
         }
         boolean requireCompleteSets = transferInfo.requireCompleteSets(container, recipe);
         List<Integer> craftingIndexes = recipeSlots.stream().map(slot -> slot.index).toList();
@@ -305,10 +305,7 @@ public final class AEIRecipeTransferHandler {
 
     private static boolean sameType(ItemStack a, ItemStack b) {
         if (a.isEmpty() || b.isEmpty()) return false;
-        if (a.getItem() != b.getItem()) return false;
-        var ta = a.getTag();
-        var tb = b.getTag();
-        return Objects.equals(ta, tb);
+        return ItemStack.isSameItemSameComponents(a, b);
     }
 
     private static Ingredient[] buildRecipeLayout(Recipe<?> recipe, int targetSlots) {
@@ -488,7 +485,7 @@ public final class AEIRecipeTransferHandler {
         }
 
         boolean isPlain() {
-            return key.tag() == null;
+            return !key.hasCustomData();
         }
     }
 

@@ -330,7 +330,7 @@ public class ScreenFramework implements PageManager{
     private void slotQuickMoved(Slot clicked) {
         ItemStack itemStack = clicked.getItem().copy();
         if (menu instanceof CreativeModeInventoryScreen.ItemPickerMenu && clicked.index < 45 && menu.slots.size() >= 54) {
-            if (ItemStack.isSameItemSameTags(itemStack, creativeQuickInsertedItem)) {
+            if (ItemStack.isSameItemSameComponents(itemStack, creativeQuickInsertedItem)) {
                 return;
             } else creativeQuickInsertedItem = itemStack;
             itemStack.setCount(itemStack.getMaxStackSize());
