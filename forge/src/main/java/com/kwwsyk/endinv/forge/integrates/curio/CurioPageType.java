@@ -18,7 +18,7 @@ public class CurioPageType {
             },
             "curios",
             (stack)-> stack.getCapability(CuriosCapability.ITEM).isPresent(),
-            ResourceLocation.fromNamespaceAndPath(ModInfo.MOD_ID,"textures/curios_icon.png")
+            ResourceLocation.tryBuild(ModInfo.MOD_ID,"textures/curios_icon.png")
     );
 
     public static void register(){

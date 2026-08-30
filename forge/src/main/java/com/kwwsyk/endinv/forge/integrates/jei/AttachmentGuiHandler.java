@@ -80,37 +80,20 @@ public class AttachmentGuiHandler implements IGuiContainerHandler<AbstractContai
          * Get the typed ingredient that can be looked up by JEI for recipes.
          *
          * @since 11.5.0
-         * @deprecated use {@link #getIngredient()} and {@link #getIngredientType()} instead.
          */
-        @Override @Deprecated @SuppressWarnings({"removal","nonextendable"})
+        @Override
         public ITypedIngredient<ItemStack> getTypedIngredient() {
             return new ITypedIngredient<>() {
                 @Override
                 public IIngredientType<ItemStack> getType() {
-                    return getIngredientType();
+                    return VanillaTypes.ITEM_STACK;
                 }
 
                 @Override
                 public ItemStack getIngredient() {
-                    return ItemClickEventWrapper.this.getIngredient();
+                    return hovered;
                 }
             };
-        }
-
-        /**
-         * @since 15.14.0
-         */
-        @Override
-        public IIngredientType<ItemStack> getIngredientType() {
-            return VanillaTypes.ITEM_STACK;
-        }
-
-        /**
-         * @since 15.14.0
-         */
-        @Override
-        public ItemStack getIngredient() {
-            return hovered;
         }
 
         /**

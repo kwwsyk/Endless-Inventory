@@ -10,90 +10,122 @@ import com.kwwsyk.endinv.forge.network.payloads.JeiTransferRecipePayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.network.Channel;
+import net.minecraftforge.network.ChannelBuilder;
+import net.minecraftforge.network.SimpleChannel;
 
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 @Mod.EventBusSubscriber(modid = ModInfo.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ModPacketHandler {
 
     private static final String PROTOCOL_VERSION = "1";
     @SuppressWarnings("removal")
-    public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(ModInfo.MOD_ID, "main"),
-            () -> PROTOCOL_VERSION,
-            PROTOCOL_VERSION::equals,
-            PROTOCOL_VERSION::equals
-    );
+    public static final SimpleChannel INSTANCE = ChannelBuilder
+            .named(new ResourceLocation(ModInfo.MOD_ID, "main"))
+            .networkProtocolVersion(1)
+            .acceptedVersions(Channel.VersionTest.exact(1))
+            .simpleChannel();
 
-    public static <MSG> BiConsumer<MSG, Supplier<NetworkEvent.Context>> convert(BiConsumer<MSG, ModPacketContext> handler){
-        return (msg,sup)-> {
-            sup.get().enqueueWork(() -> {
+    public static <MSG> BiConsumer<MSG, CustomPayloadEvent.Context> convert(BiConsumer<MSG, ModPacketContext> handler){
+        return (msg, sup)-> {
+            sup.enqueueWork(() -> {
                 // Work that needs to be thread-safe (most work)
                 // Do stuff
-                handler.accept(msg,()->sup.get().getSender());
+                handler.accept(msg,()->sup.getSender());
             });
-            sup.get().setPacketHandled(true);
+            sup.setPacketHandled(true);
         };
     }
 
-    public static <MSG> BiConsumer<MSG, Supplier<NetworkEvent.Context>> convertClient(BiConsumer<MSG, ModPacketContext> handler){
-        return (msg,sup)-> {
-            sup.get().enqueueWork(() -> {
+    public static <MSG> BiConsumer<MSG, CustomPayloadEvent.Context> convertClient(BiConsumer<MSG, ModPacketContext> handler){
+        return (msg, sup)-> {
+            sup.enqueueWork(() -> {
                 // Make sure it's only executed on the physical client
-                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handler.accept(msg,()->sup.get().getSender()));
+                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handler.accept(msg,()->sup.getSender()));
 
             });
-            sup.get().setPacketHandled(true);
+            sup.setPacketHandled(true);
         };
     }
 
-    public static <MSG> BiConsumer<MSG, Supplier<NetworkEvent.Context>> convertBi(BiConsumer<MSG, ModPacketContext> handler){
-        return (msg,sup)-> {
-            sup.get().enqueueWork(() -> {
-                var cxt = sup.get();
+    public static <MSG> BiConsumer<MSG, CustomPayloadEvent.Context> convertBi(BiConsumer<MSG, ModPacketContext> handler){
+        return (msg, cxt)-> {
+            cxt.enqueueWork(() -> {
                 ServerPlayer sender;
                 if((sender=cxt.getSender())!=null){
                     handler.accept(msg,()->sender);
                 }else {
-                    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handler.accept(msg,()->sup.get().getSender()));
+                    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handler.accept(msg, cxt::getSender));
                 }
             });
-            sup.get().setPacketHandled(true);
+            cxt.setPacketHandled(true);
         };
     }
 
     private static void register(){
         int i=0;
-        INSTANCE.registerMessage(i++, EndInvContent.class,EndInvContent::encode,EndInvContent::decode,convertClient(EndInvContent::handle));
-        INSTANCE.registerMessage(i++, EndInvMetadata.class,EndInvMetadata::encode,EndInvMetadata::decode,convertClient(EndInvMetadata::handle));
-        INSTANCE.registerMessage(i++, ItemPickedUpPayload.class,ItemPickedUpPayload::encode,ItemPickedUpPayload::decode,convertClient(ItemPickedUpPayload::handle));
-        INSTANCE.registerMessage(i++, SetItemDisplayContentPayload.class,SetItemDisplayContentPayload::encode,SetItemDisplayContentPayload::decode,convertClient(SetItemDisplayContentPayload::handle));
-        INSTANCE.registerMessage(i++, SetStarredPagePayload.class,SetStarredPagePayload::encode,SetStarredPagePayload::decode,convertClient(SetStarredPagePayload::handle));
-        INSTANCE.registerMessage(i++, MenuAttachabilityPayload.class, MenuAttachabilityPayload::encode, MenuAttachabilityPayload::decode, convertClient(MenuAttachabilityPayload::handle));
+        INSTANCE.messageBuilder(EndInvContent.class, i++)
+                .encoder(EndInvContent::encode).decoder(EndInvContent::decode)
+                .consumerNetworkThread(convertClient(EndInvContent::handle)).add();
+        INSTANCE.messageBuilder(EndInvMetadata.class, i++)
+                .encoder(EndInvMetadata::encode).decoder(EndInvMetadata::decode)
+                .consumerNetworkThread(convertClient(EndInvMetadata::handle)).add();
+        INSTANCE.messageBuilder(ItemPickedUpPayload.class, i++)
+                .encoder(ItemPickedUpPayload::encode).decoder(ItemPickedUpPayload::decode)
+                .consumerNetworkThread(convertClient(ItemPickedUpPayload::handle)).add();
+        INSTANCE.messageBuilder(SetItemDisplayContentPayload.class, i++)
+                .encoder(SetItemDisplayContentPayload::encode).decoder(SetItemDisplayContentPayload::decode)
+                .consumerNetworkThread(convertClient(SetItemDisplayContentPayload::handle)).add();
+        INSTANCE.messageBuilder(SetStarredPagePayload.class, i++)
+                .encoder(SetStarredPagePayload::encode).decoder(SetStarredPagePayload::decode)
+                .consumerNetworkThread(convertClient(SetStarredPagePayload::handle)).add();
+        INSTANCE.messageBuilder(MenuAttachabilityPayload.class, i++)
+                .encoder(MenuAttachabilityPayload::encode).decoder(MenuAttachabilityPayload::decode)
+                .consumerNetworkThread(convertClient(MenuAttachabilityPayload::handle)).add();
 
-        INSTANCE.registerMessage(i++, ItemClickPayload.class,ItemClickPayload::encode,ItemClickPayload::decode,convert(ItemClickPayload::handle));
-        INSTANCE.registerMessage(i++, BulkQuickMoveFromPagePayload.class, BulkQuickMoveFromPagePayload::encode, BulkQuickMoveFromPagePayload::decode,convert(BulkQuickMoveFromPagePayload::handle));
-        INSTANCE.registerMessage(i++, CreativeItemModPayload.class, CreativeItemModPayload::encode, CreativeItemModPayload::decode,convert(CreativeItemModPayload::handle));
-        INSTANCE.registerMessage(i++, ItemPageContext.class,ItemPageContext::encode,ItemPageContext::decode,convert(ItemPageContext::handle));
-        INSTANCE.registerMessage(i++, OpenEndInvPayload.class,OpenEndInvPayload::encode,OpenEndInvPayload::decode,convert(OpenEndInvPayload::handle));
-        INSTANCE.registerMessage(i++, QuickMoveToPagePayload.class,QuickMoveToPagePayload::encode,QuickMoveToPagePayload::decode,convert(QuickMoveToPagePayload::handle));
-        INSTANCE.registerMessage(i++, StarItemPayload.class,StarItemPayload::encode,StarItemPayload::decode,convert(StarItemPayload::handle));
-        INSTANCE.registerMessage(i++, ToggleCraftingPayload.class, ToggleCraftingPayload::encode, ToggleCraftingPayload::decode, convert(ToggleCraftingPayload::handle));
+        INSTANCE.messageBuilder(ItemClickPayload.class, i++)
+                .encoder(ItemClickPayload::encode).decoder(ItemClickPayload::decode)
+                .consumerNetworkThread(convert(ItemClickPayload::handle)).add();
+        INSTANCE.messageBuilder(BulkQuickMoveFromPagePayload.class, i++)
+                .encoder(BulkQuickMoveFromPagePayload::encode).decoder(BulkQuickMoveFromPagePayload::decode)
+                .consumerNetworkThread(convert(BulkQuickMoveFromPagePayload::handle)).add();
+        INSTANCE.messageBuilder(CreativeItemModPayload.class, i++)
+                .encoder(CreativeItemModPayload::encode).decoder(CreativeItemModPayload::decode)
+                .consumerNetworkThread(convert(CreativeItemModPayload::handle)).add();
+        INSTANCE.messageBuilder(ItemPageContext.class, i++)
+                .encoder(ItemPageContext::encode).decoder(ItemPageContext::decode)
+                .consumerNetworkThread(convert(ItemPageContext::handle)).add();
+        INSTANCE.messageBuilder(OpenEndInvPayload.class, i++)
+                .encoder(OpenEndInvPayload::encode).decoder(OpenEndInvPayload::decode)
+                .consumerNetworkThread(convert(OpenEndInvPayload::handle)).add();
+        INSTANCE.messageBuilder(QuickMoveToPagePayload.class, i++)
+                .encoder(QuickMoveToPagePayload::encode).decoder(QuickMoveToPagePayload::decode)
+                .consumerNetworkThread(convert(QuickMoveToPagePayload::handle)).add();
+        INSTANCE.messageBuilder(StarItemPayload.class, i++)
+                .encoder(StarItemPayload::encode).decoder(StarItemPayload::decode)
+                .consumerNetworkThread(convert(StarItemPayload::handle)).add();
+        INSTANCE.messageBuilder(ToggleCraftingPayload.class, i++)
+                .encoder(ToggleCraftingPayload::encode).decoder(ToggleCraftingPayload::decode)
+                .consumerNetworkThread(convert(ToggleCraftingPayload::handle)).add();
         if(ModList.get().isLoaded("jei")) {
-            INSTANCE.registerMessage(i++, JeiTransferRecipePayload.class, JeiTransferRecipePayload::encode, JeiTransferRecipePayload::decode, convert(JeiTransferRecipePayload::handle));
-            INSTANCE.registerMessage(i++, JeiAttachedTransferPayload.class, JeiAttachedTransferPayload::encode, JeiAttachedTransferPayload::decode, convert(JeiAttachedTransferPayload::handle));
+            INSTANCE.messageBuilder(JeiTransferRecipePayload.class, i++)
+                    .encoder(JeiTransferRecipePayload::encode).decoder(JeiTransferRecipePayload::decode)
+                    .consumerNetworkThread(convert(JeiTransferRecipePayload::handle)).add();
+            INSTANCE.messageBuilder(JeiAttachedTransferPayload.class, i++)
+                    .encoder(JeiAttachedTransferPayload::encode).decoder(JeiAttachedTransferPayload::decode)
+                    .consumerNetworkThread(convert(JeiAttachedTransferPayload::handle)).add();
         }
 
-        INSTANCE.registerMessage(i, SyncedConfig.class,SyncedConfig::encode,SyncedConfig::decode,convertBi(SyncedConfig::handle));
+        INSTANCE.messageBuilder(SyncedConfig.class, i)
+                .encoder(SyncedConfig::encode).decoder(SyncedConfig::decode)
+                .consumerNetworkThread(convertBi(SyncedConfig::handle)).add();
     }
 
     @SubscribeEvent
@@ -102,4 +134,3 @@ public class ModPacketHandler {
         event.enqueueWork(ModPacketHandler::register);
     }
 }
-

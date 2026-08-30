@@ -131,7 +131,7 @@ public class EndInvSettingScreen extends Screen {
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
-        renderBackground(guiGraphics);
+        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         for(var entry : renderingEntries){
             if(entry!=null) {
                 entry.render(guiGraphics, partialTick, mouseX, mouseY);
@@ -140,7 +140,7 @@ public class EndInvSettingScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics guiGraphics) {
+    public void renderBackground(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0,0,-100);
         guiGraphics.fill(leftPos,topPos,leftPos+imageWidth,topPos+imageHeight,0x88888888);
@@ -199,18 +199,18 @@ public class EndInvSettingScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
         if(entries.size()>MAX_ENTRY_COUNT){
-            if (scrollOffset < 1 && scrollY < 0) {
-                scrollOffset = Mth.clamp(scrollOffset+scrollY,0.0,1.0);
+            if (scrollOffset < 1 && deltaY < 0) {
+                scrollOffset = Mth.clamp(scrollOffset+deltaY,0.0,1.0);
             }
-            if (scrollOffset > 0 && scrollY > 0) {
-                scrollOffset = Mth.clamp(scrollOffset-scrollY,0.0,1.0);
+            if (scrollOffset > 0 && deltaY > 0) {
+                scrollOffset = Mth.clamp(scrollOffset-deltaY,0.0,1.0);
             }
             entryOffset = (int) Math.floor(scrollOffset*(entries.size()-MAX_ENTRY_COUNT));
             scrollTo();
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
     }
 
     /*private AttributeEntry<Accessibility> createAccessibilityConfig(){

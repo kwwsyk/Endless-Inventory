@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -34,14 +35,14 @@ public class ServerPlaceRecipeMixin<C extends Container>{
 
 
     @Inject(method = "recipeClicked", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/inventory/RecipeBookMenu;fillCraftSlotsStackedContents(Lnet/minecraft/world/entity/player/StackedContents;)V"))
-    private void fillEndInvStackedContents(ServerPlayer player, Recipe<C> recipe, boolean placeAll, CallbackInfo ci){
+    private void fillEndInvStackedContents(ServerPlayer player, RecipeHolder<? extends Recipe<C>> holder, boolean placeAll, CallbackInfo ci){
         endInv = ServerLevelEndInv.getEndInvForPlayer(player).orElse(null);
         if(endInv==null) return;
         RecipeItemProvider.fillStackedContents(endInv.getItemsAsList(), this.stackedContents);
     }
 
-    @Inject(method = "recipeClicked", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/recipebook/ServerPlaceRecipe;handleRecipeClicked(Lnet/minecraft/world/item/crafting/Recipe;Z)V"))
-    private void finishHandleClick(ServerPlayer player, Recipe<C> recipe, boolean placeAll, CallbackInfo ci){
+    @Inject(method = "recipeClicked", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/recipebook/ServerPlaceRecipe;handleRecipeClicked(Lnet/minecraft/world/item/crafting/RecipeHolder;Z)V"))
+    private void finishHandleClick(ServerPlayer player, RecipeHolder<? extends Recipe<C>> holder, boolean placeAll, CallbackInfo ci){
         if(endInv!=null){
             endInv.broadcastChanges();
         }

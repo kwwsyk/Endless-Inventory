@@ -100,7 +100,7 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
     }
 
     public void render(@NotNull GuiGraphics gui, int mouseX, int mouseY, float partialTick){
-        this.renderBackground(gui);
+        this.renderBackground(gui, mouseX, mouseY, partialTick);
         frameWork.renderPre(gui,mouseX,mouseY,partialTick);
 
         super.render(gui,mouseX,mouseY,partialTick);
@@ -131,8 +131,8 @@ public class EndlessInventoryScreen extends AbstractContainerScreen<EndlessInven
         return frameWork.mouseReleased(mouseX,mouseY,keyCode) || super.mouseReleased(mouseX,mouseY,keyCode);
     }
 
-    public boolean mouseScrolled(double mouseX,double mouseY,double scrollY){
-        return super.mouseScrolled(mouseX,mouseY,scrollY) || frameWork.mouseScrolled(mouseX,mouseY,scrollY);
+    public boolean mouseScrolled(double mouseX,double mouseY,double deltaX,double deltaY){
+        return super.mouseScrolled(mouseX,mouseY,deltaX,deltaY) || frameWork.mouseScrolled(mouseX,mouseY,deltaY);
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers){

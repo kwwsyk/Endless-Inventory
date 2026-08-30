@@ -89,17 +89,17 @@ public class ModInitializer extends AbstractModInitializer {
         return new IPacketDistributor() {
             @Override
             public void sendToServer(ModPacketPayload payload) {
-                ModPacketHandler.INSTANCE.sendToServer(payload);
+                ModPacketHandler.INSTANCE.send(payload, PacketDistributor.SERVER.noArg());
             }
 
             @Override
             public void sendToPlayer(ServerPlayer player, ModPacketPayload payload) {
-                ModPacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(()->player),payload);
+                ModPacketHandler.INSTANCE.send(payload, PacketDistributor.PLAYER.with(player));
             }
 
             @Override
             public void sendToAllPlayer(ModPacketPayload payload) {
-                ModPacketHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),payload);
+                ModPacketHandler.INSTANCE.send(payload, PacketDistributor.ALL.noArg());
             }
         };
     }

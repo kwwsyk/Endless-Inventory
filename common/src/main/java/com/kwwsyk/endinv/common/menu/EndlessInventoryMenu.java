@@ -27,6 +27,7 @@ import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -704,10 +705,11 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         }
         var level = serverPlayer.level();
         ItemStack resultStack = ItemStack.EMPTY;
-        Optional<CraftingRecipe> optional = serverPlayer.server.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, this.craftMatrix, level);
+        Optional<RecipeHolder<CraftingRecipe>> optional = serverPlayer.server.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, this.craftMatrix, level);
         if (optional.isPresent()) {
-            CraftingRecipe recipe = optional.get();
-            if (this.craftResult.setRecipeUsed(level, serverPlayer, recipe)) {
+            RecipeHolder<CraftingRecipe> holder = optional.get();
+            CraftingRecipe recipe = holder.value();
+            if (this.craftResult.setRecipeUsed(level, serverPlayer, holder)) {
                 ItemStack assembled = recipe.assemble(this.craftMatrix, level.registryAccess());
                 if (assembled.isItemEnabled(level.enabledFeatures())) {
                     resultStack = assembled;
