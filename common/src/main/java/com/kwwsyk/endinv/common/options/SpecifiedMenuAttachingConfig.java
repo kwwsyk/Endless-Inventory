@@ -219,7 +219,7 @@ public class SpecifiedMenuAttachingConfig {
                 String namespaceTxt = configEntry.substring(0,LCIndex).trim();
 
                 boolean value = parseBoolean(boolTxt);
-                ResourceLocation rl = ResourceLocation.parse(namespaceTxt);
+                ResourceLocation rl = new ResourceLocation(namespaceTxt);
 
                 if(rl.getPath().equals("inventory") || rl.getPath().equals("inventory_menu")){
                     return new ParseStringResult(true, null, value);

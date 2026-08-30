@@ -22,6 +22,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -68,7 +69,8 @@ public final class AEIRecipeTransferHandler {
         Ingredient[] layout = buildLayoutFromRecipeSlots(recipeSlotsView, recipeSlots.size());
         TransferPlan plan = null;
         if (endInv != null) {
-            if (allEmpty(layout) && recipe instanceof Recipe<?> mcRecipe) {
+            Recipe<?> mcRecipe = unwrapRecipe(recipe);
+            if (allEmpty(layout) && mcRecipe != null) {
                 // Fallback to recipe ingredients if the slots view didn't provide inputs
                 plan = createTransferPlan(mcRecipe, recipeSlots, inventorySlots, endInv, maxTransfer);
             } else {
@@ -79,8 +81,8 @@ public final class AEIRecipeTransferHandler {
             }
         }
         ResourceLocation recipeId;
-        if (recipe instanceof Recipe<?> mcRecipe) {
-            recipeId = mcRecipe.getId();
+        if (recipe instanceof RecipeHolder<?> holder) {
+            recipeId = holder.id();
         } else {
             // Best-effort: use JEI's displayed recipe location via slots view hash; fall back to container id scoping
             recipeId = new ResourceLocation("endless_inventory", "jei/unknown/" + container.containerId);
@@ -96,6 +98,20 @@ public final class AEIRecipeTransferHandler {
                 craftingIndexes,
                 inventoryIndexes
         ));
+    }
+
+    @Nullable
+    private static Recipe<?> unwrapRecipe(Object recipe) {
+        if (recipe instanceof Recipe<?> value) {
+            return value;
+        }
+        if (recipe instanceof RecipeHolder<?> holder) {
+            Object value = holder.value();
+            if (value instanceof Recipe<?> recipeValue) {
+                return recipeValue;
+            }
+        }
+        return null;
     }
 
     @Nullable

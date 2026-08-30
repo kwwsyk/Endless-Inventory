@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraftforge.fml.ModList;
 
 import java.util.Optional;
@@ -51,21 +52,21 @@ public record JeiTransferRecipePayload(int containerId, ResourceLocation recipeI
 
         Optional<?> optional = serverPlayer.serverLevel().getRecipeManager().byKey(recipeId);
         optional.ifPresent(recipeObj -> {
-            CraftingRecipe craftingRecipe = resolveCraftingRecipe(recipeObj);
+            RecipeHolder<CraftingRecipe> craftingRecipe = resolveCraftingRecipe(recipeObj);
             if (craftingRecipe != null) {
                 EIMRecipeTranHandler.performServerTransfer(menu, craftingRecipe, serverPlayer, maxTransfer);
             }
         });
     }
 
-    private static CraftingRecipe resolveCraftingRecipe(Object recipeObj) {
-        if (recipeObj instanceof CraftingRecipe craftingRecipe) {
-            return craftingRecipe;
+    private static RecipeHolder<CraftingRecipe> resolveCraftingRecipe(Object recipeObj) {
+        if (recipeObj instanceof RecipeHolder<?> holder && holder.value() instanceof CraftingRecipe craftingRecipe) {
+            return new RecipeHolder<>(holder.id(), craftingRecipe);
         }
         try {
             Object value = recipeObj.getClass().getMethod("value").invoke(recipeObj);
             if (value instanceof CraftingRecipe craftingRecipe) {
-                return craftingRecipe;
+                return new RecipeHolder<>(new ResourceLocation(recipeObj.getClass().getName()), craftingRecipe);
             }
         } catch (ReflectiveOperationException ignored) {
         }

@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.LevelResource;
@@ -46,7 +47,8 @@ public class EndlessInventoryData extends SavedData {
             return; // 仅在主世界执行
         }
 
-        ServerLevelEndInv.levelEndInvData = level.getDataStorage().computeIfAbsent(EndlessInventoryData::load,EndlessInventoryData::create,END_INV_LIST_KEY);
+        SavedData.Factory<EndlessInventoryData> factory = new SavedData.Factory<>(EndlessInventoryData::create, EndlessInventoryData::load, DataFixTypes.SAVED_DATA_MAP_DATA);
+        ServerLevelEndInv.levelEndInvData = level.getDataStorage().computeIfAbsent(factory, END_INV_LIST_KEY);
 
         LOGGER.info("Initialized EndlessInventoryData in {} with {} inventories", level.dimension().location(), ServerLevelEndInv.levelEndInvData.levelEndInvs.size());
     }

@@ -17,7 +17,7 @@ public final class ClothConfigIntegration {
         ClientModInfo.setConfigScreenFactory(ClothConfigScreenBuilder::create);
         container.registerExtensionPoint(
                 ConfigScreenHandler.ConfigScreenFactory.class,
-                () -> new ConfigScreenHandler.ConfigScreenFactory(ClothConfigScreenBuilder::create)
+                () -> new ConfigScreenHandler.ConfigScreenFactory((minecraft, parent) -> ClothConfigScreenBuilder.create(parent))
         );
     }
 }

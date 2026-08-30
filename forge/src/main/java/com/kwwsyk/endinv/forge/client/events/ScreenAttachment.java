@@ -219,7 +219,7 @@ public class ScreenAttachment {
             attached.mouseScrolled(new IScreenEvent() {
                 @Override
                 public double getScrollDeltaY() {
-                    return event.getScrollDelta();
+                    return event.getDeltaY();
                 }
 
                 @Override
