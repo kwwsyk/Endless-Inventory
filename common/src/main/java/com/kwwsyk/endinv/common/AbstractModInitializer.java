@@ -26,9 +26,12 @@ public abstract class AbstractModInitializer {
         <R extends T> Supplier<R> register(String id, Supplier<R> supplier);
     }
 
-    @SuppressWarnings({"removal"})
     public static ResourceLocation withModLocation(String id){
         return new ResourceLocation(ModInfo.MOD_ID,id);
+    }
+
+    public static ResourceLocation withMcLocation(String id){
+        return new ResourceLocation("minecraft",id);
     }
 
     protected AbstractModInitializer(){}
