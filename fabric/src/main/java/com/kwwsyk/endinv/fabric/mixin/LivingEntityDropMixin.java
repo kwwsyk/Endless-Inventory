@@ -18,7 +18,7 @@ public abstract class LivingEntityDropMixin {
         if (source == null) return;
         var attacker = source.getEntity();
         if (attacker instanceof ServerPlayer sp) {
-            if (ServerConfigs.ENABLE_AUTOPICK.get()) {
+            if (ServerConfigs.PICKUP_HELPER.ITEM_DROPS.DIRECTLY_SEND_TO_ENDINV.get()) {
                 MobDeathRedirect.set(sp);
             }
         }

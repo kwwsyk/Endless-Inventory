@@ -147,7 +147,7 @@ publishMods {
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         minecraftVersionRange {
             start = "26.1"
-            end = "latest" // Set to "latest" to use the latest Minecraft version
+            end = "26.1" // Set to "latest" to use the latest Minecraft version
 
             // Optionally include snapshot versions, defaults to false
             includeSnapshots = true

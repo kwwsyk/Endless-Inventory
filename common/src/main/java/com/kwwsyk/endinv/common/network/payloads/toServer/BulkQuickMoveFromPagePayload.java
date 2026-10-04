@@ -14,7 +14,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import java.util.Optional;
@@ -43,7 +42,7 @@ public record BulkQuickMoveFromPagePayload(ItemKey prototype) implements ModPack
     }
 
     @Override
-    public void handle(@NotNull ModPacketContext context) {
+    public void handle(ModPacketContext context) {
         Player player = context.player();
         Optional<EndlessInventory> opt = ServerLevelEndInv.getEndInvForPlayer(player);
         if (opt.isEmpty()) {

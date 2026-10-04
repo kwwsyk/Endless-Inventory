@@ -467,7 +467,7 @@ public class ScreenFramework implements PageManager, GuiEventListener {
 
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (hasClickedOnPage(mouseX, mouseY)) {
-            return getDisplayingPage().mouseScrolled(mouseX - getPageX(), getPageY(), scrollY);
+            return getDisplayingPage().mouseScrolled(mouseX - getPageX(), mouseY - getPageY(), scrollY);
         }
         return false;
     }

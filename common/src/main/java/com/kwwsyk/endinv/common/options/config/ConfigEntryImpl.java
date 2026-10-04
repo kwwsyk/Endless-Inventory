@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -94,6 +95,19 @@ public sealed abstract class ConfigEntryImpl<T> implements AutoSavable<T>, IConf
 
     public boolean isInitialized() {
         return isInitialized;
+    }
+
+    public List<String> print(){
+        List<String> list = new ArrayList<>();
+        list.add(key() + ": " + (isInitialized() ? "Current: " + get() : ""));
+        for(String cmt : comments()) list.add("   #" + cmt);
+        list.add("    default: " + defaultValue);
+        return list;
+    }
+
+    @Override
+    public String toString() {
+        return isInitialized() ? key() + "=" + get() : key() + ", default value: " + defaultValue();
     }
 
     public static final class BooleanEntry extends ConfigEntryImpl<Boolean> implements IConfigValue<Boolean>, AutoSavable<Boolean> {

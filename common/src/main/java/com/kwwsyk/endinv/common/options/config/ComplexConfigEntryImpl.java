@@ -1,5 +1,8 @@
 package com.kwwsyk.endinv.common.options.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**Configuration entry of grouped configurations.
  *</br>
  * Supports recursive installation via (neo)forge's night config api by iterate {@link #fields()}
@@ -94,5 +97,18 @@ public abstract non-sealed class ComplexConfigEntryImpl<C> extends ConfigEntryIm
         for(var field : fields()){
             field.setSaver(new LazySaver());
         }
+    }
+
+    public List<String> print(){
+        List<String> list = new ArrayList<>();
+        list.add(key() + ": ");
+        for(String cmt : comments()) list.add("   #" + cmt);
+        for(var field : fields()) list.add(field.toString());
+        return list;
+    }
+
+    @Override
+    public String toString(){
+        return key() + (defaultValue != null ? ", default value: " + defaultValue() : " Complex Config");
     }
 }

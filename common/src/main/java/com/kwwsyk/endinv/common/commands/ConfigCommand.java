@@ -1,47 +1,27 @@
 package com.kwwsyk.endinv.common.commands;
 
-import com.kwwsyk.endinv.common.options.ServerConfigs;
+import com.kwwsyk.endinv.common.options.config.ConfigEntryImpl;
+import com.kwwsyk.endinv.common.options.config.command.CommandBuilder;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 
-/**
- * Register Endless Inventory config commands
- *
- * @author Kay Zhang
- * @since 2025-10-17
- * @version 1.1.0
- */
-public class ConfigCommand {
+import java.util.List;
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher){
-        dispatcher.register(Commands.literal("endinv").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                .then(
-                        Commands.literal("config")
-                                .then(
-                                        Commands.literal("autoPick")
-                                                .then(
-                                                        Commands.argument("enable", BoolArgumentType.bool())
-                                                                .executes(
-                                                                        context-> cmdSetAutoPick(context.getSource(),BoolArgumentType.getBool(context, "enable"))
-
-                                                                )
-                                                )
-                                )
-                )
-        );
-    }
-
-    private static int cmdSetAutoPick(CommandSourceStack source,boolean enable){
-        try {
-            ServerConfigs.ENABLE_AUTOPICK.set(enable);
-            source.sendSuccess(()-> Component.literal(enable ? "Enabled":"Disabled"+ " autoPick utility"), true);
-            return 1;
-        } catch (Exception e) {
-            return 0;
-        }
-
+public final class ConfigCommand {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher,
+                                List<ConfigEntryImpl<?>> configEntries, String subEntryName) {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("endinv");
+        LiteralArgumentBuilder<CommandSourceStack> configs = Commands.literal(subEntryName)
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .executes(ctx -> {
+                    ctx.getSource().sendSuccess(() -> Component.literal("Endinv configs root. Use /endinv config <path>"), false);
+                    return 1;
+                });
+        for (ConfigEntryImpl<?> cfg : configEntries) configs.then(CommandBuilder.buildNode(cfg));
+        root.then(configs);
+        dispatcher.register(root);
     }
 }

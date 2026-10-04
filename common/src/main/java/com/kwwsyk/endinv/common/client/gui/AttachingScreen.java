@@ -134,7 +134,9 @@ public class AttachingScreen<T extends AbstractContainerMenu>{
     }
 
     public void mouseScrolled(IScreenEvent event) {
-        frameWork.mouseScrolled(event.getMouseX(), event.getMouseY(), event.getScrollDeltaX(), event.getScrollDeltaY());
+        event.setCanceled(frameWork.mouseScrolled(
+                event.getMouseX(), event.getMouseY(), event.getScrollDeltaX(), event.getScrollDeltaY()
+        ));
     }
 
     public void keyPressed(IScreenEvent event) {

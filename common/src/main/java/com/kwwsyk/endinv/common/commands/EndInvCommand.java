@@ -3,18 +3,25 @@ package com.kwwsyk.endinv.common.commands;
 import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.ServerLevelEndInv;
+import com.kwwsyk.endinv.common.autopick.options.PickupHelperOptions;
 import com.kwwsyk.endinv.common.data.EndlessInventoryData;
 import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
+import com.kwwsyk.endinv.common.options.ServerConfigs;
+import com.kwwsyk.endinv.common.options.config.IConfigValue;
 import com.kwwsyk.endinv.common.util.Accessibility;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class EndInvCommand {
 
@@ -75,7 +82,67 @@ public class EndInvCommand {
                                 .executes(context -> createNew(context.getSource(),Accessibility.PRIVATE))
                         )
                 )
+                .then(autoPickCommand())
         );
+    }
+
+    private static final PickupHelperOptions PICKUP_HELPER = ServerConfigs.PICKUP_HELPER;
+    private static final Map<IConfigValue<Boolean>, Boolean> DEFAULT_AUTOPICK_PLAN = createDefaultAutoPickPlan();
+
+    private static Map<IConfigValue<Boolean>, Boolean> createDefaultAutoPickPlan() {
+        Map<IConfigValue<Boolean>, Boolean> plan = new LinkedHashMap<>();
+        plan.put(PICKUP_HELPER.EXP_DROPS.PROTECT_DROPS, true);
+        plan.put(PICKUP_HELPER.EXP_DROPS.TOUCH_DIRECTLY, true);
+        plan.put(PICKUP_HELPER.ITEM_DROPS.PROTECT_DROPS, true);
+        plan.put(PICKUP_HELPER.ITEM_DROPS.SEND_TO_INVENTORY, true);
+        plan.put(PICKUP_HELPER.ITEM_DROPS.PICK_TO_ENDINV, true);
+        return plan;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> autoPickCommand() {
+        return Commands.literal("autoPick")
+                .executes(context -> printAutoPickStatus(context.getSource()))
+                .then(Commands.literal("print").executes(context -> printAutoPickSettings(context.getSource())))
+                .then(Commands.literal("enable").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> setRecommendedAutoPick(context.getSource(), true)))
+                .then(Commands.literal("disable").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> setRecommendedAutoPick(context.getSource(), false)));
+    }
+
+    private static int printAutoPickStatus(CommandSourceStack source) {
+        boolean enabled = DEFAULT_AUTOPICK_PLAN.entrySet().stream().allMatch(entry -> entry.getKey().get().equals(entry.getValue()))
+                && PICKUP_HELPER.EXP_DROPS.DIRECTED_DISTRIBUTE.get() == 0
+                && PICKUP_HELPER.ITEM_DROPS.DIRECTED_DISTRIBUTE.get() == 0
+                && !PICKUP_HELPER.ITEM_DROPS.DIRECTLY_SEND_TO_ENDINV.get();
+        boolean disabled = DEFAULT_AUTOPICK_PLAN.keySet().stream().noneMatch(IConfigValue::get);
+        String status = enabled ? "enabled" : disabled ? "disabled" : "custom";
+        source.sendSystemMessage(Component.literal("AutoPick is in " + status + " configuration status."));
+        return 0;
+    }
+
+    private static int printAutoPickSettings(CommandSourceStack source) {
+        source.sendSystemMessage(Component.literal("pickup_helper.item_drops_config"));
+        for (var entry : PICKUP_HELPER.ITEM_DROPS.fields()) {
+            source.sendSystemMessage(Component.literal("  " + entry.key() + " = " + entry.get()));
+        }
+        source.sendSystemMessage(Component.literal("pickup_helper.exp_drops_config"));
+        for (var entry : PICKUP_HELPER.EXP_DROPS.fields()) {
+            source.sendSystemMessage(Component.literal("  " + entry.key() + " = " + entry.get()));
+        }
+        return 0;
+    }
+
+    private static int setRecommendedAutoPick(CommandSourceStack source, boolean enabled) {
+        for (var entry : DEFAULT_AUTOPICK_PLAN.entrySet()) {
+            entry.getKey().set(enabled && entry.getValue());
+        }
+        PICKUP_HELPER.ITEM_DROPS.DIRECTED_DISTRIBUTE.set(0);
+        PICKUP_HELPER.ITEM_DROPS.DIRECTLY_SEND_TO_ENDINV.set(false);
+        PICKUP_HELPER.ITEM_DROPS.ENDINV_AFTER_INVENTORY.set(enabled);
+        PICKUP_HELPER.EXP_DROPS.DIRECTED_DISTRIBUTE.set(0);
+        PICKUP_HELPER.EXP_DROPS.GIVE_DIRECTLY.set(false);
+        source.sendSystemMessage(Component.literal("AutoPick has been " + (enabled ? "enabled" : "disabled") + "."));
+        return 1;
     }
 
     private static int byIndexRemove(CommandSourceStack source, int index, boolean forced) {

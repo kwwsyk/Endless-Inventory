@@ -25,6 +25,9 @@ public class MixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith("ExperienceOrbMixin") || mixinClassName.endsWith("ItemEntityMixin")) {
+            return true;
+        }
         try {
             return StartupConfig.enableVanillaRecipeBookTransfer();
         } catch (IllegalStateException e) {

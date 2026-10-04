@@ -6,6 +6,8 @@
   "plugin": "com.kwwsyk.endinv.neoforge.mixin.MixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ExperienceOrbMixin",
+    "ItemEntityMixin",
     "ServerPlaceRecipeMixin"
   ],
   "client": [

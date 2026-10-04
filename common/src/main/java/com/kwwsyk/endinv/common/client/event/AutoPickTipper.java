@@ -23,7 +23,6 @@ public class AutoPickTipper {
         if (Minecraft.getInstance().player != null) {
             Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 0.5f, 1.0f);
         }
-        // å°è¯•åˆå¹¶å·²æœ‰ç‰©å“
         for (PickupDisplayItem item : pickupQueue) {
             if (ItemStack.isSameItemSameComponents(item.stack, stack)) {
                 item.stack.grow(stack.getCount());
@@ -34,7 +33,6 @@ public class AutoPickTipper {
             }
         }
 
-        // æ–°ç‰©å“åŠ å…¥
         if (pickupQueue.size() >= MAX_QUEUE_SIZE) {
             pickupQueue.pollLast();
         }
@@ -64,7 +62,6 @@ public class AutoPickTipper {
             index++;
         }
 
-        // å¤„ç†æ—¶é—´
         if (removalDelayCounter > 0) {
             removalDelayCounter--;
         } else if (!pickupQueue.isEmpty()) {
@@ -79,14 +76,16 @@ public class AutoPickTipper {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private static int rarityColor(Rarity rarity){
-        if (rarity == Rarity.COMMON) {
-            return 0x88ffffff;
-        } else {
-            var color = rarity.color();
-            Integer rgb = color != null ? color.getColor() : null;
-            return rgb != null ? (0xff000000 | rgb) : 0x88ffffff;
+        switch (rarity){
+            case COMMON -> {
+                return 0x88ffffff;
+            }
+            default -> {
+                var color = rarity.color();
+                Integer rgb = color != null ? color.getColor() : null;
+                return rgb != null ? (0xff000000 | rgb) : 0x88ffffff;
+            }
         }
     }
 
@@ -100,4 +99,3 @@ public class AutoPickTipper {
         }
     }
 }
-

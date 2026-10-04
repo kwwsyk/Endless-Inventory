@@ -1,5 +1,13 @@
 # Change Log
 
+__branch 26.1__
+
+## 1.1.4
+- Fixed attached Endless Inventory pages losing mouse-wheel input when the host menu also contains a scrollable component.
+- Fixed attached page scroll hit testing to use page-relative mouse coordinates.
+- Added the 1.1.4 Auto Pick settings tree and `/endinv autoPick` command branches.
+- Added configurable item/experience drop protection, direction, inventory-first handling, and EndInv fallback on NeoForge.
+
 __branch 1.21.8__
 
 ## 2026-2-24

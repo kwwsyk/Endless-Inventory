@@ -23,7 +23,7 @@ public abstract class ItemEntityPickupMixin {
     @Inject(method = "playerTouch", at = @At("HEAD"))
     private void endlessinv$autopick(Player player, CallbackInfo ci) {
         if (!(player instanceof ServerPlayer serverPlayer)) return;
-        if (!ServerConfigs.ENABLE_AUTOPICK.get()) return;
+        if (!ServerConfigs.PICKUP_HELPER.ITEM_DROPS.PICK_TO_ENDINV.get()) return;
         if (!isPlayerEnabledAutoPick(serverPlayer)) return;
 
         ItemEntity self = (ItemEntity) (Object) this;
