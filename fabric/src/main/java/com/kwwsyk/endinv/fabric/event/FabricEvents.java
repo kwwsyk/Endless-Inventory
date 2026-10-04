@@ -9,7 +9,6 @@ public final class FabricEvents {
         Commands.register();
         LevelEvents.register();
         PlayerEvents.register();
-        //LootEvent.register();
         BlockBreakRedirect.register();
     }
 }

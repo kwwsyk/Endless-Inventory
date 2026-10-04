@@ -1,11 +1,13 @@
 package com.kwwsyk.endinv.fabric.client.events;
 
 import com.kwwsyk.endinv.common.ModInfo;
+import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.client.gui.AttachingScreen;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.common.client.gui.IScreenEvent;
 import com.kwwsyk.endinv.common.client.gui.bg.IRectangleParam;
 import com.kwwsyk.endinv.common.client.option.ClientConfigs;
+import com.kwwsyk.endinv.common.client.option.MenuAttachabilityCache;
 import com.kwwsyk.endinv.common.network.payloads.toServer.OpenEndInvPayload;
 import com.kwwsyk.endinv.fabric.mixin.ScreenAccessor;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -82,7 +84,7 @@ public final class ScreenAttachment {
                 return;
             }
 
-            if (AttachingScreen.isAttachable(container)) {
+            if (isAttachable(container)) {
                 if (attachment == null) {
                     ModInfo.getPacketDistributor().sendToServer(new OpenEndInvPayload());
                     attachment = new AttachingScreen<>(container);
@@ -317,11 +319,25 @@ public final class ScreenAttachment {
         if (expected == null || expected.screen != screen) {
             return false;
         }
-        if (!AttachingScreen.isAttachable(c)) {
+        if (!isAttachable(c)) {
             attachment = null;
             return false;
         }
         return true;
+    }
+
+    private static boolean isAttachable(AbstractContainerScreen<?> screen) {
+        try {
+            screen.getMenu().getType();
+        } catch (UnsupportedOperationException ignored) {
+            Player player = Minecraft.getInstance().player;
+            return player != null
+                    && ClientConfigs.DO_ATTACH.get()
+                    && ModRegistries.NbtAttachments.getSyncedConfig().computeIfAbsent(player).checkForAttaching()
+                    && ClientConfigs.SPECIFIED_ATTACHABILITY.get().isInventoryAttachable()
+                    && MenuAttachabilityCache.isAttachable(screen);
+        }
+        return AttachingScreen.isAttachable(screen);
     }
 }
 

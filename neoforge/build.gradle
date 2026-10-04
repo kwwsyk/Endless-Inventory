@@ -141,11 +141,12 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 publishMods {
+    dryRun = providers.gradleProperty("publishDryRun").map { it.toBoolean() }.orElse(false)
     file = tasks.named("jar").get().archiveFile
-    changelog = "26.1 1.1.3.1 bug fix"
+    changelog = "26.1 1.1.4 beta"
     displayName.set(base.archivesName)
     version = mod_version
-    type = STABLE
+    type = BETA
     modLoaders.add("neoforge")
 
     curseforge {
@@ -154,6 +155,9 @@ publishMods {
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
         minecraftVersions.add(minecraft_version)
         javaVersions.add(JavaVersion.toVersion(java_version))
+        clientRequired = true
+        serverRequired = true
+        optional("jei")
     }
     modrinth {
         projectId = modrinth_project_id

@@ -14,10 +14,13 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
+import static com.kwwsyk.endinv.common.client.gui.EndInvSettingScreen.renderScrollingString;
+
 public class SortTypeSwitchBox extends AbstractWidget {
 
     public ScreenFramework framework;
     private final int singleBoxHeight;
+    private List<SortType> sortTypes;
     private boolean isOpen;
 
 
@@ -25,6 +28,14 @@ public class SortTypeSwitchBox extends AbstractWidget {
         super(x,y,width,height, Component.empty());
         this.framework = framework;
         this.singleBoxHeight = height;
+        this.sortTypes = List.of(SortType.values());
+    }
+
+    public SortTypeSwitchBox(ScreenFramework framework, int x, int y, int width, int height, List<SortType> sortTypes){
+        super(x,y,width,height, Component.empty());
+        this.framework = framework;
+        this.singleBoxHeight = height;
+        this.sortTypes = sortTypes;
     }
 
     public SortTypeSwitchBox(ScreenFramework framework, IRectangleParam sortTypeSwitchBoxParam){
@@ -32,7 +43,8 @@ public class SortTypeSwitchBox extends AbstractWidget {
                 sortTypeSwitchBoxParam.x(),
                 sortTypeSwitchBoxParam.y(),
                 sortTypeSwitchBoxParam.width(),
-                sortTypeSwitchBoxParam.height()
+                sortTypeSwitchBoxParam.height(),
+                List.of(SortType.values())
         );
     }
 
@@ -42,7 +54,12 @@ public class SortTypeSwitchBox extends AbstractWidget {
 
     public void setOpen(boolean open) {
         isOpen = open;
-        this.height = open ? singleBoxHeight*(1+ SortType.values().length) : singleBoxHeight;
+        this.height = open ? singleBoxHeight*(1+ sortTypes.size()) : singleBoxHeight;
+    }
+
+    public void setSortTypes(List<SortType> sortTypes) {
+        this.sortTypes = sortTypes;
+        setOpen(false);
     }
 
     public void onClick(MouseButtonEvent event, boolean pre){
@@ -51,7 +68,7 @@ public class SortTypeSwitchBox extends AbstractWidget {
         }else {
             int y1 = getY()+singleBoxHeight;
             int mouseY = (int) event.y();
-            for(SortType type : SortType.values()){
+            for(SortType type : sortTypes){
                 if(isHoveringOnSingleBox(mouseY,y1)){
                     framework.switchSortTypeTo(type);
                     return;
@@ -88,7 +105,7 @@ public class SortTypeSwitchBox extends AbstractWidget {
         if(isOpen){
             GuiGraphicsExtractor.nextStratum();
             int y1 = getY() +singleBoxHeight;
-            for (SortType type : SortType.values()) {
+            for (SortType type : sortTypes) {
                 GuiGraphicsExtractor.fill(getX(), y1, getX() + width, y1 + singleBoxHeight, 0xff888888);
                 GuiGraphicsExtractor.fill(getX() + 1, y1 + 1, getX() + width - 1, y1 + singleBoxHeight - 1, 0xff000000);
                 if (isHoveringOnSingleBox(mouseY, y1)) {
@@ -107,12 +124,24 @@ public class SortTypeSwitchBox extends AbstractWidget {
                     );
                 }
                 s = type.toString();
-                GuiGraphicsExtractor.text(Minecraft.getInstance().font, s,getX()+2,y1+2,0xffffffff);
+                renderScrollingString(GuiGraphicsExtractor, Minecraft.getInstance().font, Component.literal(s),
+                        getX(),y1, getX()+width,y1+singleBoxHeight,0xffffffff);
+
+                //GuiGraphicsExtractor.text(Minecraft.getInstance().font, s,getX()+2,y1+2,0xffffffff);
                 y1+=singleBoxHeight;
             }
         }
         GuiGraphicsExtractor.pose().popMatrix();
     }
+
+    public boolean covers(int x, int y, int width, int height) {
+        return visible && isOpen
+                && x < getX() + this.width
+                && x + width > getX()
+                && y < getY() + this.height
+                && y + height > getY();
+    }
+
     private boolean isHoveringOnSingleBox(int mouseY,int minY){
         return mouseY>=minY && mouseY<=minY+singleBoxHeight && isHovered;
     }
@@ -122,4 +151,3 @@ public class SortTypeSwitchBox extends AbstractWidget {
         this.defaultButtonNarrationText(narrationElementOutput);
     }
 }
-

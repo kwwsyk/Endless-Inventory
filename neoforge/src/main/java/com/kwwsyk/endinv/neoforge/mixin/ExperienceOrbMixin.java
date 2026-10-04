@@ -20,7 +20,8 @@ public class ExperienceOrbMixin {
     private void endinv$adjustOrbBehavior(CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         Player nearest = self.level().getNearestPlayer(self, 16.0);
-        if (nearest == null || !AutoPickHelper.isPlayerEnabledAutoPick(nearest)) return;
+        if (nearest == null || nearest.isDeadOrDying() || nearest.isSpectator()
+                || !AutoPickHelper.isPlayerEnabledAutoPick(nearest)) return;
         var options = ServerConfigs.PICKUP_HELPER.EXP_DROPS;
         if (options.PROTECT_DROPS.get() && !endinv$protectionApplied) {
             self.invulnerableTime = 6000;

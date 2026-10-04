@@ -89,7 +89,12 @@ public abstract class GridPage extends DisplayPage {//todo support item and flui
         final int slotSize = 18;
         final int rowAt = slot / framework.columns();
         final int columnAt = slot % framework.columns();
-        return new Rect2i(leftPos+slotSize*columnAt, topPos+slotSize*rowAt, slotSize, slotSize);
+        return new Rect2i(
+                leftPos+slotSize*columnAt,
+                topPos+slotSize*rowAt,
+                slotSize,
+                slotSize)
+                ;
     }
 
     @Override
@@ -116,4 +121,3 @@ public abstract class GridPage extends DisplayPage {//todo support item and flui
     }
 
 }
-

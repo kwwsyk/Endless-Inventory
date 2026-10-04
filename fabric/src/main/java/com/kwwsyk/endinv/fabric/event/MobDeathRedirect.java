@@ -1,6 +1,7 @@
 package com.kwwsyk.endinv.fabric.event;
 
 import net.minecraft.server.level.ServerPlayer;
+import org.jetbrains.annotations.Nullable;
 
 public final class MobDeathRedirect {
     private static final ThreadLocal<ServerPlayer> CURRENT_KILLER = new ThreadLocal<>();
@@ -11,7 +12,7 @@ public final class MobDeathRedirect {
         CURRENT_KILLER.set(killer);
     }
 
-    public static ServerPlayer get() {
+    public static @Nullable ServerPlayer get() {
         return CURRENT_KILLER.get();
     }
 
@@ -19,4 +20,3 @@ public final class MobDeathRedirect {
         CURRENT_KILLER.remove();
     }
 }
-

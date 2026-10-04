@@ -1,9 +1,31 @@
 package com.kwwsyk.endinv.common.autopick.options;
 
+
 import com.kwwsyk.endinv.common.options.config.ComplexConfigEntryImpl;
 import com.kwwsyk.endinv.common.options.config.ConfigEntryImpl;
 
-public class DropsConfig extends ComplexConfigEntryImpl<Void> {
+public class DropsConfig extends ComplexConfigEntryImpl<DropsConfig.Param> {
+
+    public DropsConfig(String key) {
+        super(key);
+    }
+
+    public record Param(
+            boolean protectDrops,
+            int directedDistribute,
+            boolean sendToInventory,
+            boolean directlySendToEndinv,
+            boolean endinvAfterInventory,
+            boolean pick2Endinv
+    ){
+        public static final Param DEFAULT = new Param(false,-1,false, false,true,false);
+    }
+
+    /// Impl
+    /// see {@code neoforge.event.LootEvent}
+    /// @see com.kwwsyk.endinv.neoforge.events.LootEvent
+
+
     public final BooleanEntry PROTECT_DROPS = new BooleanEntry("protect_drops",
             new String[]{"Give item drops temporary protection from fire, explosions, and other damage."}, true);
     public final IntEntry DIRECTED_DISTRIBUTE = new IntEntry("directed_distribute", new String[]{
@@ -23,9 +45,7 @@ public class DropsConfig extends ComplexConfigEntryImpl<Void> {
             "Send items encountered during normal ground-item pickup to Endless Inventory."
     }, false);
 
-    public DropsConfig(String key) {
-        super(key);
-    }
+
 
     @Override
     public ConfigEntryImpl<?>[] fields() {

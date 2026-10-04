@@ -6,7 +6,6 @@ import com.kwwsyk.endinv.common.menu.page.PageType;
 import com.kwwsyk.endinv.common.network.payloads.toServer.StarItemPayload;
 import com.kwwsyk.endinv.common.util.ItemKey;
 import com.kwwsyk.endinv.common.util.ItemStackLike;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -14,9 +13,6 @@ import java.util.List;
 import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
 
 public class StarredItemPage extends ItemDisplay{
-
-    public Identifier icon = Identifier.fromNamespaceAndPath("minecraft", "book");
-    private int[] countArray;
 
     public StarredItemPage(PageType type, ScreenFramework screenFramework) {
         super(type, screenFramework);
@@ -37,7 +33,6 @@ public class StarredItemPage extends ItemDisplay{
     protected void setVisibleRange(int startIndex, int length){
         this.startIndex = startIndex;
         this.length = Math.min(length, framework.rows()* framework.columns());
-        this.countArray = new int[length];
         this.refreshItems();
     }
 

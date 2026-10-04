@@ -5,8 +5,10 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "BlockDropMixin",
+    "EntitySpawnAtLocationMixin",
     "ExperienceOrbAwardMixin",
-    "ItemEntityPickupMixin"
+    "ItemEntityPickupMixin",
+    "LivingEntityDropMixin"
   ],
   "client": [
     "AbstractContainerScreenAccessor",

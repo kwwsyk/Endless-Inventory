@@ -5,7 +5,6 @@ import com.kwwsyk.endinv.common.options.config.ConfigEntryImpl;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -92,7 +91,9 @@ public class SpecifiedMenuAttachingConfig{
     }
 
     public boolean isMenuAttachable(AbstractContainerMenu menu){
-        if(menu instanceof InventoryMenu || menu instanceof CreativeModeInventoryScreen.ItemPickerMenu) return isInventoryAttachable();
+        // On dedicated server, creative inventory picker is represented as InventoryMenu,
+        // so the client-only CreativeModeInventoryScreen.ItemPickerMenu class must not be referenced here.
+        if(menu instanceof InventoryMenu) return isInventoryAttachable();
         return isMenuAttachable(menu.getType());
     }
 

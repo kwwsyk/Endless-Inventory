@@ -12,7 +12,7 @@ public final class BlockBreakRedirect {
 
     public static void register() {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
-            if (player instanceof ServerPlayer sp && AutoPickHelper.isEnabled(sp)) {
+            if (player instanceof ServerPlayer sp && AutoPickHelper.isPlayerEnabledAutoPick(sp)) {
                 CURRENT_BREAKER.set(sp);
             } else {
                 CURRENT_BREAKER.remove();
