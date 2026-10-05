@@ -1,21 +1,16 @@
 package com.kwwsyk.endinv.fabric.client.events;
 
-import com.kwwsyk.endinv.common.ModInfo;
-import com.kwwsyk.endinv.common.ModRegistries;
 import com.kwwsyk.endinv.common.client.gui.AttachingScreen;
 import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.common.client.gui.IScreenEvent;
 import com.kwwsyk.endinv.common.client.gui.bg.IRectangleParam;
 import com.kwwsyk.endinv.common.client.option.ClientConfigs;
-import com.kwwsyk.endinv.common.client.option.MenuAttachabilityCache;
-import com.kwwsyk.endinv.common.network.payloads.toServer.OpenEndInvPayload;
 import com.kwwsyk.endinv.fabric.mixin.ScreenAccessor;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -59,14 +54,8 @@ public final class ScreenAttachment {
                             btnParam,
                             () -> {
                                 if (attachment == null) {
-                                    ModInfo.getPacketDistributor().sendToServer(new OpenEndInvPayload());
-                                    attachment = new AttachingScreen<>(container);
-                                    attachment.init(new IScreenEvent() {
-                                        @Override
-                                        public void addListener(AbstractWidget widget) {
-                                            ((ScreenAccessor) screen).endinv$invokeAddRenderableWidget(widget);
-                                        }
-                                    });
+                                    attachment = AttachingScreen.attach(container,
+                                            widget -> ((ScreenAccessor) screen).endinv$invokeAddRenderableWidget(widget));
                                 }
                             },
                             () -> {
@@ -84,16 +73,10 @@ public final class ScreenAttachment {
                 return;
             }
 
-            if (isAttachable(container)) {
+            if (AttachingScreen.isAttachable(container)) {
                 if (attachment == null) {
-                    ModInfo.getPacketDistributor().sendToServer(new OpenEndInvPayload());
-                    attachment = new AttachingScreen<>(container);
-                    attachment.init(new IScreenEvent() {
-                        @Override
-                        public void addListener(AbstractWidget widget) {
-                            ((ScreenAccessor) screen).endinv$invokeAddRenderableWidget(widget);
-                        }
-                    });
+                    attachment = AttachingScreen.attach(container,
+                            widget -> ((ScreenAccessor) screen).endinv$invokeAddRenderableWidget(widget));
                 }
             }
 
@@ -305,39 +288,11 @@ public final class ScreenAttachment {
     }
 
     private static boolean isAttachmentActive(@Nullable AttachingScreen<?> expected) {
-        Screen screen = Minecraft.getInstance().screen;
-        if (!(screen instanceof AbstractContainerScreen<?> c)) {
-            attachment = null;
-            return false;
-        }
-        Player player = Minecraft.getInstance().player;
-        if (player == null) {
-            attachment = null;
-            return false;
-        }
-
-        if (expected == null || expected.screen != screen) {
-            return false;
-        }
-        if (!isAttachable(c)) {
+        if (!AttachingScreen.isActive(expected, Minecraft.getInstance().gui.screen())) {
             attachment = null;
             return false;
         }
         return true;
-    }
-
-    private static boolean isAttachable(AbstractContainerScreen<?> screen) {
-        try {
-            screen.getMenu().getType();
-        } catch (UnsupportedOperationException ignored) {
-            Player player = Minecraft.getInstance().player;
-            return player != null
-                    && ClientConfigs.DO_ATTACH.get()
-                    && ModRegistries.NbtAttachments.getSyncedConfig().computeIfAbsent(player).checkForAttaching()
-                    && ClientConfigs.SPECIFIED_ATTACHABILITY.get().isInventoryAttachable()
-                    && MenuAttachabilityCache.isAttachable(screen);
-        }
-        return AttachingScreen.isAttachable(screen);
     }
 }
 

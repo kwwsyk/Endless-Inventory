@@ -89,11 +89,11 @@ public abstract class AttachedMenuScreenLayout implements SFParamProvider{
                     new ScreenRectangleWidgetParam(
                             0, 0,
                             textureMode==TextureMode.TRANSPARENT ? pageRectangleParam.width() : columns * 18 + 8 + 8,
-                            textureMode==TextureMode.TRANSPARENT ? pageRectangleParam.height() : rows * 18 + 17 + 12
+                            textureMode==TextureMode.TRANSPARENT ? rows * 18 : rows * 18 + 17 + 12
                     ),
-                    adjustSearchBox(screen, textureMode == TextureMode.TRANSPARENT ? pageRectangleParam.height() : rows * 18 +17+12),
+                    adjustSearchBox(screen, textureMode == TextureMode.TRANSPARENT ? rows * 18 : rows * 18 +17+12),
                     sortBoxParam,
-                    adjustConfigButton(Math.max(textureMode == TextureMode.TRANSPARENT ? pageRectangleParam.height() : rows * 18 +17+12, pageSwitchBarParam.maxBars()), screen),
+                    adjustConfigButton(Math.max(textureMode == TextureMode.TRANSPARENT ? rows * 18 : rows * 18 +17+12, pageSwitchBarParam.maxBars()), screen),
                     reverseSortButtonParam
             );
         }
@@ -145,11 +145,11 @@ public abstract class AttachedMenuScreenLayout implements SFParamProvider{
                     new ScreenRectangleWidgetParam(
                             0, 0,
                             textureMode==TextureMode.TRANSPARENT ? pageRectangleParam.width() : columns * 18 + 8 + 8,
-                            textureMode==TextureMode.TRANSPARENT ? pageRectangleParam.height() : rows * 18 + 17 + 12
+                            textureMode==TextureMode.TRANSPARENT ? rows * 18 : rows * 18 + 17 + 12
                     ),
-                    adjustSearchBox(screen, textureMode == TextureMode.TRANSPARENT ? pageRectangleParam.height() : rows * 18 +17+12),
+                    adjustSearchBox(screen, textureMode == TextureMode.TRANSPARENT ? rows * 18 : rows * 18 +17+12),
                     sortBoxParam,
-                    adjustConfigButton(textureMode == TextureMode.TRANSPARENT ? pageRectangleParam.height() : rows * 18 +17+12, screen),
+                    adjustConfigButton(textureMode == TextureMode.TRANSPARENT ? rows * 18 : rows * 18 +17+12, screen),
                     reverseSortButtonParam
             );
         }
@@ -311,20 +311,10 @@ public abstract class AttachedMenuScreenLayout implements SFParamProvider{
 
     protected int calculateRows(int givenPageY){
         boolean treatAsAuto = pageParam.autoRows() || pageParam.rows() <= 0; // rows==0 means auto
-        if(textureMode == TextureMode.TRANSPARENT){
-            int pageH = pageRectangleParam.height() > 0 ? pageRectangleParam.height() : givenPageY;
-            if(treatAsAuto){
-                pageH = Math.min(givenPageY, pageRectangleParam.height());
-            }
-            int rows = Math.floorDiv(pageH, 18);// marginH = pageH % 18 / 2
-            return Math.max(1, rows);
-        }
-        // marginH = 17
-        int rows = Math.floorDiv(givenPageY - 17 - 12, 18);
+        int rows = treatAsAuto ? Math.floorDiv(givenPageY - 17 - 12, 18) : pageParam.rows();
         if(pageParam.autoRows() && pageParam.rows() > 0){
             rows = Math.min(rows, pageParam.rows());
         }
-        // When not auto, ensure rows does not exceed configured maximum; when auto, just clamp minimum
         return Math.max(1, rows);
     }
 
@@ -354,7 +344,7 @@ public abstract class AttachedMenuScreenLayout implements SFParamProvider{
     }
 
     protected IRectangleParam adjustConfigButton(int givenPageY, Screen screen){//todo
-        return new ScreenRectangleWidgetParam(configButtonParam.x(), Math.min(givenPageY, screen.height - configButtonParam.height() + configButtonParam.y()), configButtonParam.width(), configButtonParam.height());
+        return new ScreenRectangleWidgetParam(configButtonParam.x(), Math.min(givenPageY, screen.height - topPos - configButtonParam.height() + configButtonParam.y()), configButtonParam.width(), configButtonParam.height());
     }
 
     @Override

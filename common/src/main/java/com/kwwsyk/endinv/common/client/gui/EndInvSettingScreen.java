@@ -196,7 +196,7 @@ public abstract class EndInvSettingScreen extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(this.back);
+        this.minecraft.gui.setScreen(this.back);
     }
 
     // input handling is routed by the widget pipeline in 1.21.11

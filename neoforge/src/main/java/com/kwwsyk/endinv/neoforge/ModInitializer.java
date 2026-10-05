@@ -83,7 +83,7 @@ public class ModInitializer extends AbstractModInitializer {
         return new IPlatform() {
             @Override
             public boolean onItemStackedOn(ItemStack clickedItem, ItemStack carriedItem, Slot slot, ClickAction action, Player player, SlotAccess access) {
-                return CommonHooks.onItemStackedOn(carriedItem,carriedItem,slot,action,player,access);
+                return CommonHooks.onItemStackedOn(carriedItem,carriedItem,slot,action,player,access).isCanceled();
             }
 
             @Override

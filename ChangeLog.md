@@ -1,6 +1,12 @@
 # Change Log
 
-__branch 26.1__
+__branch 26.2__
+
+## 1.1.4.1 Beta
+- Fixed attached menus not remaining active in the creative inventory on NeoForge.
+- Unified shared attachment initialization and active-state checks across Fabric and NeoForge.
+- Fixed configured row counts and automatic row limits not applying in transparent texture mode.
+- Updated NeoForge mod metadata to use the supported icon property.
 
 ## 1.1.4
 - Fixed attached Endless Inventory pages losing mouse-wheel input when the host menu also contains a scrollable component.

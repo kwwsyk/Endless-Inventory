@@ -107,7 +107,7 @@ public abstract class GridPage extends DisplayPage {//todo support item and flui
     }
 
     protected boolean isHiddenBySortBox(int rowIndex, int columnIndex){
-        return rowIndex<=2 && columnIndex<=3 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
+        return rowIndex<=2 && columnIndex<=3 && Minecraft.getInstance().gui.screen() instanceof AbstractContainerScreen<?> screen
                 && (
                 screen instanceof EndlessInventoryScreen EIS && EIS.getFrameWork().sortTypeSwitchBox.isOpen() && columnIndex <=2
                         || framework.sortTypeSwitchBox.isOpen()

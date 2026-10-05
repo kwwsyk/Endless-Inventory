@@ -116,11 +116,6 @@ public  class EndinvScreen<T extends AbstractContainerMenu> extends AbstractCont
     }
 
     @Override
-    public void extractSnapbackItem(GuiGraphicsExtractor graphics) {
-        super.extractSnapbackItem(graphics);
-    }
-
-    @Override
     protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         super.extractTooltip(graphics, mouseX, mouseY);
     }

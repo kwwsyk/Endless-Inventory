@@ -14,7 +14,7 @@ public class KeyMappings {
         GUI {
             @Override
             public boolean isActive() {
-                return Minecraft.getInstance().screen != null;
+                return Minecraft.getInstance().gui.screen() != null;
             }
         },
         IN_GAME {

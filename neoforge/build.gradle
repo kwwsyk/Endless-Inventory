@@ -41,11 +41,6 @@ dependencies {
 neoForge {
     version = project.neoforge_version
 
-    parchment {
-        mappingsVersion = project.parchment_version
-        minecraftVersion = project.parchment_minecraft
-    }
-
     runs {
         client {
             client()
@@ -143,7 +138,7 @@ tasks.withType(JavaCompile).configureEach {
 publishMods {
     dryRun = providers.gradleProperty("publishDryRun").map { it.toBoolean() }.orElse(false)
     file = tasks.named("jar").get().archiveFile
-    changelog = "26.1 1.1.4 beta"
+    changelog = "26.2 1.1.4.1 beta: port to 26.2 from 26.1, fixed some issues"
     displayName.set(base.archivesName)
     version = mod_version
     type = BETA

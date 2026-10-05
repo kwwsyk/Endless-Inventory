@@ -127,7 +127,7 @@ jar {
 publishMods {
     dryRun = providers.gradleProperty("publishDryRun").map { it.toBoolean() }.orElse(false)
     file = project.tasks.named("jar").get().archiveFile
-    changelog = "26.1 1.1.4 beta"
+    changelog = "26.2 1.1.4.1 beta: port to 26.2 from 26.1, fixed some issues"
     displayName.set(base.archivesName)
     version = mod_version
     type = BETA

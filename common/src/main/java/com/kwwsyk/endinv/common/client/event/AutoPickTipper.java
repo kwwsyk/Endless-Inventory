@@ -2,6 +2,7 @@ package com.kwwsyk.endinv.common.client.event;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -83,8 +84,8 @@ public class AutoPickTipper {
             }
             default -> {
                 var color = rarity.color();
-                Integer rgb = color != null ? color.getColor() : null;
-                return rgb != null ? (0xff000000 | rgb) : 0x88ffffff;
+                TextColor textColor = color != null ? TextColor.fromLegacyFormat(color) : null;
+                return textColor != null ? (0xff000000 | textColor.getValue()) : 0x88ffffff;
             }
         }
     }

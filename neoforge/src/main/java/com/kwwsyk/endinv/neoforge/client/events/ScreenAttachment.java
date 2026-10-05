@@ -6,9 +6,8 @@ import com.kwwsyk.endinv.common.client.gui.EndlessInventoryScreen;
 import com.kwwsyk.endinv.common.client.gui.IScreenEvent;
 import com.kwwsyk.endinv.common.client.gui.bg.IRectangleParam;
 import com.kwwsyk.endinv.common.client.option.ClientConfigs;
-import com.kwwsyk.endinv.common.network.payloads.toServer.OpenEndInvPayload;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -21,12 +20,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import javax.annotation.Nullable;
 
-import static com.kwwsyk.endinv.common.ModInfo.getPacketDistributor;
-
 @EventBusSubscriber(value = Dist.CLIENT,modid = ModInfo.MOD_ID)
 public class ScreenAttachment {
     @Nullable
     public static AttachingScreen<?> ATTACHMENT_MANAGER;
+    @Nullable
+    private static Button configButton;
 
     @Nullable
     private static AttachingScreen<?> checkAndGetAttached(ScreenEvent event){
@@ -34,7 +33,7 @@ public class ScreenAttachment {
                 !(
                         event.getScreen() instanceof AbstractContainerScreen<?> screen
                                 && !(screen instanceof EndlessInventoryScreen)
-                                && AttachingScreen.isAttachable(screen)
+                                && AttachingScreen.isActive(ATTACHMENT_MANAGER, screen)
                 )
         ){
             ATTACHMENT_MANAGER = null;
@@ -61,17 +60,11 @@ public class ScreenAttachment {
     public static void init(ScreenEvent.Init.Post event){
         if(!(event.getScreen() instanceof AbstractContainerScreen<?> screen) || screen instanceof EndlessInventoryScreen) return;
         IRectangleParam btnParam = ClientConfigs.ATTACHED_MENU_CONFIG.get().adjust(screen).configButtonA();
-        event.addListener(AttachingScreen.configButton(
+        configButton = AttachingScreen.configButton(
                 event.getScreen(), btnParam,
                 () -> {
                     if(ATTACHMENT_MANAGER==null){
-                        getPacketDistributor().sendToServer(new OpenEndInvPayload());
-                        ATTACHMENT_MANAGER = new AttachingScreen<>(screen);
-                        ATTACHMENT_MANAGER.init(new IScreenEvent() {
-                            public void addListener(AbstractWidget widget){
-                                event.addListener(widget);
-                            }
-                        });
+                        ATTACHMENT_MANAGER = AttachingScreen.attach(screen, event::addListener);
                     }
                 },
                 () -> {
@@ -80,19 +73,14 @@ public class ScreenAttachment {
                         ATTACHMENT_MANAGER = null;
                     }
                 }
-        ));
+        );
+        event.addListener(configButton);
         if(AttachingScreen.isAttachable(screen)){
             Player player = screen.getMinecraft().player;
             if(player==null) return;
 
             if(ATTACHMENT_MANAGER==null){
-                getPacketDistributor().sendToServer(new OpenEndInvPayload());
-                ATTACHMENT_MANAGER = new AttachingScreen<>(screen);
-                ATTACHMENT_MANAGER.init(new IScreenEvent() {
-                    public void addListener(AbstractWidget widget){
-                        event.addListener(widget);
-                    }
-                });
+                ATTACHMENT_MANAGER = AttachingScreen.attach(screen, event::addListener);
             }
         }
     }
@@ -153,6 +141,7 @@ public class ScreenAttachment {
 
     @SubscribeEvent
     public static void mouseClicked(ScreenEvent.MouseButtonPressed.Pre event){
+        if(configButton != null && configButton.isMouseOver(event.getMouseX(), event.getMouseY())) return;
         var attached = checkAndGetAttached(event);
         if(attached!=null){
             attached.mouseClicked(new IScreenEvent() {

@@ -147,7 +147,7 @@ public class ItemEntryDisplay extends ItemDisplay{
 
     @Override
     protected boolean isHiddenBySortBox(int rowIndex, int columnIndex) {
-        return rowIndex<=2 && Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen && (
+        return rowIndex<=2 && Minecraft.getInstance().gui.screen() instanceof AbstractContainerScreen<?> screen && (
                 screen instanceof EndlessInventoryScreen EIS && EIS.getFrameWork().sortTypeSwitchBox.isOpen()
                         || framework.sortTypeSwitchBox.isOpen()
         );

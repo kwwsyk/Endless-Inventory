@@ -9,6 +9,7 @@ import com.kwwsyk.endinv.common.network.payloads.toServer.OpenEndInvPayload;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.kwwsyk.endinv.common.ModRegistries.NbtAttachments.getSyncedConfig;
 
@@ -51,15 +53,43 @@ public class AttachingScreen<T extends AbstractContainerMenu>{
     }
     @SuppressWarnings("nullable")
     public static boolean isAttachable(AbstractContainerScreen<?> screen){
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) return false;
         try{
+            boolean specifiedAttachable;
+            try {
+                screen.getMenu().getType();
+                specifiedAttachable = ClientConfigs.SPECIFIED_ATTACHABILITY.get().isMenuAttachable(screen.getMenu());
+            } catch (UnsupportedOperationException ignored) {
+                specifiedAttachable = ClientConfigs.SPECIFIED_ATTACHABILITY.get().isInventoryAttachable();
+            }
             return ClientConfigs.DO_ATTACH.get()
-                    && getSyncedConfig().computeIfAbsent(Minecraft.getInstance().player).checkForAttaching()
-                    && ClientConfigs.SPECIFIED_ATTACHABILITY.get().isMenuAttachable(screen.getMenu())
+                    && getSyncedConfig().computeIfAbsent(minecraft.player).checkForAttaching()
+                    && specifiedAttachable
                     && MenuAttachabilityCache.isAttachable(screen);
         } catch (RuntimeException e){
             LOGGER.error("", e);
         }
         return false;
+    }
+
+    public static boolean isActive(@Nullable AttachingScreen<?> attachment, Screen screen) {
+        return attachment != null
+                && attachment.screen == screen
+                && screen instanceof AbstractContainerScreen<?> container
+                && isAttachable(container);
+    }
+
+    public static <T extends AbstractContainerMenu> AttachingScreen<T> attach(
+            AbstractContainerScreen<T> screen, Consumer<AbstractWidget> addListener) {
+        AttachingScreen<T> attachment = new AttachingScreen<>(screen);
+        attachment.init(new IScreenEvent() {
+            @Override
+            public void addListener(AbstractWidget widget) {
+                addListener.accept(widget);
+            }
+        });
+        return attachment;
     }
 
     public static net.minecraft.client.gui.components.Button configButton(Screen screen, IRectangleParam configButtonParam,
@@ -69,7 +99,7 @@ public class AttachingScreen<T extends AbstractContainerMenu>{
                 Component.literal(ScreenFramework.CONFIG_ICON),
                         btn -> {
                         if(Minecraft.getInstance().hasShiftDown()){
-                            mc.setScreen(ClientModInfo.createConfigScreen(screen));
+                            mc.gui.setScreen(ClientModInfo.createConfigScreen(screen));
                         } else {
                             boolean currentA = ClientConfigs.DO_ATTACH.get();
                             currentA = !currentA;

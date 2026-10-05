@@ -195,7 +195,7 @@ public class ScreenFramework implements PageManager, GuiEventListener {
     private void addWidgets() {
         Button configButton = Button.builder(Component.literal(CONFIG_ICON),
                         btn -> {
-                            mc.setScreen(ClientModInfo.createConfigScreen(screen));
+                            mc.gui.setScreen(ClientModInfo.createConfigScreen(screen));
                         })
                 .pos(this.configButtonParam.x(), this.configButtonParam.y())
                 .size(this.configButtonParam.width(), this.configButtonParam.height())
@@ -434,7 +434,7 @@ public class ScreenFramework implements PageManager, GuiEventListener {
         int button = event.button();
         ItemStack itemstack = this.menu.getCarried();
         //ignore QUICK_CRAFT and touchscreen
-        if (!itemstack.isEmpty() || mc.options.touchscreen().get())
+        if (!itemstack.isEmpty())
             return false;
         //CTRL-click(default) to quick move items as behavior as Mouse Tweaks
         if (inputHandler.isActiveAndMatches(KeyMappings.QUICK_MOVE, event)) {
