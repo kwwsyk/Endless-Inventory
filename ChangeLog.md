@@ -2,6 +2,10 @@
 
 __branch 26.2__
 
+## Unreleased
+- Fixed search text not updating item filters in attached and standalone inventories.
+- Fixed standalone search rejecting characters and focused search triggering inventory-close or item shortcuts (#49, related report #41).
+
 ## 1.1.4.1 Beta
 - Fixed attached menus not remaining active in the creative inventory on NeoForge.
 - Unified shared attachment initialization and active-state checks across Fabric and NeoForge.
