@@ -162,14 +162,14 @@ public final class AutoPickHelper {
         Item item = stack.getItem();
         if(item.builtInRegistryHolder().is(ItemTags.SWORDS)){
             return hasSuch(player,item);
-        }else if(item instanceof AxeItem axeItem){
-            return hasSuch(player,axeItem);
+        }else if(item.builtInRegistryHolder().is(ItemTags.AXES)){
+            return hasSuch(player, ItemTags.AXES);
         }else if(item.builtInRegistryHolder().is(ItemTags.PICKAXES)){
             return hasSuch(player,item);
-        }else if(item instanceof ShovelItem such){
-            return hasSuch(player,such);
-        }else if(item instanceof HoeItem such){
-            return hasSuch(player,such);
+        }else if(item.builtInRegistryHolder().is(ItemTags.SHOVELS)){
+            return hasSuch(player, ItemTags.SHOVELS);
+        }else if(item.builtInRegistryHolder().is(ItemTags.HOES)){
+            return hasSuch(player, ItemTags.HOES);
         }else if(item instanceof TridentItem such){
             return hasSuch(player,such);
         }else if(item instanceof ShieldItem such){
@@ -197,6 +197,10 @@ public final class AutoPickHelper {
 
     private static boolean hasSuch(Player player, Item item){
         return player.inventoryMenu.slots.stream().anyMatch(slot->slot.getItem().getItem().getClass()==item.getClass());
+    }
+
+    private static boolean hasSuch(Player player, net.minecraft.tags.TagKey<Item> tag){
+        return player.inventoryMenu.slots.stream().anyMatch(slot -> slot.getItem().is(tag));
     }
 
     private static boolean hasOrSwearing(Player player,Item armor){

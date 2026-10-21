@@ -430,7 +430,7 @@ public abstract class DisplayPage{
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers, int mouseX, int mouseY){
-        boolean isNumericKey = InputConstants.Type.KEYSYM.getOrCreate(keyCode).getNumericKeyValue().isPresent();
+        boolean isNumericKey = InputConstants.Type.KEYBOARD.getOrCreate(keyCode).getNumericKeyValue().isPresent();
 
         if (isNumericKey && this.menu.getCarried().isEmpty()) {
             if (mc.options.keySwapOffhand.matches(new KeyEvent(keyCode, scanCode, modifiers))) {

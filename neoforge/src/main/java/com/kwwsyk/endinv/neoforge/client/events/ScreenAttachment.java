@@ -288,7 +288,7 @@ public class ScreenAttachment {
             attached.keyPressed(new IScreenEvent() {
                 @Override
                 public int getKeyCode() {
-                    return event.getKeyCode();
+                    return event.getKey();
                 }
 
                 @Override
@@ -298,7 +298,7 @@ public class ScreenAttachment {
 
                 @Override
                 public int getScanCode() {
-                    return event.getScanCode();
+                    return event.getKeycode();
                 }
 
                 @Override

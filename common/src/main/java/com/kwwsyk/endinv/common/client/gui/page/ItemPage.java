@@ -11,6 +11,7 @@ import com.kwwsyk.endinv.common.network.payloads.PageData;
 import com.kwwsyk.endinv.common.network.payloads.toServer.*;
 import com.kwwsyk.endinv.common.util.ItemKey;
 import com.kwwsyk.endinv.common.util.NotNullWhenInitialized;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -153,7 +154,10 @@ public abstract class ItemPage extends GridPage {
             if(ContainerInput == ContainerInput.PICKUP_ALL && Minecraft.getInstance().hasShiftDown()) return;
             ModInfo.getPacketDistributor().sendToServer(new ItemClickPayload(
                     ItemKey.asKey(clicked),
-                    button,ContainerInput));
+                    ContainerInput == ContainerInput.PICKUP
+                            ? (button == InputConstants.MOUSE_BUTTON_LEFT ? 0 : 1)
+                            : button,
+                    ContainerInput));
             this.refreshItems();
         }
     }
@@ -187,6 +191,7 @@ public abstract class ItemPage extends GridPage {
     }
 
     protected void handleQuickMove(ItemStack clicked){
+        if(framework.getMenu() instanceof CreativeModeInventoryScreen.ItemPickerMenu) return;
         ItemStack taken = takeItem(clicked);
         ItemStack remain = framework.quickMoveFromPage(taken);
         addItem(remain);
@@ -214,7 +219,7 @@ public abstract class ItemPage extends GridPage {
             setChanged();
         }else{
             int count = Math.min(clicked.getCount(),clicked.getMaxStackSize());
-            int takenCount = keyCode==0 ? count : (count + 1) / 2;
+            int takenCount = keyCode == InputConstants.MOUSE_BUTTON_LEFT ? count : (count + 1) / 2;
             framework.getMenu().setCarried(takeItem(clicked,takenCount));
             if(!framework.getMenu().getCarried().isEmpty()) setChanged();
         }
@@ -248,7 +253,7 @@ public abstract class ItemPage extends GridPage {
     protected void handleThrow(ItemStack clicked){
         Player player = framework.getPlayer();
         ItemStack thrown = takeItem(clicked);
-        player.drop(thrown,true);
+        player.drop(thrown,true, net.minecraft.util.Prediction.PREDICTED);
         setChanged();
     }
     protected void handlePickupAll(ItemStack clicked){

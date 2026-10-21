@@ -9,6 +9,7 @@ import com.kwwsyk.endinv.common.util.ItemKey;
 import com.kwwsyk.endinv.common.util.ItemState;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
@@ -30,11 +31,17 @@ public record SetItemDisplayContentPayload(List<ItemStack> stacks) implements Mo
             new CustomPacketPayload.Type<>(AbstractModInitializer.withModLocation("itemdisplay_content"));
 
     public static void encode(SetItemDisplayContentPayload payload, FriendlyByteBuf o){
-        o.writeCollection(payload.stacks,(buf, stack) -> ItemStack.OPTIONAL_STREAM_CODEC.encode((net.minecraft.network.RegistryFriendlyByteBuf) buf, stack));
+        ByteBufCodecs.writeCount(o, payload.stacks.size(), Integer.MAX_VALUE);
+        payload.stacks.forEach(stack -> ItemStack.OPTIONAL_STREAM_CODEC.encode((RegistryFriendlyByteBuf) o, stack));
     }
 
     public static SetItemDisplayContentPayload decode(FriendlyByteBuf o){
-        return new SetItemDisplayContentPayload(o.readList(buf -> ItemStack.OPTIONAL_STREAM_CODEC.decode((net.minecraft.network.RegistryFriendlyByteBuf) buf)));
+        int size = ByteBufCodecs.readCount(o, Integer.MAX_VALUE);
+        List<ItemStack> stacks = new java.util.ArrayList<>(Math.min(size, 65536));
+        for(int i = 0; i < size; i++){
+            stacks.add(ItemStack.OPTIONAL_STREAM_CODEC.decode((RegistryFriendlyByteBuf) o));
+        }
+        return new SetItemDisplayContentPayload(stacks);
     }
 
     // Registry-friendly versions used by the typed StreamCodec to avoid any ambiguity

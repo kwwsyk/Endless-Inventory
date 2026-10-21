@@ -1,5 +1,15 @@
 # Change Log
 
+__branch 26.3__
+
+## 1.1.4.1orx Beta
+- Updated Minecraft, NeoForge, Fabric API, JEI, and Curios dependencies for 26.3.
+- Migrated key bindings from GLFW constants to the SDL-backed input constants used by Minecraft 26.3.
+- Updated the NeoForge server configuration registration to the 26.3 synced configuration type.
+- Temporarily decoupled the NeoForge runtime from Curios because its current 26.3 beta still uses the removed COMMON config type.
+- Updated the Fabric block-drop mixin descriptor for the 26.3 server-only player-destroy parameters.
+- Fixed Ctrl+left-click item transfer on Fabric and NeoForge under the 26.3 SDL modifier masks.
+
 __branch 26.2__
 
 ## 1.1.4.1 Beta

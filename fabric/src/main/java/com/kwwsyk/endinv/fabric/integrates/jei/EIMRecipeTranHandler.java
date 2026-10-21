@@ -257,7 +257,7 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
             int count = cSlot.getItem().getCount();
             if (count <= 0) continue;
             ItemStack removed = cSlot.safeTake(count, count, player);
-            if (!removed.isEmpty()) player.getInventory().placeItemBackInInventory(removed);
+            if (!removed.isEmpty()) player.getInventory().placeItemBackInInventory(removed, net.minecraft.util.Prediction.PREDICTED);
         }
 
         List<Slot> playerInvSlots = container.getPlayerInvSlots();
@@ -287,7 +287,7 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
                     } else if (sameType(placedStack, taken)) {
                         placedStack.grow(taken.getCount());
                     } else {
-                        player.getInventory().placeItemBackInInventory(taken);
+                        player.getInventory().placeItemBackInInventory(taken, net.minecraft.util.Prediction.PREDICTED);
                         break;
                     }
                     toTake -= taken.getCount();
@@ -307,7 +307,7 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
                     } else if (sameType(placedStack, extracted)) {
                         placedStack.grow(extracted.getCount());
                     } else {
-                        player.getInventory().placeItemBackInInventory(extracted);
+                        player.getInventory().placeItemBackInInventory(extracted, net.minecraft.util.Prediction.PREDICTED);
                     }
                 }
             }
@@ -317,7 +317,7 @@ public class EIMRecipeTranHandler implements IRecipeTransferHandler<EndlessInven
                 if (placedStack.getCount() > cap) {
                     ItemStack overflow = placedStack.copyWithCount(placedStack.getCount() - cap);
                     placedStack.setCount(cap);
-                    player.getInventory().placeItemBackInInventory(overflow);
+                    player.getInventory().placeItemBackInInventory(overflow, net.minecraft.util.Prediction.PREDICTED);
                 }
                 target.set(placedStack);
             }

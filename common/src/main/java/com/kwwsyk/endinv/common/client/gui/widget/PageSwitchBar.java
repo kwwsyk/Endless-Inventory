@@ -139,7 +139,8 @@ public class PageSwitchBar extends AbstractWidget {
                         mouseX,
                         mouseY,
                         net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner.INSTANCE,
-                        null
+                        null,
+                        false
                 );
             }
             if(direction_isVertical) tabY+=tabHeight; else tabX+=tabWidth;

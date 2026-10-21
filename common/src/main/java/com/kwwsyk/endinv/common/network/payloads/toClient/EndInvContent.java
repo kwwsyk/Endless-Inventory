@@ -9,6 +9,7 @@ import com.kwwsyk.endinv.common.util.ItemKey;
 import com.kwwsyk.endinv.common.util.ItemState;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
@@ -17,18 +18,20 @@ import java.util.Map;
 public record EndInvContent(Map<ItemKey, ItemState> itemMap) implements ModPacketPayload {
 
     public static void encode(RegistryFriendlyByteBuf o, EndInvContent content){
-        o.writeMap(
-                content.itemMap,
-                (buf, key) -> ItemKey.STREAM_CODEC.encode((RegistryFriendlyByteBuf) buf, key),
-                ItemState::encode
-        );
+        ByteBufCodecs.writeCount(o, content.itemMap.size(), Integer.MAX_VALUE);
+        content.itemMap.forEach((key, value) -> {
+            ItemKey.STREAM_CODEC.encode(o, key);
+            ItemState.encode(o, value);
+        });
     }
 
     public static EndInvContent decode(RegistryFriendlyByteBuf o){
-        return new EndInvContent(o.readMap(Object2ObjectLinkedOpenHashMap::new,
-                buf -> ItemKey.STREAM_CODEC.decode((RegistryFriendlyByteBuf) buf),
-                ItemState::decode
-        ));
+        int size = ByteBufCodecs.readCount(o, Integer.MAX_VALUE);
+        Map<ItemKey, ItemState> itemMap = new Object2ObjectLinkedOpenHashMap<>(Math.min(size, 65536));
+        for(int i = 0; i < size; i++){
+            itemMap.put(ItemKey.STREAM_CODEC.decode(o), ItemState.decode(o));
+        }
+        return new EndInvContent(itemMap);
     }
 
     public static final StreamCodec<RegistryFriendlyByteBuf, EndInvContent> STREAM_CODEC = StreamCodec.of(EndInvContent::encode, EndInvContent::decode);

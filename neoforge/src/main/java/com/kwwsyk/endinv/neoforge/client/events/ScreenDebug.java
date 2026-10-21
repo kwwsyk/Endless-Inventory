@@ -37,6 +37,6 @@ public class ScreenDebug {
 
     @SubscribeEvent
     public static void click(ScreenEvent.KeyPressed.Post event){
-        com.kwwsyk.endinv.common.client.ScreenDebug.click(event.getKeyCode(),event.getScreen());
+        com.kwwsyk.endinv.common.client.ScreenDebug.click(event.getKey(),event.getScreen());
     }
 }

@@ -4,6 +4,7 @@ import com.kwwsyk.endinv.common.EndlessInventory;
 import com.kwwsyk.endinv.common.ModInfo;
 import com.kwwsyk.endinv.common.util.Accessibility;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +20,25 @@ public record EndInvConfig(Accessibility accessibility, UUID owner, List<UUID> w
 
 
     public static EndInvConfig decode(FriendlyByteBuf friendlyByteBuf) {
+        Accessibility accessibility = friendlyByteBuf.readEnum(Accessibility.class);
+        UUID owner = friendlyByteBuf.readUUID();
+        int whiteListSize = ByteBufCodecs.readCount(friendlyByteBuf, Integer.MAX_VALUE);
+        List<UUID> whiteList = new ArrayList<>(Math.min(whiteListSize, 65536));
+        for(int i = 0; i < whiteListSize; i++){
+            whiteList.add(friendlyByteBuf.readUUID());
+        }
         return new EndInvConfig(
-                friendlyByteBuf.readEnum(Accessibility.class),
-                friendlyByteBuf.readUUID(),
-                friendlyByteBuf.readList(buf -> buf.readUUID())
+                accessibility,
+                owner,
+                whiteList
         );
     }
 
     public static void encode(FriendlyByteBuf o, EndInvConfig endInvConfig) {
         o.writeEnum(endInvConfig.accessibility);
         o.writeUUID(endInvConfig.owner);
-        o.writeCollection(endInvConfig.white_list, (buf, id) -> buf.writeUUID(id));
+        ByteBufCodecs.writeCount(o, endInvConfig.white_list.size(), Integer.MAX_VALUE);
+        endInvConfig.white_list.forEach(o::writeUUID);
     }
 
 

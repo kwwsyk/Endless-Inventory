@@ -23,7 +23,7 @@ public final class LootEvent {
 
     public static void handleItemDrop(ItemEntity entity, ServerPlayer player) {
         var options = ServerConfigs.PICKUP_HELPER.ITEM_DROPS;
-        if (options.PROTECT_DROPS.get()) entity.invulnerableTime = 6000;
+        if (options.PROTECT_DROPS.get()) entity.setInvulnerableTime(6000);
         if (options.DIRECTLY_SEND_TO_ENDINV.get()) {
             ItemStack remain = sendItemToEndinv(player, entity.getItem());
             entity.setItem(remain);

@@ -58,22 +58,22 @@ public class ClientModInitializer extends AbstractClientModInitializer {
         return new IContainerScreenHelper() {
             @Override
             public int getGuiLeft(AbstractContainerScreen<?> screen) {
-                return screen.getGuiLeft();
+                return screen.getLeftPos();
             }
 
             @Override
             public int getGuiTop(AbstractContainerScreen<?> screen) {
-                return screen.getGuiTop();
+                return screen.getTopPos();
             }
 
             @Override
             public int getGuiXSize(AbstractContainerScreen<?> screen) {
-                return screen.getXSize();
+                return screen.getImageWidth();
             }
 
             @Override
             public int getGuiYSize(AbstractContainerScreen<?> screen) {
-                return screen.getYSize();
+                return screen.getImageHeight();
             }
         };
     }

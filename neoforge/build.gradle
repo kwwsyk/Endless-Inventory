@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id "me.modmuss50.mod-publish-plugin" version "1.1.0"
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.neoforged.moddev' version '2.0.148'
 }
 
 base {
@@ -138,7 +138,7 @@ tasks.withType(JavaCompile).configureEach {
 publishMods {
     dryRun = providers.gradleProperty("publishDryRun").map { it.toBoolean() }.orElse(false)
     file = tasks.named("jar").get().archiveFile
-    changelog = "26.2 1.1.4.1 beta: port to 26.2 from 26.1, fixed some issues"
+    changelog = "26.3 1.1.4.1 beta: port to 26.3 from 26.2"
     displayName.set(base.archivesName)
     version = mod_version
     type = BETA

@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.InputWithModifiers;
-import org.lwjgl.glfw.GLFW;
 
 public class KeyMappings {
 
@@ -38,7 +37,7 @@ public class KeyMappings {
         }
 
         public boolean matchesModifier(InputWithModifiers input){
-            return input.modifiers() == modifier;
+            return this == CTRL ? input.hasControlDown() : input.modifiers() == modifier;
         }
     }
 
@@ -46,8 +45,8 @@ public class KeyMappings {
 
     public static final KeyParam OPEN_MENU = new KeyParam(
             "key.endinv.open_endinv_menu",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_I,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_I,
             ActiveCondition.IN_GAME,
             Modifier.NONE,
             KeyMapping.Category.INVENTORY
@@ -55,23 +54,23 @@ public class KeyMappings {
     public static final KeyParam QUICK_MOVE = new KeyParam(
             "key.endinv.quick_move_item",
             InputConstants.Type.MOUSE,
-            GLFW.GLFW_MOUSE_BUTTON_1,
+            InputConstants.MOUSE_BUTTON_LEFT,
             ActiveCondition.GUI,
             Modifier.CTRL,
             KeyMapping.Category.INVENTORY
     );
     public static final KeyParam STAR_ITEM = new KeyParam(
             "key.endinv.star_item",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_A,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_A,
             ActiveCondition.GUI,
             Modifier.NONE,
             KeyMapping.Category.INVENTORY
     );
     public static final KeyParam STAR_ITEM_ALTER = new KeyParam(
             "key.endinv.star_item",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F13,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_F13,
             ActiveCondition.GUI,
             Modifier.NONE,
             KeyMapping.Category.INVENTORY

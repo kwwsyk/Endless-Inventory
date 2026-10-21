@@ -4,11 +4,8 @@ import com.kwwsyk.endinv.common.client.gui.AttachingScreen;
 import com.kwwsyk.endinv.common.client.gui.ScreenFramework;
 import com.kwwsyk.endinv.neoforge.client.events.ScreenAttachment;
 import com.mojang.logging.LogUtils;
-import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IClickableIngredientFactory;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
-import mezz.jei.api.ingredients.IIngredientType;
-import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IClickableIngredient;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.Rect2i;
@@ -52,26 +49,6 @@ public class AttachmentGuiHandler implements IGuiContainerHandler<AbstractContai
 //        int absY = (int) Math.floor(mouseY);
 //        if (!area.contains(absX, absY)) return Optional.empty();
 
-        return Optional.of(new ItemClickEventWrapper(hovered, area));
-    }
-
-    public static class ItemClickEventWrapper implements IClickableIngredient<ItemStack> {
-        private final ItemStack hovered;
-        private final Rect2i area;
-
-        public ItemClickEventWrapper(ItemStack hovered, Rect2i area) {
-            this.hovered = hovered;
-            this.area = area;
-        }
-
-        @Override public Rect2i getArea() { return area; }
-
-        @Override
-        public ITypedIngredient<ItemStack> getTypedIngredient() {
-            return new ITypedIngredient<>() {
-                @Override public IIngredientType<ItemStack> getType() { return VanillaTypes.ITEM_STACK; }
-                @Override public ItemStack getIngredient() { return hovered; }
-            };
-        }
+        return builder.createBuilder(hovered).buildWithArea(area);
     }
 }

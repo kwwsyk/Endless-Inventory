@@ -7,6 +7,7 @@ import com.kwwsyk.endinv.common.menu.page.pageManager.PageMetaDataManager;
 import com.kwwsyk.endinv.common.network.payloads.ModPacketContext;
 import com.kwwsyk.endinv.common.network.payloads.ModPacketPayload;
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -29,11 +30,17 @@ public record QuickMoveToPagePayload(IntList slots) implements ModPacketPayload 
     }
 
     public static void encode(QuickMoveToPagePayload payload, FriendlyByteBuf o){
-        o.writeIntIdList(payload.slots);
+        o.writeVarInt(payload.slots.size());
+        payload.slots.forEach((int slot) -> o.writeVarInt(slot));
     }
 
     public static QuickMoveToPagePayload decode(FriendlyByteBuf o){
-        return new QuickMoveToPagePayload(o.readIntIdList());
+        int size = o.readVarInt();
+        IntList slots = new IntArrayList(size);
+        for(int i = 0; i < size; i++){
+            slots.add(o.readVarInt());
+        }
+        return new QuickMoveToPagePayload(slots);
     }
 
     public static final StreamCodec<RegistryFriendlyByteBuf, QuickMoveToPagePayload> STREAM_CODEC =

@@ -118,7 +118,7 @@ public record ItemClickPayload(ItemKey key, int button, ContainerInput Container
             case THROW -> {
                 ItemStack thrown = endInv.takeItem(snapStack, count);
                 LOGGER.debug("ItemClickPayload.THROW: thrown={}", thrown);
-                player.drop(thrown,true);
+                player.drop(thrown,true, net.minecraft.util.Prediction.PREDICTED);
                 endInv.setChanged();
             }
             case PICKUP_ALL -> {

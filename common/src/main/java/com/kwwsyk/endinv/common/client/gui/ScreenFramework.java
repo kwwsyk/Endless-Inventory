@@ -476,7 +476,7 @@ public class ScreenFramework implements PageManager, GuiEventListener {
 
     public boolean keyPressed(KeyEvent event) {
         int keyCode = event.key();
-        int scanCode = event.scancode();
+        int scanCode = event.keycode();
         int modifiers = event.modifiers();
         this.ignoreTextInput = false;
 

@@ -246,7 +246,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
         for (int i = 0; i < craftMatrix.getContainerSize(); ++i) {
             ItemStack stack = craftMatrix.removeItemNoUpdate(i);
             if (!stack.isEmpty()) {
-                inventory.placeItemBackInInventory(stack);
+                inventory.placeItemBackInInventory(stack, net.minecraft.util.Prediction.SERVER_ONLY);
             }
         }
         // Clear the result slot without returning it to the player to avoid duplication on close
@@ -462,7 +462,7 @@ public class EndlessInventoryMenu extends AbstractContainerMenu implements PageM
 
         slot.onTake(player, slotStack);
         if (index == RESULT_SLOT_INDEX) {
-            player.drop(slotStack, false);
+            player.drop(slotStack, false, net.minecraft.util.Prediction.PREDICTED);
         }
 
         return original;

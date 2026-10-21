@@ -24,7 +24,7 @@ public class ExperienceOrbMixin {
                 || !AutoPickHelper.isPlayerEnabledAutoPick(nearest)) return;
         var options = ServerConfigs.PICKUP_HELPER.EXP_DROPS;
         if (options.PROTECT_DROPS.get() && !endinv$protectionApplied) {
-            self.invulnerableTime = 6000;
+            self.setInvulnerableTime(6000);
             endinv$protectionApplied = true;
         }
         if (options.TOUCH_DIRECTLY.get() && !self.level().isClientSide()) {

@@ -120,7 +120,8 @@ public class SortTypeSwitchBox extends AbstractWidget {
                             mouseX,
                             mouseY,
                             DefaultTooltipPositioner.INSTANCE,
-                            null
+                            null,
+                            false
                     );
                 }
                 s = type.toString();

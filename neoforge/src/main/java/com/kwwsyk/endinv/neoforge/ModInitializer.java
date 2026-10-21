@@ -61,7 +61,7 @@ public class ModInitializer extends AbstractModInitializer {
 
 
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
-        container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);
+        container.registerConfig(ModConfig.Type.SYNCED, ServerConfig.CONFIG_SPEC);
         container.registerConfig(ModConfig.Type.STARTUP, StartupConfig.CONFIG_SPEC);
 
         if(ModList.get().isLoaded(CurioPageType.CURIOS_MODID)){
