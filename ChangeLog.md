@@ -4,6 +4,8 @@ __branch 26.3__
 
 ## Unreleased — search input (#49)
 
+- Fabric: use screen-level character events before default widget listeners, and synchronize attached search focus with the host screen. Remove the ineffective GuiEventListener character hook.
+
 - Keep focused search key events out of inventory-close and item shortcuts; preserve Escape and unfocused shortcuts.
 - Restore search text change callbacks and standalone character forwarding so typing, paste, deletion and clear refresh item results.
 

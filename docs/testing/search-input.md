@@ -47,8 +47,13 @@ character must appear once, not twice. Do not commit temporary diagnostic logs.
 ## Failure paths
 
 - Input: EndlessInventoryScreen.charTyped delegates exclusively to
-  ScreenFramework; attached Fabric screens intercept characters before the host
-  widget pipeline and cancel events consumed by the framework.
+  ScreenFramework. Fabric uses ScreenKeyboardEvents.allowCharType at the keyboard
+  dispatch boundary for attached and standalone EI, before default-phase
+  listeners. The old GuiEventListener default-method injection did not cover
+  screens that dispatch through overrides or ContainerEventHandler.
+- Focus: Fabric consumes left/right clicks inside a visible, active attached
+  search field, sets the host screen's focused child, and forwards cursor clicks
+  and selection dragging explicitly. Outside clicks retain host processing.
 - Filter: the EditBox responder copies its value into ScreenFramework.searching
   via refreshSearchResults, then refreshes the ItemPage. ItemDisplay rebuilds
   the local view and sends ItemPageContext for remote contents.
@@ -58,3 +63,26 @@ character must appear once, not twice. Do not commit temporary diagnostic logs.
   The attached-screen closing log records closure, not its underlying cause.
 
 These are manual acceptance checks, not claims of a completed client test.
+
+## Fabric / JEI focus regression
+
+Run on Minecraft 26.3 with Fabric API 0.161.0+26.3 (repository dependency),
+then with 0.164.0+26.3 (reporter environment), using matching JEI builds.
+Repeat with JEI absent, then present. Test both E and I:
+
+1. Focus JEI search and enter `jei-only`. Click EI search, type `bread` and
+   paste `stone`. Only EI's text/results should change. No character may be
+   inserted twice or appear in JEI. Repeat without moving the mouse, then with
+   the mouse over JEI or a stored item while EI search remains focused.
+2. Click the middle of EI text, use arrows, select text by dragging beyond the
+   field, release, then type. Cursor placement and selection must work, without
+   continuing to drag after release. Right-click clear must update the filter.
+3. Type `e` and `i` with EI focused. It must remain open. Escape must still close.
+4. Click JEI search again and type: only JEI should change. Click a vanilla slot
+   and verify normal item/close shortcuts after EI has lost focus.
+5. Repeat after resize, close/reopen, switching tabs and toggling attachment.
+
+User feedback confirms NeoForge search works with the shared fix. This follow-up
+changes Fabric only; repeat the basic NeoForge E/I checks as a regression check.
+Runtime execution of this matrix remains required; source inspection alone does
+not establish compatibility with every JEI event phase or mod combination.
