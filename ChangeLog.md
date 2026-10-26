@@ -1,6 +1,10 @@
 # Change Log
 __branch 1.21.1__
 
+## Unreleased — dedicated server startup (#48)
+
+- NeoForge: register client configuration and the configuration screen only from the physical-client initializer, preventing dedicated server startup from loading Minecraft Screen classes.
+
 ## 更新日志
 
 **警告：升级 mod 版本前应备份游戏存档。**

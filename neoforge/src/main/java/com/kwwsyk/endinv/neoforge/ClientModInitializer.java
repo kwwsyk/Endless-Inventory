@@ -4,12 +4,17 @@ import com.kwwsyk.endinv.common.AbstractClientModInitializer;
 import com.kwwsyk.endinv.common.client.IContainerScreenHelper;
 import com.kwwsyk.endinv.common.client.IInputHandler;
 import com.kwwsyk.endinv.common.client.KeyMappings;
+import com.kwwsyk.endinv.neoforge.client.config.ClientConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.util.Lazy;
@@ -23,7 +28,10 @@ public class ClientModInitializer extends AbstractClientModInitializer {
     public static Lazy<KeyMapping> STAR_ITEM_KEY = regKey(STAR_ITEM);
 
 
-    static void init(IEventBus modEventBus){
+    static void init(IEventBus modEventBus, ModContainer container){
+        container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
+        new ClientModInitializer();
+        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         modEventBus.addListener(ClientModInitializer::regKeyMapping);
     }
 
