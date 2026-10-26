@@ -8,7 +8,6 @@ import com.kwwsyk.endinv.common.menu.EndlessInventoryMenu;
 import com.kwwsyk.endinv.common.network.IPacketDistributor;
 import com.kwwsyk.endinv.common.network.payloads.ModPacketPayload;
 import com.kwwsyk.endinv.common.network.payloads.SyncedConfig;
-import com.kwwsyk.endinv.neoforge.client.config.ClientConfig;
 import com.kwwsyk.endinv.neoforge.integrates.curio.CurioPageType;
 import com.kwwsyk.endinv.neoforge.integrates.irons_spellbooks.IronsSpellbooksPageType;
 import com.kwwsyk.endinv.neoforge.integrates.silentgear.SilentGearPageType;
@@ -32,8 +31,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.attachment.AttachmentType;
-import net.neoforged.neoforge.client.gui.ConfigurationScreen;
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -55,7 +52,6 @@ public class ModInitializer extends AbstractModInitializer {
 
     public ModInitializer(IEventBus modEventBus, ModContainer container){
         super.init();
-        container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CONFIG_SPEC);
         container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);
         container.registerConfig(ModConfig.Type.STARTUP, StartupConfig.CONFIG_SPEC);
 
@@ -75,9 +71,7 @@ public class ModInitializer extends AbstractModInitializer {
         }
 
         if(FMLEnvironment.dist.isClient()) {
-            var client = new ClientModInitializer();
-            ClientModInitializer.init(modEventBus);
-            container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+            ClientModInitializer.init(modEventBus, container);
         }
     }
 
