@@ -1,6 +1,10 @@
 # Change Log
 __branch 1.21.1__
 
+## Unreleased — search input (#49)
+
+- Keep focused search key events out of inventory-close and item shortcuts; preserve Escape and unfocused shortcuts.
+
 ## 更新日志
 
 **警告：升级 mod 版本前应备份游戏存档。**

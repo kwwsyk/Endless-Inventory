@@ -477,6 +477,14 @@ public class ScreenFramework implements PageManager, ContainerEventHandler, Rend
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (getDisplayingPage().hasSearchbox() && searchBox.isFocused()) {
+            if (keyCode == InputConstants.KEY_ESCAPE) {
+                return false;
+            }
+            searchBox.keyPressed(keyCode, scanCode, modifiers);
+            // Printable keys arrive in charTyped; keep them out of container shortcuts.
+            return true;
+        }
 
         if (inputHandler.isActiveAndMatches(KeyMappings.STAR_ITEM, InputConstants.getKey(keyCode, scanCode))) {
             Slot clicked = findSlot(roughMouseX, roughMouseY);
