@@ -13,7 +13,6 @@
   "client": [
     "AbstractContainerScreenAccessor",
     "AbstractContainerScreenMixin",
-    "GuiEventListenerCharTypedMixin",
     "RecipeBookComponentMixin",
     "ScreenAccessor",
     "ScreenMixin"
