@@ -217,6 +217,7 @@ public class ScreenFramework implements PageManager, GuiEventListener {
         this.sortTypeSwitchBox = new SortTypeSwitchBox(this,  sortBoxParam);
 
         this.searchBox.setValue(searching());
+        this.searchBox.setResponder(value -> refreshSearchResults());
 
         if (pageBarCount < getPages().size()) {
             Button up = Button.builder(Component.literal("^"), btn -> {
@@ -393,7 +394,6 @@ public class ScreenFramework implements PageManager, GuiEventListener {
             searchBox.setFocused(true);//this is what JEI behaves
             if (keyCode == InputConstants.MOUSE_BUTTON_RIGHT) {
                 searchBox.setValue("");
-                refreshSearchResults();
                 return true;
             }
         }
@@ -480,6 +480,16 @@ public class ScreenFramework implements PageManager, GuiEventListener {
         int modifiers = event.modifiers();
         this.ignoreTextInput = false;
 
+        if (getDisplayingPage().hasSearchbox() && searchBox.isFocused()) {
+            if (keyCode == InputConstants.KEY_ESCAPE) {
+                return false;
+            }
+            searchBox.keyPressed(event);
+            // Printable keys may return false here; their text arrives in charTyped.
+            // Consume them before container close and item shortcuts can run.
+            return true;
+        }
+
         if (inputHandler.isActiveAndMatches(KeyMappings.STAR_ITEM, event)) {
             Slot clicked = findSlot(roughMouseX, roughMouseY);
             if (clicked != null && clicked.hasItem()) {
@@ -499,17 +509,14 @@ public class ScreenFramework implements PageManager, GuiEventListener {
             return true;
         }
 
-        // Let default input pipeline handle focused widgets in 1.21.11
         return false;
     }
 
     public boolean charTyped(CharacterEvent event) {
         if (this.ignoreTextInput || !getDisplayingPage().hasSearchbox()) {
             return false;
-        } else {
-            // Defer text input handling to the widget pipeline
-            return false;
         }
+        return searchBox.charTyped(event);
     }
 
     public void onClose() {
